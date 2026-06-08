@@ -25,15 +25,18 @@ src/
   educase_core/          # общий слой: домен, сервисы, инфраструктура, кодеки архивов
     domain/              # сущности, value objects — НИКАКИХ зависимостей
     application/         # use cases, сервисы — оркестрация, без бизнес-правил
-    infrastructure/      # SQLAlchemy, файловый I/O
-      db/
-      archive/           # кодеки .educase / .eduresult
+    infrastructure/      # файловый I/O, кодеки архивов
+      archive/           # кодеки .educase / .eduresult — единственная персистентность
   educase_constructor/   # GUI преподавателя (PySide6)
   educase_player/        # GUI курсанта (PySide6)
 ```
 
+**Документная модель (ADR-009):** БД нет. Кейс = файл `.educase`, результат = `.eduresult`.
+Единственная персистентность — кодек архива (`infrastructure/archive`). SQLAlchemy/SQLite в MVP
+не используются.
+
 ### Запрещённые зависимости (нарушение = архитектурная ошибка)
-- `domain` ← PySide6 / SQLAlchemy (домен ничего не знает о GUI и ORM)
+- `domain` ← PySide6 / любые внешние библиотеки (домен — чистый Python)
 - `*_constructor` / `*_player` (UI) ← `infrastructure` напрямую (только через `application`)
 - любой код ← сеть (см. ниже)
 
@@ -69,16 +72,17 @@ python -m compileall -q src tests   # 4. компиляция
 позиционирования); стили в QSS (никакого inline-стиля в Python); долгие операции — в
 QThread/QRunnable, никогда в основном потоке; данные из БД — QTableView + QAbstractTableModel.
 
-**SQLAlchemy 2:** `Mapped[]`-аннотации (не `Column()`); `DeclarativeBase`;
-`relationship(back_populates=...)`; Session через DI (не глобальные переменные);
-параметризованные запросы (никаких f-string в SQL).
+**Персистентность:** БД/ORM нет (ADR-009). Состояние читается/пишется **только через кодек
+архива** (`infrastructure/archive`): кейс — `.educase`, результат — `.eduresult` (ZIP +
+manifest.json + ассеты). Версионирование формата — поле `format_version` в manifest (ADR-010),
+никакого Alembic.
 
 **Python:** типы на всё (mypy strict); docstrings на публичные API; `logging`/loguru
 вместо `print()`; никаких хардкод-путей — только через `config.py`/ENV;
 `# type: ignore` только с комментарием-причиной.
 
-**Тесты (pytest / pytest-qt):** SQLite `:memory:` для БД (без моков ORM); реальные
-виджеты вместо моков PySide6 где возможно; фикстуры в `conftest.py`; имена
+**Тесты (pytest / pytest-qt):** реальные виджеты вместо моков PySide6 где возможно; кодеки
+тестируем на временных файлах (`tmp_path`); фикстуры в `conftest.py`; имена
 `test_<что>_<сценарий>`.
 
 ## Жёсткие правила проекта (НЕ нарушать без нового ADR)

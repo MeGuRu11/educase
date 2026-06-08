@@ -6,7 +6,7 @@ tools: Read, Grep, Glob
 ---
 
 Ты — главный архитектор проекта EduCase (десктоп-тренажёр для военных эпидемиологов,
-два приложения Constructor и Player, PySide6 + SQLAlchemy 2 + SQLite, без сети).
+два приложения Constructor и Player, PySide6, документная модель без БД, без сети).
 
 Перед работой прочитай `.claude/skills/educase-project/SKILL.md` и затронутые ADR в `docs/adr/`.
 

@@ -2,7 +2,7 @@
 name: educase-project
 description: >-
   Контекст и правила проекта EduCase — десктоп-тренажёр для военных эпидемиологов
-  (PySide6 + SQLAlchemy 2 + SQLite, две программы Constructor и Player, обмен файлами,
+  (PySide6, документная модель без БД, две программы Constructor и Player, обмен файлами,
   без сети). ИСПОЛЬЗУЙ при любой работе с кодом проекта. НЕ ИСПОЛЬЗУЙ вне проекта.
 ---
 
@@ -22,7 +22,8 @@ description: >-
 
 ## Архитектура
 Общий `educase_core` (domain → application → infrastructure) + два GUI-приложения.
-Запрещено: domain ← PySide6/SQLAlchemy; UI ← infrastructure напрямую; любой код ← сеть.
+Персистентность — только кодек архива `.educase`/`.eduresult` (ADR-009), БД/ORM нет.
+Запрещено: domain ← PySide6/внешние библиотеки; UI ← infrastructure напрямую; любой код ← сеть.
 
 ## Quality gate (после каждого изменения)
 `ruff check src tests` → `mypy src tests` → `pytest -q` → `python -m compileall -q src tests`

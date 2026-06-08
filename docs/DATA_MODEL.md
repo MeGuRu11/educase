@@ -70,4 +70,4 @@
 - [ ] Поля и типы PatientCard, DocumentField, ObservationTimeline.
 - [ ] Точная структура `facility_scheme` / `action_icons` / `hotspots`.
 - [ ] Модель оценивания: что считается ошибкой, как формируется финальный отчёт.
-- [ ] Решить: хранится ли кейс в SQLite у Constructor, или только в `.educase` (влияет на ORM).
+- [x] ~~Решить: SQLite у Constructor или только .educase~~ — документная модель, без БД (ADR-009).

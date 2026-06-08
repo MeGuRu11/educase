@@ -12,10 +12,10 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 
 Правила:
 - Слои: domain без зависимостей; application оркестрирует; infrastructure реализует протоколы.
-- SQLAlchemy 2: `Mapped[]`, `DeclarativeBase`, `relationship(back_populates=...)`, Session через DI,
-  параметризованные запросы.
+- Персистентность — только через кодек архива `.educase`/`.eduresult` (ADR-009). БД/ORM нет.
+  Версия формата — поле `format_version` в manifest (ADR-010).
 - Типы на всё (mypy strict). Логирование через loguru, не print.
 - Никакого сетевого кода. JSON не показывается пользователю.
 - После КАЖДОГО изменения: `ruff check src tests` → `mypy src tests` → `pytest -q`
   → `python -m compileall -q src tests`. Только потом коммит (Conventional Commits).
-- Тесты обязательны на каждый затронутый слой (SQLite :memory:, без моков ORM).
+- Тесты обязательны на каждый затронутый слой (кодеки — на временных файлах `tmp_path`).

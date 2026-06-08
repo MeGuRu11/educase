@@ -11,8 +11,8 @@
 
 ## Стек
 
-Python 3.12 · PySide6 (только виджеты) · SQLAlchemy 2 + SQLite · loguru · PyInstaller ·
-pytest-qt · ruff · mypy (strict).
+Python 3.12 · PySide6 (только виджеты) · loguru · PyInstaller · pytest-qt · ruff ·
+mypy (strict). Персистентность — файловая (кодек `.educase`/`.eduresult`), без БД/ORM (ADR-009).
 
 ## Разработка
 

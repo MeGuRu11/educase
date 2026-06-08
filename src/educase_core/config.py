@@ -19,13 +19,5 @@ def _data_dir() -> Path:
 class Config:
     data_dir: Path = field(default_factory=_data_dir)
 
-    @property
-    def constructor_db(self) -> Path:
-        return self.data_dir / "constructor.sqlite3"
-
-    @property
-    def player_db(self) -> Path:
-        return self.data_dir / "player.sqlite3"
-
 
 config = Config()
