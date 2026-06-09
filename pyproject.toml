@@ -52,9 +52,14 @@ python_version = "3.12"
 strict = true
 mypy_path = "src"
 packages = ["educase_core", "educase_constructor", "educase_player"]
-# PySide6 поставляет частичные стабы; при шуме можно точечно ослабить ниже.
+
+# PySide6 и pytest-qt поставляют неполные стабы — точечно гасим шум по missing imports.
 [[tool.mypy.overrides]]
 module = ["PySide6.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["pytestqt.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
