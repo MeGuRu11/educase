@@ -12,6 +12,7 @@ from pathlib import Path
 
 from educase_core.domain.case import Case
 from educase_core.infrastructure.archive.codec import read_educase, write_educase
+from educase_core.infrastructure.archive.errors import ArchiveError
 
 
 @dataclass(frozen=True)
@@ -52,4 +53,4 @@ def load_case(src: Path) -> LoadedCase:
     return LoadedCase(case=Case.from_dict(bundle.payload), assets=bundle.assets)
 
 
-__all__ = ["LoadedCase", "load_case", "save_case"]
+__all__ = ["ArchiveError", "LoadedCase", "load_case", "save_case"]
