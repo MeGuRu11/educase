@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from educase_constructor.ui.clinical_editor import ClinicalEditor
 from educase_constructor.ui.patient_editor import PatientEditor
 from educase_core.application.case_builder import CaseDraft
 
@@ -58,10 +59,16 @@ class CaseEditor(QWidget):
         patients_box_layout.addLayout(patient_buttons)
         patients_box_layout.addLayout(self._patients_layout)
 
+        self.clinical_editor = ClinicalEditor(self)
+        clinical_box = QGroupBox("Клинико-эпидемиологический диагноз")
+        clinical_box_layout = QVBoxLayout(clinical_box)
+        clinical_box_layout.addWidget(self.clinical_editor)
+
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Кейс"))
         layout.addLayout(meta_form)
         layout.addWidget(patients_box)
+        layout.addWidget(clinical_box)
         layout.addStretch(1)
 
     def add_patient(self) -> None:
@@ -96,4 +103,5 @@ class CaseEditor(QWidget):
             nosology=self.nosology_edit.text(),
             unit_personnel=self._unit_personnel(),
             patients=tuple(editor.to_draft() for editor in self.patient_editors),
+            clinical=self.clinical_editor.to_draft(),
         )
