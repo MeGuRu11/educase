@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from educase_constructor.ui.clinical_editor import ClinicalEditor
+from educase_constructor.ui.contacts_editor import ContactsEditor
+from educase_constructor.ui.environment_editor import EnvironmentEditor
 from educase_constructor.ui.patient_editor import PatientEditor
 from educase_core.application.case_builder import CaseDraft
 
@@ -64,11 +66,23 @@ class CaseEditor(QWidget):
         clinical_box_layout = QVBoxLayout(clinical_box)
         clinical_box_layout.addWidget(self.clinical_editor)
 
+        self.contacts_editor = ContactsEditor(self)
+        contacts_box = QGroupBox("Обследование контактных лиц")
+        contacts_box_layout = QVBoxLayout(contacts_box)
+        contacts_box_layout.addWidget(self.contacts_editor)
+
+        self.environment_editor = EnvironmentEditor(self)
+        environment_box = QGroupBox("Обследование объектов внешней среды")
+        environment_box_layout = QVBoxLayout(environment_box)
+        environment_box_layout.addWidget(self.environment_editor)
+
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Кейс"))
         layout.addLayout(meta_form)
         layout.addWidget(patients_box)
         layout.addWidget(clinical_box)
+        layout.addWidget(contacts_box)
+        layout.addWidget(environment_box)
         layout.addStretch(1)
 
     def add_patient(self) -> None:
@@ -104,4 +118,6 @@ class CaseEditor(QWidget):
             unit_personnel=self._unit_personnel(),
             patients=tuple(editor.to_draft() for editor in self.patient_editors),
             clinical=self.clinical_editor.to_draft(),
+            contacts=self.contacts_editor.to_draft(),
+            environment=self.environment_editor.to_draft(),
         )

@@ -10,9 +10,12 @@ from educase_core.application.case_builder import (
     BranchOptionDraft,
     CaseDraft,
     ClinicalDraft,
+    ContactsDraft,
     DocumentOptionDraft,
     DocumentTaskDraft,
+    EnvironmentDraft,
     FieldDraft,
+    InspectionDraft,
     PatientDraft,
     SearchDraft,
     SearchEntryDraft,
@@ -28,6 +31,8 @@ from educase_core.domain import (
     FieldType,
     NumberMatch,
     StageClinical,
+    StageContacts,
+    StageEnvironment,
     StageFinal,
     TextMatch,
 )
@@ -352,3 +357,103 @@ def test_build_case_clinical_documents_round_trip_codec(tmp_path: Path) -> None:
     loaded = load_case(dst)
     assert loaded.case.clinical.documents == case.clinical.documents
     assert loaded.case == case
+
+
+# --- Этапы 3–4: обследование контактных лиц и объектов внешней среды ---
+
+
+def test_build_case_without_contacts_and_environment_default_stages() -> None:
+    """``CaseDraft`` без contacts/environment → дефолтные пустые этапы 3 и 4."""
+    case = build_case(CaseDraft(case_id="case-cd"))
+    assert case.contacts == StageContacts()
+    assert case.environment == StageEnvironment()
+
+
+def test_build_case_contacts_scheme_and_inspection() -> None:
+    """``contacts`` → схема и ожидаемые группы осмотра как заданы."""
+    contacts = ContactsDraft(
+        intro="Обследуйте контактных",
+        scheme="scheme_contacts",
+        inspection=InspectionDraft(
+            groups=(
+                SynonymSetDraft(canonical="сыпь", synonyms=("экзантема",)),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-ct", contacts=contacts))
+
+    assert case.contacts.intro == "Обследуйте контактных"
+    assert case.contacts.scheme == "scheme_contacts"
+    inspection = case.contacts.inspection
+    assert inspection is not None
+    assert len(inspection.expected) == 1
+    assert inspection.expected[0].canonical == "сыпь"
+    assert inspection.expected[0].synonyms == ("экзантема",)
+
+
+def test_build_case_contacts_blank_scheme_and_empty_inspection_are_none() -> None:
+    """Пустая схема → ``None``; осмотр без валидных групп → ``inspection`` равен ``None``."""
+    contacts = ContactsDraft(
+        scheme="   ",
+        inspection=InspectionDraft(groups=(SynonymSetDraft(canonical="  "),)),
+    )
+    case = build_case(CaseDraft(case_id="case-cn", contacts=contacts))
+    assert case.contacts.scheme is None
+    assert case.contacts.inspection is None
+
+
+def test_build_case_environment_photos_documents_inspection() -> None:
+    """``environment`` → схема, отфильтрованные фото, документы и осмотр как заданы."""
+    environment = EnvironmentDraft(
+        intro="Обследуйте пищеблок",
+        scheme="scheme_env",
+        photos=("img_01", "  img_02  ", "   "),  # пустые/пробельные отбрасываются
+        documents=(
+            DocumentTaskDraft(
+                prompt="Выберите акт",
+                options=(DocumentOptionDraft(title="Акт обследования"),),
+            ),
+        ),
+        inspection=InspectionDraft(
+            groups=(SynonymSetDraft(canonical="грязь"),),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-en", environment=environment))
+
+    assert case.environment.scheme == "scheme_env"
+    assert case.environment.photos == ("img_01", "img_02")
+    assert len(case.environment.documents) == 1
+    assert case.environment.documents[0].id == "doc-1"
+    assert case.environment.documents[0].prompt == "Выберите акт"
+    inspection = case.environment.inspection
+    assert inspection is not None
+    assert len(inspection.expected) == 1
+    assert inspection.expected[0].canonical == "грязь"
+
+
+def test_build_case_environment_blank_scheme_and_empty_inspection_are_none() -> None:
+    """Пустая схема → ``None``; осмотр без валидных групп → ``inspection`` равен ``None``."""
+    case = build_case(
+        CaseDraft(case_id="case-eb", environment=EnvironmentDraft(scheme=""))
+    )
+    assert case.environment.scheme is None
+    assert case.environment.inspection is None
+
+
+def test_build_case_contacts_environment_round_trip_to_dict() -> None:
+    """round-trip: build_case(...).to_dict() → Case.from_dict(...) сохраняет этапы 3 и 4."""
+    contacts = ContactsDraft(
+        scheme="scheme_contacts",
+        inspection=InspectionDraft(groups=(SynonymSetDraft(canonical="сыпь"),)),
+    )
+    environment = EnvironmentDraft(
+        scheme="scheme_env",
+        photos=("img_01",),
+        inspection=InspectionDraft(groups=(SynonymSetDraft(canonical="грязь"),)),
+    )
+    case = build_case(
+        CaseDraft(case_id="case-rt34", contacts=contacts, environment=environment)
+    )
+    restored = Case.from_dict(case.to_dict())
+    assert restored.contacts == case.contacts
+    assert restored.environment == case.environment

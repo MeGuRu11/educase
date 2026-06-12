@@ -21,12 +21,15 @@ from educase_core.domain import (
     DocumentTask,
     DocumentTemplate,
     FieldType,
+    InspectionCheck,
     KeywordSearch,
     MatchRule,
     NumberMatch,
     PatientCard,
     SearchEntry,
     StageClinical,
+    StageContacts,
+    StageEnvironment,
     StagePatients,
     SynonymSet,
     TextMatch,
@@ -140,8 +143,35 @@ class ClinicalDraft:
 
 
 @dataclass(frozen=True)
+class InspectionDraft:
+    """Сырые значения сверки осмотра: ожидаемые группы синонимов (этапы 3/4)."""
+
+    groups: tuple[SynonymSetDraft, ...] = ()
+
+
+@dataclass(frozen=True)
+class ContactsDraft:
+    """Сырые значения этапа «Обследование контактных лиц»: вступление, схема, осмотр."""
+
+    intro: str = ""
+    scheme: str = ""
+    inspection: InspectionDraft = InspectionDraft()
+
+
+@dataclass(frozen=True)
+class EnvironmentDraft:
+    """Сырые значения этапа «Объекты внешней среды»: схема, фото, документы, осмотр."""
+
+    intro: str = ""
+    scheme: str = ""
+    photos: tuple[str, ...] = ()
+    documents: tuple[DocumentTaskDraft, ...] = ()
+    inspection: InspectionDraft = InspectionDraft()
+
+
+@dataclass(frozen=True)
 class CaseDraft:
-    """Сырые значения кейса из UI (этот срез: мета + пациенты + этап «Клинический»)."""
+    """Сырые значения кейса из UI (этот срез: мета + пациенты + этапы 2–4)."""
 
     case_id: str
     title: str = ""
@@ -150,6 +180,8 @@ class CaseDraft:
     unit_personnel: int | None = None
     patients: tuple[PatientDraft, ...] = ()
     clinical: ClinicalDraft | None = None
+    contacts: ContactsDraft | None = None
+    environment: EnvironmentDraft | None = None
 
 
 def _build_search(draft: SearchDraft) -> KeywordSearch | None:
@@ -322,12 +354,48 @@ def build_clinical(draft: ClinicalDraft) -> StageClinical:
     )
 
 
+def _build_inspection(draft: InspectionDraft) -> InspectionCheck | None:
+    """Собрать ``InspectionCheck`` из ``InspectionDraft`` (или ``None``, если групп нет).
+
+    Группы с пустым каноническим термином (после ``strip``) отбрасываются. Если валидных
+    групп не осталось — возвращается ``None`` (сверки осмотра нет).
+    """
+    groups = [
+        SynonymSet(canonical=group.canonical, synonyms=group.synonyms)
+        for group in draft.groups
+        if group.canonical.strip()
+    ]
+    if not groups:
+        return None
+    return InspectionCheck(expected=tuple(groups))
+
+
+def build_contacts(draft: ContactsDraft) -> StageContacts:
+    """Собрать этап «Обследование контактных лиц» из ``ContactsDraft``."""
+    return StageContacts(
+        intro=draft.intro,
+        scheme=draft.scheme.strip() or None,
+        inspection=_build_inspection(draft.inspection),
+    )
+
+
+def build_environment(draft: EnvironmentDraft) -> StageEnvironment:
+    """Собрать этап «Обследование объектов внешней среды» из ``EnvironmentDraft``."""
+    photos = tuple(p.strip() for p in draft.photos if p.strip())
+    return StageEnvironment(
+        intro=draft.intro,
+        scheme=draft.scheme.strip() or None,
+        photos=photos,
+        documents=_build_documents(draft.documents),
+        inspection=_build_inspection(draft.inspection),
+    )
+
+
 def build_case(draft: CaseDraft) -> Case:
     """Собрать доменный ``Case`` из ``CaseDraft``.
 
     Валидируется только обязательный непустой идентификатор кейса. Этот срез трогает мету,
-    этап «Пациенты» и этап «Клинический»; остальные этапы — дефолтные пустые. Чистая
-    функция без I/O.
+    этап «Пациенты» и этапы 2–4; остальные этапы — дефолтные пустые. Чистая функция без I/O.
     """
     case_id = draft.case_id.strip()
     if not case_id:
@@ -352,7 +420,23 @@ def build_case(draft: CaseDraft) -> Case:
         if draft.clinical is not None
         else StageClinical()
     )
-    return Case(meta=meta, patients=patients, clinical=clinical)
+    contacts = (
+        build_contacts(draft.contacts)
+        if draft.contacts is not None
+        else StageContacts()
+    )
+    environment = (
+        build_environment(draft.environment)
+        if draft.environment is not None
+        else StageEnvironment()
+    )
+    return Case(
+        meta=meta,
+        patients=patients,
+        clinical=clinical,
+        contacts=contacts,
+        environment=environment,
+    )
 
 
 __all__ = [
@@ -360,9 +444,12 @@ __all__ = [
     "BranchOptionDraft",
     "CaseDraft",
     "ClinicalDraft",
+    "ContactsDraft",
     "DocumentOptionDraft",
     "DocumentTaskDraft",
+    "EnvironmentDraft",
     "FieldDraft",
+    "InspectionDraft",
     "PatientDraft",
     "SearchDraft",
     "SearchEntryDraft",
@@ -370,4 +457,6 @@ __all__ = [
     "TemplateDraft",
     "build_case",
     "build_clinical",
+    "build_contacts",
+    "build_environment",
 ]

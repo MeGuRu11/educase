@@ -1,0 +1,65 @@
+"""Редактор этапа 4 «Обследование объектов внешней среды» (Constructor).
+
+Вступление, ссылка на схему (ассет по id), фото (id через запятую), задания по документам и
+сверка осмотра. Без визуальной полировки: только функциональные виджеты и layout-менеджеры.
+Публичные поля ввода и вложенные редакторы — точки доступа для тестов. Сборка значений в
+драфт — через ``to_draft``.
+"""
+from __future__ import annotations
+
+from PySide6.QtWidgets import (
+    QFormLayout,
+    QGroupBox,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
+from educase_constructor.ui.document_editor import DocumentListEditor
+from educase_constructor.ui.inspection_editor import InspectionEditor
+from educase_core.application.case_builder import EnvironmentDraft
+
+
+class EnvironmentEditor(QWidget):
+    """Редактор этапа «Обследование объектов внешней среды»: схема, фото, документы, осмотр."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+
+        self.intro_edit = QLineEdit(self)
+        self.scheme_edit = QLineEdit(self)
+        self.photos_edit = QLineEdit(self)
+        self.documents_editor = DocumentListEditor(self)
+        self.inspection_editor = InspectionEditor(self)
+
+        form = QFormLayout()
+        form.addRow("Вступление", self.intro_edit)
+        form.addRow("Схема (id ассета)", self.scheme_edit)
+        form.addRow("Фото (id через запятую)", self.photos_edit)
+
+        documents_box = QGroupBox("Документы")
+        documents_box_layout = QVBoxLayout(documents_box)
+        documents_box_layout.addWidget(self.documents_editor)
+
+        inspection_box = QGroupBox("Осмотр")
+        inspection_box_layout = QVBoxLayout(inspection_box)
+        inspection_box_layout.addWidget(self.inspection_editor)
+
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addWidget(documents_box)
+        layout.addWidget(inspection_box)
+
+    def _collect_photos(self) -> tuple[str, ...]:
+        parts = (chunk.strip() for chunk in self.photos_edit.text().split(","))
+        return tuple(part for part in parts if part)
+
+    def to_draft(self) -> EnvironmentDraft:
+        """Собрать ``EnvironmentDraft`` из вступления, схемы, фото, документов и осмотра."""
+        return EnvironmentDraft(
+            intro=self.intro_edit.text(),
+            scheme=self.scheme_edit.text(),
+            photos=self._collect_photos(),
+            documents=self.documents_editor.to_draft(),
+            inspection=self.inspection_editor.to_draft(),
+        )
