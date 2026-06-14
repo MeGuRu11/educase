@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from educase_constructor.ui.asset_picker import AssetListPicker
-from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder
+from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.synonym_editor import SynonymSetEditor
 from educase_core.application.case_builder import SearchDraft, SearchEntryDraft
 
@@ -59,15 +59,17 @@ class SearchEditor(QWidget):
         self.optional_checkbox = QCheckBox("Поиск необязателен", self)
 
         self.entry_editors: list[SearchEntryEditor] = []
+        self._entry_cards: list[QGroupBox] = []
 
-        self.add_entry_button = QPushButton("Добавить точку поиска", self)
-        self.remove_entry_button = QPushButton("Удалить последнюю", self)
+        self.add_entry_button = QPushButton("+ Добавить", self)
+        self.remove_entry_button = QPushButton("− Удалить", self)
         self.add_entry_button.clicked.connect(self.add_entry)
         self.remove_entry_button.clicked.connect(self.remove_last_entry)
 
         entry_buttons = QHBoxLayout()
         entry_buttons.addWidget(self.add_entry_button)
         entry_buttons.addWidget(self.remove_entry_button)
+        entry_buttons.addStretch(1)
 
         self._empty_label = make_placeholder("Пока не добавлено ни одной точки поиска")
 
@@ -89,16 +91,19 @@ class SearchEditor(QWidget):
         """Добавить редактор новой точки поиска в конец списка."""
         editor = SearchEntryEditor(self)
         self.entry_editors.append(editor)
-        self._entries_layout.addWidget(editor)
+        card = wrap_in_card(editor, f"Точка поиска {len(self.entry_editors)}")
+        self._entry_cards.append(card)
+        self._entries_layout.addWidget(card)
         self._refresh_empty()
 
     def remove_last_entry(self) -> None:
         """Удалить последний редактор точки поиска (если он есть)."""
         if not self.entry_editors:
             return
-        editor = self.entry_editors.pop()
-        self._entries_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.entry_editors.pop()
+        card = self._entry_cards.pop()
+        self._entries_layout.removeWidget(card)
+        card.deleteLater()
         self._refresh_empty()
 
     def _refresh_empty(self) -> None:

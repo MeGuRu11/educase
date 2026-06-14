@@ -5,7 +5,15 @@
 """
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QGroupBox, QLabel, QVBoxLayout, QWidget
+
+
+def wrap_in_card(content: QWidget, title: str) -> QGroupBox:
+    """Обернуть виджет в QGroupBox с заголовком-номером для карточного вида списка."""
+    card = QGroupBox(title)
+    layout = QVBoxLayout(card)
+    layout.addWidget(content)
+    return card
 
 
 def make_placeholder(text: str) -> QLabel:

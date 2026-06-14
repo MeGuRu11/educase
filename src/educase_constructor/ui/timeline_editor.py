@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLineEdit,
     QPushButton,
@@ -17,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder
+from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_core.application.case_builder import TimelineDraft
 
 
@@ -87,15 +88,17 @@ class TimelineListEditor(QWidget):
         super().__init__(parent)
 
         self.timeline_editors: list[TimelineEditor] = []
+        self._timeline_cards: list[QGroupBox] = []
 
-        self.add_timeline_button = QPushButton("Добавить таймлайн", self)
-        self.remove_timeline_button = QPushButton("Удалить последний", self)
+        self.add_timeline_button = QPushButton("+ Добавить", self)
+        self.remove_timeline_button = QPushButton("− Удалить", self)
         self.add_timeline_button.clicked.connect(self.add_timeline)
         self.remove_timeline_button.clicked.connect(self.remove_last_timeline)
 
         timeline_buttons = QHBoxLayout()
         timeline_buttons.addWidget(self.add_timeline_button)
         timeline_buttons.addWidget(self.remove_timeline_button)
+        timeline_buttons.addStretch(1)
 
         self._empty_label = make_placeholder("Пока не добавлено ни одного срока наблюдения")
 
@@ -112,16 +115,19 @@ class TimelineListEditor(QWidget):
         """Добавить редактор нового таймлайна в конец списка."""
         editor = TimelineEditor(self)
         self.timeline_editors.append(editor)
-        self._timelines_layout.addWidget(editor)
+        card = wrap_in_card(editor, f"Срок наблюдения {len(self.timeline_editors)}")
+        self._timeline_cards.append(card)
+        self._timelines_layout.addWidget(card)
         self._refresh_empty()
 
     def remove_last_timeline(self) -> None:
         """Удалить последний редактор таймлайна (если он есть)."""
         if not self.timeline_editors:
             return
-        editor = self.timeline_editors.pop()
-        self._timelines_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.timeline_editors.pop()
+        card = self._timeline_cards.pop()
+        self._timelines_layout.removeWidget(card)
+        card.deleteLater()
         self._refresh_empty()
 
     def _refresh_empty(self) -> None:

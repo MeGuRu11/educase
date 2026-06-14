@@ -24,7 +24,7 @@ from educase_constructor.ui.clinical_editor import ClinicalEditor
 from educase_constructor.ui.contacts_editor import ContactsEditor
 from educase_constructor.ui.environment_editor import EnvironmentEditor
 from educase_constructor.ui.final_editor import FinalEditor
-from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder
+from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.patient_editor import PatientEditor
 from educase_constructor.ui.ses_editor import SesEditor
 from educase_core.application.case_builder import CaseDraft
@@ -46,6 +46,7 @@ class CaseEditor(QWidget):
         self.unit_personnel_edit = QLineEdit(self)
 
         self.patient_editors: list[PatientEditor] = []
+        self._patient_cards: list[QGroupBox] = []
 
         meta_form = QFormLayout()
         meta_form.addRow("Название", self.title_edit)
@@ -53,14 +54,15 @@ class CaseEditor(QWidget):
         meta_form.addRow("Нозология", self.nosology_edit)
         meta_form.addRow("Личный состав", self.unit_personnel_edit)
 
-        self.add_patient_button = QPushButton("Добавить пациента", self)
-        self.remove_patient_button = QPushButton("Удалить последнего", self)
+        self.add_patient_button = QPushButton("+ Добавить", self)
+        self.remove_patient_button = QPushButton("− Удалить", self)
         self.add_patient_button.clicked.connect(self.add_patient)
         self.remove_patient_button.clicked.connect(self.remove_last_patient)
 
         patient_buttons = QHBoxLayout()
         patient_buttons.addWidget(self.add_patient_button)
         patient_buttons.addWidget(self.remove_patient_button)
+        patient_buttons.addStretch(1)
 
         self._empty_label = make_placeholder("Пока не добавлено ни одного пациента")
 
@@ -119,16 +121,19 @@ class CaseEditor(QWidget):
         """Добавить редактор нового пациента в конец списка."""
         editor = PatientEditor(self)
         self.patient_editors.append(editor)
-        self._patients_layout.addWidget(editor)
+        card = wrap_in_card(editor, f"Пациент {len(self.patient_editors)}")
+        self._patient_cards.append(card)
+        self._patients_layout.addWidget(card)
         self._refresh_empty()
 
     def remove_last_patient(self) -> None:
         """Удалить последний редактор пациента (если он есть)."""
         if not self.patient_editors:
             return
-        editor = self.patient_editors.pop()
-        self._patients_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.patient_editors.pop()
+        card = self._patient_cards.pop()
+        self._patients_layout.removeWidget(card)
+        card.deleteLater()
         self._refresh_empty()
 
     def _refresh_empty(self) -> None:

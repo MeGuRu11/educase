@@ -7,13 +7,14 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QGroupBox,
     QHBoxLayout,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder
+from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.synonym_editor import SynonymSetEditor
 from educase_core.application.case_builder import InspectionDraft
 
@@ -25,15 +26,17 @@ class InspectionEditor(QWidget):
         super().__init__(parent)
 
         self.group_editors: list[SynonymSetEditor] = []
+        self._group_cards: list[QGroupBox] = []
 
-        self.add_group_button = QPushButton("Добавить группу", self)
-        self.remove_group_button = QPushButton("Удалить последнюю", self)
+        self.add_group_button = QPushButton("+ Добавить", self)
+        self.remove_group_button = QPushButton("− Удалить", self)
         self.add_group_button.clicked.connect(self.add_group)
         self.remove_group_button.clicked.connect(self.remove_last_group)
 
         group_buttons = QHBoxLayout()
         group_buttons.addWidget(self.add_group_button)
         group_buttons.addWidget(self.remove_group_button)
+        group_buttons.addStretch(1)
 
         self._empty_label = make_placeholder("Пока не добавлено ни одной группы")
 
@@ -50,16 +53,19 @@ class InspectionEditor(QWidget):
         """Добавить редактор новой ожидаемой группы осмотра в конец списка."""
         editor = SynonymSetEditor(self)
         self.group_editors.append(editor)
-        self._groups_layout.addWidget(editor)
+        card = wrap_in_card(editor, f"Группа {len(self.group_editors)}")
+        self._group_cards.append(card)
+        self._groups_layout.addWidget(card)
         self._refresh_empty()
 
     def remove_last_group(self) -> None:
         """Удалить последний редактор группы (если он есть)."""
         if not self.group_editors:
             return
-        editor = self.group_editors.pop()
-        self._groups_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.group_editors.pop()
+        card = self._group_cards.pop()
+        self._groups_layout.removeWidget(card)
+        card.deleteLater()
         self._refresh_empty()
 
     def _refresh_empty(self) -> None:

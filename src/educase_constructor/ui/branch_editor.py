@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder
+from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_core.application.case_builder import BranchDraft, BranchOptionDraft
 
 
@@ -51,15 +51,17 @@ class BranchEditor(QWidget):
         self.prompt_edit = QLineEdit(self)
 
         self.option_editors: list[BranchOptionEditor] = []
+        self._option_cards: list[QGroupBox] = []
 
-        self.add_option_button = QPushButton("Добавить вариант", self)
-        self.remove_option_button = QPushButton("Удалить последний", self)
+        self.add_option_button = QPushButton("+ Добавить", self)
+        self.remove_option_button = QPushButton("− Удалить", self)
         self.add_option_button.clicked.connect(self.add_option)
         self.remove_option_button.clicked.connect(self.remove_last_option)
 
         option_buttons = QHBoxLayout()
         option_buttons.addWidget(self.add_option_button)
         option_buttons.addWidget(self.remove_option_button)
+        option_buttons.addStretch(1)
 
         self._empty_label = make_placeholder("Пока не добавлено ни одного варианта")
 
@@ -81,16 +83,19 @@ class BranchEditor(QWidget):
         """Добавить редактор новой опции в конец списка."""
         editor = BranchOptionEditor(self)
         self.option_editors.append(editor)
-        self._options_layout.addWidget(editor)
+        card = wrap_in_card(editor, f"Вариант {len(self.option_editors)}")
+        self._option_cards.append(card)
+        self._options_layout.addWidget(card)
         self._refresh_empty()
 
     def remove_last_option(self) -> None:
         """Удалить последний редактор опции (если он есть)."""
         if not self.option_editors:
             return
-        editor = self.option_editors.pop()
-        self._options_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.option_editors.pop()
+        card = self._option_cards.pop()
+        self._options_layout.removeWidget(card)
+        card.deleteLater()
         self._refresh_empty()
 
     def _refresh_empty(self) -> None:
