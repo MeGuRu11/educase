@@ -34,3 +34,10 @@ _scratch/
 .idea/
 .vscode/
 *.iml
+
+# --- Ministry source documents (sensitive, never commit; ADR .md stays tracked) ---
+docs/**/*.docx
+docs/**/*.xlsx
+docs/**/*.rtf
+docs/**/*.doc
+docs/**/*.pdf
