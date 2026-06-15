@@ -52,11 +52,11 @@ class CaseNavigator(QWidget):
 
         self._assets: Mapping[str, bytes] = assets if assets is not None else {}
         stages = case.ordered()
-        self._titles: tuple[str, ...] = tuple(s.title for s in stages)
 
         layout = QVBoxLayout(self)
 
         self._position_label = QLabel()
+        self._position_label.setObjectName("stagePosition")
         layout.addWidget(self._position_label)
 
         self.stack = QStackedWidget()
@@ -124,9 +124,7 @@ class CaseNavigator(QWidget):
     def _refresh(self) -> None:
         idx = self.stack.currentIndex()
         count = self.stack.count()
-        self._position_label.setText(
-            f"Этап {idx + 1} из {count} — {self._titles[idx]}"
-        )
+        self._position_label.setText(f"Этап {idx + 1} из {count}")
         self.btn_prev.setEnabled(idx > 0)
         self.btn_next.setEnabled(idx < count - 1)
 

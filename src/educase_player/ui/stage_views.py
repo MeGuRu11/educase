@@ -13,6 +13,7 @@ from collections.abc import Mapping
 from typing import assert_never
 
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
     QScrollArea,
     QVBoxLayout,
@@ -79,20 +80,34 @@ class StageView(QWidget):
         outer.addWidget(scroll)
 
         inner = QWidget()
-        self._layout = QVBoxLayout(inner)
+        inner_row = QHBoxLayout(inner)
+        inner_row.setContentsMargins(0, 0, 0, 0)
+
+        content = QWidget()
+        content.setMaximumWidth(960)
+        inner_row.addStretch(1)
+        inner_row.addWidget(content)
+        inner_row.addStretch(1)
+
+        self._layout = QVBoxLayout(content)
         scroll.setWidget(inner)
 
-        self._layout.addWidget(QLabel(stage.title))
+        title_label = QLabel(stage.title)
+        title_label.setObjectName("stageTitle")
+        self._layout.addWidget(title_label)
 
         if stage.intro:
             intro_label = QLabel(stage.intro)
+            intro_label.setObjectName("stageIntro")
             intro_label.setWordWrap(True)
             self._layout.addWidget(intro_label)
 
     def _finish(self, has_content: bool) -> None:
         """Дозаполнить каркас: заглушка пустого этапа + растяжка снизу."""
         if not has_content:
-            self._layout.addWidget(QLabel("Нет заданий на этом этапе"))
+            empty = QLabel("Нет заданий на этом этапе")
+            empty.setObjectName("mutedHint")
+            self._layout.addWidget(empty)
         self._layout.addStretch()
 
     def to_response(self) -> AttemptStage:

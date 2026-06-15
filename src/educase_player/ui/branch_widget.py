@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from PySide6.QtWidgets import (
     QComboBox,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -47,9 +48,13 @@ class BranchWidget(QWidget):
         layout.addWidget(self.options_combo)
 
         self.btn_submit = QPushButton("Сохранить")
-        layout.addWidget(self.btn_submit)
+        btn_row = QHBoxLayout()
+        btn_row.addWidget(self.btn_submit)
+        btn_row.addStretch()
+        layout.addLayout(btn_row)
 
         self._status_label = QLabel()
+        self._status_label.setObjectName("mutedHint")
         layout.addWidget(self._status_label)
 
         self.btn_submit.clicked.connect(self.on_submit)

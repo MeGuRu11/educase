@@ -160,3 +160,24 @@ QCheckBox#criticalToggle {
 *:disabled {
     color: #9AA5AF;
 }
+
+/* --- Заход 4: иерархия экрана этапа и приглушённые подсказки (Player) --- */
+/* «Этап N из 6» — мелкая приглушённая строка позиции (без названия этапа). */
+QLabel#stagePosition {
+    color: #66727E;
+    font-size: 12px;
+}
+/* Заголовок этапа — H1 экрана. */
+QLabel#stageTitle {
+    color: #1F2A33;
+    font-size: 20px;
+    font-weight: bold;
+}
+/* Вводный текст этапа — приглушённый, обычный размер. */
+QLabel#stageIntro {
+    color: #66727E;
+}
+/* Приглушённые подсказки и пустые состояния (НЕ отключённые элементы). */
+QLabel#mutedHint {
+    color: #66727E;
+}
