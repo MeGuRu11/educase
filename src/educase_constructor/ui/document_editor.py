@@ -17,7 +17,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder
+from educase_constructor.ui.list_helpers import (
+    make_placeholder,
+    refresh_placeholder,
+    wrap_in_card,
+)
 from educase_constructor.ui.template_editor import TemplateEditor
 from educase_core.application.case_builder import (
     DocumentOptionDraft,
@@ -39,18 +43,16 @@ class DocumentOptionEditor(QWidget):
         self.correct_checkbox = QCheckBox("Верный документ", self)
         self.correct_checkbox.setObjectName("criticalToggle")
         self.template_editor = TemplateEditor(self)
+        self.template_editor.setVisible(False)
+        self.correct_checkbox.toggled.connect(self.template_editor.setVisible)
 
         title_form = QFormLayout()
         title_form.addRow("Название документа", self.title_edit)
 
-        template_box = QGroupBox("Шаблон (для верного документа)")
-        template_box_layout = QVBoxLayout(template_box)
-        template_box_layout.addWidget(self.template_editor)
-
         layout = QVBoxLayout(self)
         layout.addLayout(title_form)
         layout.addWidget(self.correct_checkbox)
-        layout.addWidget(template_box)
+        layout.addWidget(self.template_editor)
 
     def to_draft(self) -> DocumentOptionDraft:
         """Собрать ``DocumentOptionDraft`` из заголовка, флага и редактора шаблона."""
@@ -70,43 +72,44 @@ class DocumentTaskEditor(QWidget):
         self.prompt_edit = QLineEdit(self)
 
         self.option_editors: list[DocumentOptionEditor] = []
+        self._option_cards: list[QGroupBox] = []
 
-        self.add_option_button = QPushButton("Добавить вариант", self)
-        self.remove_option_button = QPushButton("Удалить последний", self)
+        self.add_option_button = QPushButton("+ Добавить", self)
+        self.remove_option_button = QPushButton("− Удалить", self)
         self.add_option_button.clicked.connect(self.add_option)
         self.remove_option_button.clicked.connect(self.remove_last_option)
 
         option_buttons = QHBoxLayout()
         option_buttons.addWidget(self.add_option_button)
         option_buttons.addWidget(self.remove_option_button)
+        option_buttons.addStretch(1)
 
         self._options_layout = QVBoxLayout()
 
         prompt_form = QFormLayout()
         prompt_form.addRow("Формулировка задания", self.prompt_edit)
 
-        options_box = QGroupBox("Варианты документов")
-        options_box_layout = QVBoxLayout(options_box)
-        options_box_layout.addLayout(option_buttons)
-        options_box_layout.addLayout(self._options_layout)
-
         layout = QVBoxLayout(self)
         layout.addLayout(prompt_form)
-        layout.addWidget(options_box)
+        layout.addLayout(option_buttons)
+        layout.addLayout(self._options_layout)
 
     def add_option(self) -> None:
         """Добавить редактор нового варианта документа в конец списка."""
         editor = DocumentOptionEditor(self)
+        card = wrap_in_card(editor, f"Документ {len(self.option_editors) + 1}")
         self.option_editors.append(editor)
-        self._options_layout.addWidget(editor)
+        self._option_cards.append(card)
+        self._options_layout.addWidget(card)
 
     def remove_last_option(self) -> None:
         """Удалить последний редактор варианта (если он есть)."""
         if not self.option_editors:
             return
-        editor = self.option_editors.pop()
-        self._options_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.option_editors.pop()
+        card = self._option_cards.pop()
+        self._options_layout.removeWidget(card)
+        card.deleteLater()
 
     def to_draft(self) -> DocumentTaskDraft:
         """Собрать ``DocumentTaskDraft`` из формулировки и всех редакторов вариантов."""
@@ -123,15 +126,17 @@ class DocumentListEditor(QWidget):
         super().__init__(parent)
 
         self.task_editors: list[DocumentTaskEditor] = []
+        self._task_cards: list[QGroupBox] = []
 
-        self.add_task_button = QPushButton("Добавить задание", self)
-        self.remove_task_button = QPushButton("Удалить последнее", self)
+        self.add_task_button = QPushButton("+ Добавить", self)
+        self.remove_task_button = QPushButton("− Удалить", self)
         self.add_task_button.clicked.connect(self.add_task)
         self.remove_task_button.clicked.connect(self.remove_last_task)
 
         task_buttons = QHBoxLayout()
         task_buttons.addWidget(self.add_task_button)
         task_buttons.addWidget(self.remove_task_button)
+        task_buttons.addStretch(1)
 
         self._empty_label = make_placeholder("Пока не добавлено ни одного задания")
 
@@ -147,17 +152,20 @@ class DocumentListEditor(QWidget):
     def add_task(self) -> None:
         """Добавить редактор нового задания в конец списка."""
         editor = DocumentTaskEditor(self)
+        card = wrap_in_card(editor, f"Задание {len(self.task_editors) + 1}")
         self.task_editors.append(editor)
-        self._tasks_layout.addWidget(editor)
+        self._task_cards.append(card)
+        self._tasks_layout.addWidget(card)
         self._refresh_empty()
 
     def remove_last_task(self) -> None:
         """Удалить последний редактор задания (если он есть)."""
         if not self.task_editors:
             return
-        editor = self.task_editors.pop()
-        self._tasks_layout.removeWidget(editor)
-        editor.deleteLater()
+        self.task_editors.pop()
+        card = self._task_cards.pop()
+        self._tasks_layout.removeWidget(card)
+        card.deleteLater()
         self._refresh_empty()
 
     def _refresh_empty(self) -> None:

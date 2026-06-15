@@ -9,6 +9,7 @@ from educase_constructor.ui.document_editor import (
     DocumentTaskEditor,
 )
 from educase_constructor.ui.field_editor import FieldEditor
+from educase_constructor.ui.template_editor import TemplateEditor
 from educase_core.application.case_builder import _build_field
 from educase_core.domain import ChoiceMatch, DateMatch, NumberMatch, TextMatch
 
@@ -224,3 +225,59 @@ def test_list_editor_to_draft_correct_and_decoy(qtbot: QtBot) -> None:
 
     assert decoy_draft.title == "Обычная справка"
     assert decoy_draft.is_correct is False
+
+
+# --- Уровень 3a: условный шаблон ---
+
+
+def test_option_editor_template_hidden_by_default(qtbot: QtBot) -> None:
+    """По умолчанию шаблон скрыт (вариант считается обманкой)."""
+    editor = DocumentOptionEditor()
+    qtbot.addWidget(editor)
+    assert editor.template_editor.isHidden()
+
+
+def test_option_editor_template_shown_when_correct_checked(qtbot: QtBot) -> None:
+    """Отметка «Верный документ» делает редактор шаблона видимым."""
+    editor = DocumentOptionEditor()
+    qtbot.addWidget(editor)
+    editor.correct_checkbox.setChecked(True)
+    assert not editor.template_editor.isHidden()
+
+
+def test_option_editor_template_hidden_when_correct_unchecked(qtbot: QtBot) -> None:
+    """Снятие галочки снова скрывает редактор шаблона."""
+    editor = DocumentOptionEditor()
+    qtbot.addWidget(editor)
+    editor.correct_checkbox.setChecked(True)
+    editor.correct_checkbox.setChecked(False)
+    assert editor.template_editor.isHidden()
+
+
+# --- Уровень 3a: карточки-номера ---
+
+
+def test_task_editor_option_cards_numbered(qtbot: QtBot) -> None:
+    """add_option_button создаёт карточку «Документ N» синхронно с option_editors."""
+    editor = DocumentTaskEditor()
+    qtbot.addWidget(editor)
+    editor.add_option_button.click()
+    assert len(editor._option_cards) == 1
+    assert editor._option_cards[0].title() == "Документ 1"
+
+
+def test_list_editor_task_cards_numbered(qtbot: QtBot) -> None:
+    """add_task_button создаёт карточку «Задание N» синхронно с task_editors."""
+    editor = DocumentListEditor()
+    qtbot.addWidget(editor)
+    editor.add_task_button.click()
+    assert editor._task_cards[0].title() == "Задание 1"
+    assert len(editor._task_cards) == len(editor.task_editors)
+
+
+def test_template_editor_field_cards_numbered(qtbot: QtBot) -> None:
+    """add_field_button создаёт карточку «Поле N» синхронно с field_editors."""
+    editor = TemplateEditor()
+    qtbot.addWidget(editor)
+    editor.add_field_button.click()
+    assert editor._field_cards[0].title() == "Поле 1"
