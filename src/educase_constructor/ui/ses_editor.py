@@ -29,6 +29,7 @@ class SesEditor(QWidget):
         super().__init__(parent)
 
         self.intro_edit = QLineEdit(self)
+        self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.search_editor = SearchEditor(self)
         self.include_level_checkbox = QCheckBox("Добавить выбор уровня СЭС", self)
         self.level_field_editor = FieldEditor(self)

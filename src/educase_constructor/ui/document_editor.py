@@ -41,6 +41,7 @@ class DocumentOptionEditor(QWidget):
         super().__init__(parent)
 
         self.title_edit = QLineEdit(self)
+        self.title_edit.setPlaceholderText("Название задания")
         self.correct_checkbox = QCheckBox("Верный документ", self)
         self.correct_checkbox.setObjectName("criticalToggle")
         self.template_editor = TemplateEditor(self)
@@ -71,6 +72,7 @@ class DocumentTaskEditor(QWidget):
         super().__init__(parent)
 
         self.prompt_edit = QLineEdit(self)
+        self.prompt_edit.setPlaceholderText("Формулировка задания для курсанта")
 
         self.option_editors: list[DocumentOptionEditor] = []
         self._option_cards: list[QGroupBox] = []

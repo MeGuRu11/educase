@@ -28,6 +28,7 @@ class EnvironmentEditor(QWidget):
         super().__init__(parent)
 
         self.intro_edit = QLineEdit(self)
+        self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.scheme_picker = AssetPicker(self)
         self.photos_picker = AssetListPicker(self)
         self.documents_editor = DocumentListEditor(self)

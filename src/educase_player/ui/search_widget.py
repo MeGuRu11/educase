@@ -30,6 +30,7 @@ class SearchWidget(QWidget):
 
         input_row = QHBoxLayout()
         self.input = QLineEdit()
+        self.input.setPlaceholderText("Ключевое слово или фраза")
         self.btn_search = QPushButton("Найти")
         input_row.addWidget(self.input)
         input_row.addWidget(self.btn_search)

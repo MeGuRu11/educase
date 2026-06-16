@@ -42,6 +42,7 @@ class InspectionWidget(QWidget):
         layout.addWidget(invite)
 
         self.output = QPlainTextEdit()
+        self.output.setPlaceholderText("Свободное описание того, что вы увидели")
         layout.addWidget(self.output)
 
         self.btn_submit = QPushButton("Сохранить")

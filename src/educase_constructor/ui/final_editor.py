@@ -28,6 +28,7 @@ class FinalEditor(QWidget):
         super().__init__(parent)
 
         self.intro_edit = QLineEdit(self)
+        self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.search_editor = SearchEditor(self)
         self.documents_editor = DocumentListEditor(self)
         self.timelines_editor = TimelineListEditor(self)

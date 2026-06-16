@@ -32,6 +32,9 @@ class SearchEntryEditor(QWidget):
 
         self.triggers = SynonymSetEditor(self)
         self.reveal_text_edit = QLineEdit(self)
+        self.reveal_text_edit.setPlaceholderText(
+            "Текст, который откроется курсанту при совпадении ключа"
+        )
         self.reveal_assets_picker = AssetListPicker(self)
 
         form = QFormLayout()

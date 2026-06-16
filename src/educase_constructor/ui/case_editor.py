@@ -42,9 +42,13 @@ class CaseEditor(QWidget):
         self._case_id = uuid.uuid4().hex
 
         self.title_edit = QLineEdit(self)
+        self.title_edit.setPlaceholderText("Краткое название кейса (видит только преподаватель)")
         self.author_edit = QLineEdit(self)
+        self.author_edit.setPlaceholderText("ФИО или должность автора")
         self.nosology_edit = QLineEdit(self)
+        self.nosology_edit.setPlaceholderText("Предполагаемая нозология")
         self.unit_personnel_edit = QLineEdit(self)
+        self.unit_personnel_edit.setPlaceholderText("Списочная численность, например: 150")
 
         self.patient_editors: list[PatientEditor] = []
         self._patient_cards: list[QGroupBox] = []

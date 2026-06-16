@@ -18,7 +18,9 @@ class SynonymSetEditor(QWidget):
         super().__init__(parent)
 
         self.canonical_edit = QLineEdit(self)
+        self.canonical_edit.setPlaceholderText("Основное ключевое слово")
         self.synonyms_edit = QLineEdit(self)
+        self.synonyms_edit.setPlaceholderText("Синонимы через запятую")
 
         form = QFormLayout(self)
         form.addRow("Основной термин", self.canonical_edit)

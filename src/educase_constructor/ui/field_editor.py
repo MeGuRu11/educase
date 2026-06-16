@@ -42,6 +42,7 @@ class FieldEditor(QWidget):
         super().__init__(parent)
 
         self.label_edit = QLineEdit(self)
+        self.label_edit.setPlaceholderText("Подпись поля, например: Число заболевших")
         self.type_combo = QComboBox(self)
         for field_type in FieldType:
             self.type_combo.addItem(_TYPE_LABELS[field_type], field_type.value)
@@ -54,8 +55,11 @@ class FieldEditor(QWidget):
 
         number_page = QWidget(self)
         self.number_value_edit = QLineEdit(number_page)
+        self.number_value_edit.setPlaceholderText("Например: 25")
         self.tolerance_edit = QLineEdit(number_page)
+        self.tolerance_edit.setPlaceholderText("Отклонение, например: 2")
         self.ndigits_edit = QLineEdit(number_page)
+        self.ndigits_edit.setPlaceholderText("Знаков после запятой, например: 0")
         number_form = QFormLayout(number_page)
         number_form.addRow("Значение", self.number_value_edit)
         number_form.addRow("Допуск (необязательно)", self.tolerance_edit)
@@ -63,12 +67,15 @@ class FieldEditor(QWidget):
 
         date_page = QWidget(self)
         self.date_value_edit = QLineEdit(date_page)
+        self.date_value_edit.setPlaceholderText("ГГГГ-ММ-ДД")
         date_form = QFormLayout(date_page)
         date_form.addRow("Дата (ISO)", self.date_value_edit)
 
         choice_page = QWidget(self)
         self.options_edit = QLineEdit(choice_page)
+        self.options_edit.setPlaceholderText("Через запятую: вариант 1, вариант 2")
         self.correct_edit = QLineEdit(choice_page)
+        self.correct_edit.setPlaceholderText("Через запятую: вариант 1")
         choice_form = QFormLayout(choice_page)
         choice_form.addRow("Варианты (через запятую)", self.options_edit)
         choice_form.addRow("Верные (через запятую)", self.correct_edit)

@@ -28,6 +28,7 @@ class BranchOptionEditor(QWidget):
         super().__init__(parent)
 
         self.label_edit = QLineEdit(self)
+        self.label_edit.setPlaceholderText("Короткая подпись варианта")
         self.correct_checkbox = QCheckBox("Верный вариант", self)
         self.correct_checkbox.setObjectName("criticalToggle")
 
@@ -50,6 +51,7 @@ class BranchEditor(QWidget):
         super().__init__(parent)
 
         self.prompt_edit = QLineEdit(self)
+        self.prompt_edit.setPlaceholderText("Формулировка выбора для курсанта")
 
         self.option_editors: list[BranchOptionEditor] = []
         self._option_cards: list[QGroupBox] = []

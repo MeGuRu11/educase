@@ -35,6 +35,12 @@ class DocumentFieldWidget(QWidget):
             self.input: QLineEdit | QComboBox = combo
         else:
             self.input = QLineEdit()
+            if field.type == FieldType.NUMBER:
+                self.input.setPlaceholderText("Например: 25")
+            elif field.type == FieldType.DATE:
+                self.input.setPlaceholderText("ГГГГ-ММ-ДД")
+            else:
+                self.input.setPlaceholderText("Введите ответ")
 
         layout.addWidget(self.input)
 

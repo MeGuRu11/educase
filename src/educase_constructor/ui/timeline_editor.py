@@ -30,6 +30,7 @@ class TimelineEditor(QWidget):
         super().__init__(parent)
 
         self.title_edit = QLineEdit(self)
+        self.title_edit.setPlaceholderText("Название срока наблюдения")
 
         self.events_table = QTableWidget(0, 2, self)
         self.events_table.setHorizontalHeaderLabels(["Дата", "Событие"])

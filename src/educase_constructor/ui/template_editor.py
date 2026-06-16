@@ -29,6 +29,7 @@ class TemplateEditor(QWidget):
         super().__init__(parent)
 
         self.title_edit = QLineEdit(self)
+        self.title_edit.setPlaceholderText("Название документа")
 
         self.field_editors: list[FieldEditor] = []
         self._field_cards: list[QGroupBox] = []

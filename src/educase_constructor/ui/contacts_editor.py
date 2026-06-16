@@ -26,6 +26,7 @@ class ContactsEditor(QWidget):
         super().__init__(parent)
 
         self.intro_edit = QLineEdit(self)
+        self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.scheme_picker = AssetPicker(self)
         self.inspection_editor = InspectionEditor(self)
 

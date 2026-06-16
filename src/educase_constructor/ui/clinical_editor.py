@@ -27,6 +27,7 @@ class ClinicalEditor(QWidget):
         super().__init__(parent)
 
         self.intro_edit = QLineEdit(self)
+        self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.search_editor = SearchEditor(self)
         self.branch_editor = BranchEditor(self)
         self.documents_editor = DocumentListEditor(self)
