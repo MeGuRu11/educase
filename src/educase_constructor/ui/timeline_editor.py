@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_core.application.case_builder import TimelineDraft
 
@@ -90,8 +91,10 @@ class TimelineListEditor(QWidget):
         self.timeline_editors: list[TimelineEditor] = []
         self._timeline_cards: list[QGroupBox] = []
 
-        self.add_timeline_button = QPushButton("+ Добавить", self)
-        self.remove_timeline_button = QPushButton("− Удалить", self)
+        self.add_timeline_button = QPushButton("Добавить", self)
+        self.add_timeline_button.setIcon(load_icon("add"))
+        self.remove_timeline_button = QPushButton("Удалить", self)
+        self.remove_timeline_button.setIcon(load_icon("delete"))
         self.add_timeline_button.clicked.connect(self.add_timeline)
         self.remove_timeline_button.clicked.connect(self.remove_last_timeline)
 

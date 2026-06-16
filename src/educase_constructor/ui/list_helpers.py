@@ -1,7 +1,8 @@
 """Общие хелперы пустого состояния для списочных редакторов Constructor.
 
 Подсказка-плейсхолдер показывается, пока список пуст, и скрывается, как только в нём
-появляется хотя бы один элемент. Без QSS: приглушённый вид даёт ``setEnabled(False)``.
+появляется хотя бы один элемент. Приглушённый вид задаётся через objectName «mutedHint»
+и стилизуется темой (QSS).
 """
 from __future__ import annotations
 
@@ -17,9 +18,9 @@ def wrap_in_card(content: QWidget, title: str) -> QGroupBox:
 
 
 def make_placeholder(text: str) -> QLabel:
-    """Создать приглушённую подсказку пустого состояния (без стилевого слоя)."""
+    """Создать приглушённую подсказку пустого состояния (стиль через objectName темы)."""
     label = QLabel(text)
-    label.setEnabled(False)
+    label.setObjectName("mutedHint")
     return label
 
 

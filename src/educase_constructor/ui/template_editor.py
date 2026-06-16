@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from educase_constructor.ui.field_editor import FieldEditor
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import wrap_in_card
 from educase_core.application.case_builder import TemplateDraft
 
@@ -32,8 +33,10 @@ class TemplateEditor(QWidget):
         self.field_editors: list[FieldEditor] = []
         self._field_cards: list[QGroupBox] = []
 
-        self.add_field_button = QPushButton("+ Добавить", self)
-        self.remove_field_button = QPushButton("− Удалить", self)
+        self.add_field_button = QPushButton("Добавить", self)
+        self.add_field_button.setIcon(load_icon("add"))
+        self.remove_field_button = QPushButton("Удалить", self)
+        self.remove_field_button.setIcon(load_icon("delete"))
         self.add_field_button.clicked.connect(self.add_field)
         self.remove_field_button.clicked.connect(self.remove_last_field)
 

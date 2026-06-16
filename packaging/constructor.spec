@@ -6,7 +6,10 @@ a = Analysis(
     ["../src/educase_constructor/__main__.py"],
     pathex=["src"],
     binaries=[],
-    datas=[("../src/educase_core/theme/theme.qss", "educase_core/theme")],
+    datas=[
+        ("../src/educase_core/theme/theme.qss", "educase_core/theme"),
+        ("../src/educase_constructor/resources/icons", "educase_constructor/resources/icons"),
+    ],
     hiddenimports=[],
     hookspath=[],
     excludes=[],

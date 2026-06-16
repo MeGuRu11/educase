@@ -7,6 +7,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
 from educase_constructor.ui.case_editor import CaseEditor
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.report_dialog import ReportDialog
 from educase_core.application.assets import read_asset_sources
 from educase_core.application.case_builder import build_case
@@ -30,10 +31,12 @@ class MainWindow(QMainWindow):
         if file_menu is None:
             return
         save_action = QAction("Сохранить кейс…", self)
+        save_action.setIcon(load_icon("save"))
         save_action.triggered.connect(self.save_case_dialog)
         file_menu.addAction(save_action)
 
         open_result_action = QAction("Открыть результат…", self)
+        open_result_action.setIcon(load_icon("open"))
         open_result_action.triggered.connect(self.open_result_dialog)
         file_menu.addAction(open_result_action)
 

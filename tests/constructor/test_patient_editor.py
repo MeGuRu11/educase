@@ -34,9 +34,9 @@ def test_title_field_has_placeholder(qtbot: QtBot) -> None:
 
 
 def test_fields_hint_is_muted(qtbot: QtBot) -> None:
-    """Подсказка над таблицей существует и приглушена (``setEnabled(False)``)."""
+    """Подсказка над таблицей существует и приглушена (objectName «mutedHint»)."""
     editor = PatientEditor()
     qtbot.addWidget(editor)
 
     assert editor.fields_hint is not None
-    assert not editor.fields_hint.isEnabled()
+    assert editor.fields_hint.objectName() == "mutedHint"

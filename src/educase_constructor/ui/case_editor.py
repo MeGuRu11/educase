@@ -24,6 +24,7 @@ from educase_constructor.ui.clinical_editor import ClinicalEditor
 from educase_constructor.ui.contacts_editor import ContactsEditor
 from educase_constructor.ui.environment_editor import EnvironmentEditor
 from educase_constructor.ui.final_editor import FinalEditor
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.patient_editor import PatientEditor
 from educase_constructor.ui.ses_editor import SesEditor
@@ -54,8 +55,10 @@ class CaseEditor(QWidget):
         meta_form.addRow("Нозология", self.nosology_edit)
         meta_form.addRow("Личный состав", self.unit_personnel_edit)
 
-        self.add_patient_button = QPushButton("+ Добавить", self)
-        self.remove_patient_button = QPushButton("− Удалить", self)
+        self.add_patient_button = QPushButton("Добавить", self)
+        self.add_patient_button.setIcon(load_icon("add"))
+        self.remove_patient_button = QPushButton("Удалить", self)
+        self.remove_patient_button.setIcon(load_icon("delete"))
         self.add_patient_button.clicked.connect(self.add_patient)
         self.remove_patient_button.clicked.connect(self.remove_last_patient)
 
@@ -93,6 +96,12 @@ class CaseEditor(QWidget):
         self.tabs.addTab(self._scroll_tab(self.environment_editor), "Среда")
         self.tabs.addTab(self._scroll_tab(self.ses_editor), "СЭС")
         self.tabs.addTab(self._scroll_tab(self.final_editor), "Финал")
+        self.tabs.setTabIcon(0, load_icon("stage_patients"))
+        self.tabs.setTabIcon(1, load_icon("stage_clinical"))
+        self.tabs.setTabIcon(2, load_icon("stage_contacts"))
+        self.tabs.setTabIcon(3, load_icon("stage_environment"))
+        self.tabs.setTabIcon(4, load_icon("stage_ses"))
+        self.tabs.setTabIcon(5, load_icon("stage_final"))
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.tabs)

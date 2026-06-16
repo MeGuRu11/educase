@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from educase_constructor.ui.asset_picker import AssetListPicker
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.synonym_editor import SynonymSetEditor
 from educase_core.application.case_builder import SearchDraft, SearchEntryDraft
@@ -61,8 +62,10 @@ class SearchEditor(QWidget):
         self.entry_editors: list[SearchEntryEditor] = []
         self._entry_cards: list[QGroupBox] = []
 
-        self.add_entry_button = QPushButton("+ Добавить", self)
-        self.remove_entry_button = QPushButton("− Удалить", self)
+        self.add_entry_button = QPushButton("Добавить", self)
+        self.add_entry_button.setIcon(load_icon("add"))
+        self.remove_entry_button = QPushButton("Удалить", self)
+        self.remove_entry_button.setIcon(load_icon("delete"))
         self.add_entry_button.clicked.connect(self.add_entry)
         self.remove_entry_button.clicked.connect(self.remove_last_entry)
 

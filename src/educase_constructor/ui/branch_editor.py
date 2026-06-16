@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_core.application.case_builder import BranchDraft, BranchOptionDraft
 
@@ -53,8 +54,10 @@ class BranchEditor(QWidget):
         self.option_editors: list[BranchOptionEditor] = []
         self._option_cards: list[QGroupBox] = []
 
-        self.add_option_button = QPushButton("+ Добавить", self)
-        self.remove_option_button = QPushButton("− Удалить", self)
+        self.add_option_button = QPushButton("Добавить", self)
+        self.add_option_button.setIcon(load_icon("add"))
+        self.remove_option_button = QPushButton("Удалить", self)
+        self.remove_option_button.setIcon(load_icon("delete"))
         self.add_option_button.clicked.connect(self.add_option)
         self.remove_option_button.clicked.connect(self.remove_last_option)
 

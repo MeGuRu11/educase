@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.synonym_editor import SynonymSetEditor
 from educase_core.application.case_builder import InspectionDraft
@@ -28,8 +29,10 @@ class InspectionEditor(QWidget):
         self.group_editors: list[SynonymSetEditor] = []
         self._group_cards: list[QGroupBox] = []
 
-        self.add_group_button = QPushButton("+ Добавить", self)
-        self.remove_group_button = QPushButton("− Удалить", self)
+        self.add_group_button = QPushButton("Добавить", self)
+        self.add_group_button.setIcon(load_icon("add"))
+        self.remove_group_button = QPushButton("Удалить", self)
+        self.remove_group_button.setIcon(load_icon("delete"))
         self.add_group_button.clicked.connect(self.add_group)
         self.remove_group_button.clicked.connect(self.remove_last_group)
 
