@@ -67,9 +67,9 @@ class FieldEditor(QWidget):
 
         date_page = QWidget(self)
         self.date_value_edit = QLineEdit(date_page)
-        self.date_value_edit.setPlaceholderText("ГГГГ-ММ-ДД")
+        self.date_value_edit.setPlaceholderText("ДД.ММ.ГГГГ")
         date_form = QFormLayout(date_page)
-        date_form.addRow("Дата (ISO)", self.date_value_edit)
+        date_form.addRow("Дата (ДД.ММ.ГГГГ)", self.date_value_edit)
 
         choice_page = QWidget(self)
         self.options_edit = QLineEdit(choice_page)

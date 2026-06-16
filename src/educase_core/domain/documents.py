@@ -98,13 +98,13 @@ class NumberMatch:
 
 @dataclass(frozen=True)
 class DateMatch:
-    """Сверка даты по ISO-строке."""
+    """Сверка даты по строке формата ДД.ММ.ГГГГ."""
 
     TYPE: ClassVar[str] = "date"
     value: str = ""
 
     def accepts(self, answer: str) -> bool:
-        """Принять дату при точном равенстве строк (ISO ожидается); пробелы обрезаются."""
+        """Принять дату при точном равенстве строк (ожидается ДД.ММ.ГГГГ); пробелы обрезаются."""
         return answer.strip() == self.value.strip()
 
     def to_dict(self) -> dict[str, object]:
