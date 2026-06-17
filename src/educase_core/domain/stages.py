@@ -22,7 +22,7 @@ from educase_core.domain._serde import (
     str_tuple,
 )
 from educase_core.domain.documents import DocumentField, DocumentTask
-from educase_core.domain.scheme import SchemeDocument
+from educase_core.domain.scheme import SchemeDocument, scheme_from_raw
 from educase_core.domain.search import InspectionCheck, KeywordSearch
 
 
@@ -242,11 +242,7 @@ class StageContacts:
         return cls(
             title=opt_str(data, "title", "Обследование контактных лиц"),
             intro=opt_str(data, "intro"),
-            scheme=(
-                SchemeDocument.from_dict(as_map(raw_scheme))
-                if raw_scheme is not None
-                else None
-            ),
+            scheme=scheme_from_raw(raw_scheme),
             inspection=(
                 InspectionCheck.from_dict(as_map(raw_inspection))
                 if raw_inspection is not None
@@ -287,11 +283,7 @@ class StageEnvironment:
         return cls(
             title=opt_str(data, "title", "Обследование объектов внешней среды"),
             intro=opt_str(data, "intro"),
-            scheme=(
-                SchemeDocument.from_dict(as_map(raw_scheme))
-                if raw_scheme is not None
-                else None
-            ),
+            scheme=scheme_from_raw(raw_scheme),
             photos=str_tuple(data, "photos"),
             documents=tuple(
                 DocumentTask.from_dict(as_map(item)) for item in seq(data, "documents")

@@ -131,3 +131,26 @@ class SchemeDocument:
             title=opt_str(data, "title"),
             root=SchemeView.from_dict(as_map(raw_root)) if raw_root is not None else SchemeView(),
         )
+
+
+def scheme_from_raw(raw: object) -> SchemeDocument | None:
+    """Терпимое чтение поля ``scheme`` из архива (совместимость форматов).
+
+    - ``None`` → ``None`` (этап без схемы);
+    - ``str``  → старый формат: строка трактуется как id фонового изображения;
+    - ``Mapping`` → текущий формат ADR-013 (полный ``SchemeDocument``).
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        return SchemeDocument(root=SchemeView(background=raw))
+    return SchemeDocument.from_dict(as_map(raw))
+
+
+__all__ = [
+    "Hotspot",
+    "HotspotShape",
+    "SchemeDocument",
+    "SchemeView",
+    "scheme_from_raw",
+]

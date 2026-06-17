@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from loguru import logger
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -76,7 +77,15 @@ class MainWindow(QMainWindow):
         try:
             loaded = load_case(path)
         except ArchiveError as exc:
-            QMessageBox.warning(self, "Ошибка загрузки", str(exc))
+            QMessageBox.warning(self, "Ошибка открытия", str(exc))
+            return False
+        except Exception:  # граница приложения: любой повреждённый/несовместимый архив
+            logger.exception("Не удалось открыть кейс: {}", path)
+            QMessageBox.critical(
+                self,
+                "Не удалось открыть кейс",
+                "Файл повреждён или имеет несовместимый формат.",
+            )
             return False
         navigator = CaseNavigator(loaded.case, loaded.assets, self)
         self.setCentralWidget(navigator)

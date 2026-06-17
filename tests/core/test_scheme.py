@@ -6,7 +6,9 @@ from educase_core.domain.scheme import (
     HotspotShape,
     SchemeDocument,
     SchemeView,
+    scheme_from_raw,
 )
+from educase_core.domain.stages import StageContacts, StageEnvironment
 
 
 def _rich_scheme() -> SchemeDocument:
@@ -87,3 +89,36 @@ def test_hotspot_shape_contains_outside() -> None:
     assert shape.contains(0.7, 0.4) is False  # правее
     assert shape.contains(0.4, 0.05) is False  # выше
     assert shape.contains(0.4, 0.9) is False  # ниже
+
+
+def test_scheme_from_raw_none_is_none() -> None:
+    """Отсутствие схемы (``None``) читается как ``None`` — этап без схемы."""
+    assert scheme_from_raw(None) is None
+
+
+def test_scheme_from_raw_legacy_string() -> None:
+    """Старый формат: строка трактуется как id фонового изображения, без хотспотов."""
+    scheme = scheme_from_raw("scheme-x")
+    assert isinstance(scheme, SchemeDocument)
+    assert scheme.root.background == "scheme-x"
+    assert scheme.root.hotspots == ()
+
+
+def test_scheme_from_raw_current_dict_matches_from_dict() -> None:
+    """Текущий формат (Mapping) эквивалентен прямому ``SchemeDocument.from_dict``."""
+    data = _rich_scheme().to_dict()
+    assert scheme_from_raw(data) == SchemeDocument.from_dict(data)
+
+
+def test_stage_contacts_reads_legacy_scheme_string() -> None:
+    """``StageContacts.from_dict`` терпит старый строковый ``scheme`` (id фона)."""
+    stage = StageContacts.from_dict({"scheme": "bg-id"})
+    assert stage.scheme is not None
+    assert stage.scheme.root.background == "bg-id"
+
+
+def test_stage_environment_reads_legacy_scheme_string() -> None:
+    """``StageEnvironment.from_dict`` терпит старый строковый ``scheme`` (id фона)."""
+    stage = StageEnvironment.from_dict({"scheme": "bg-id"})
+    assert stage.scheme is not None
+    assert stage.scheme.root.background == "bg-id"
