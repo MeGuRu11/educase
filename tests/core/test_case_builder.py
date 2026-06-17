@@ -394,7 +394,9 @@ def test_build_case_contacts_scheme_and_inspection() -> None:
     case = build_case(CaseDraft(case_id="case-ct", contacts=contacts))
 
     assert case.contacts.intro == "Обследуйте контактных"
-    assert case.contacts.scheme == "scheme_contacts"
+    scheme = case.contacts.scheme
+    assert scheme is not None
+    assert scheme.root.background == "scheme_contacts"
     inspection = case.contacts.inspection
     assert inspection is not None
     assert len(inspection.expected) == 1
@@ -434,7 +436,9 @@ def test_build_case_environment_photos_documents_inspection() -> None:
     )
     case = build_case(CaseDraft(case_id="case-en", environment=environment))
 
-    assert case.environment.scheme == "scheme_env"
+    env_scheme = case.environment.scheme
+    assert env_scheme is not None
+    assert env_scheme.root.background == "scheme_env"
     assert case.environment.photos == ("img_01", "img_02")
     assert len(case.environment.documents) == 1
     assert case.environment.documents[0].id == "doc-1"

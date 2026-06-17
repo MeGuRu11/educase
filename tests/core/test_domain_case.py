@@ -22,6 +22,8 @@ from educase_core.domain import (
     KeywordSearch,
     NumberMatch,
     PatientCard,
+    SchemeDocument,
+    SchemeView,
     SearchEntry,
     StageClinical,
     StageContacts,
@@ -119,7 +121,7 @@ def _rich_case() -> Case:
 
     contacts = StageContacts(
         intro="Осмотрите контактных",
-        scheme="scheme-barrack",
+        scheme=SchemeDocument(root=SchemeView(background="scheme-barrack")),
         inspection=InspectionCheck(
             expected=(
                 SynonymSet(canonical="скученность", synonyms=("теснота",)),
@@ -130,7 +132,7 @@ def _rich_case() -> Case:
 
     environment = StageEnvironment(
         intro="Осмотрите объекты",
-        scheme="scheme-canteen",
+        scheme=SchemeDocument(root=SchemeView(background="scheme-canteen")),
         photos=("photo-kitchen", "photo-store"),
         documents=(
             DocumentTask(

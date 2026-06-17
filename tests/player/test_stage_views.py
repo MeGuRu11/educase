@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QLabel, QWidget
 from pytestqt.qtbot import QtBot
 
 from educase_core.domain.documents import DocumentOption, DocumentTask
+from educase_core.domain.scheme import SchemeDocument, SchemeView
 from educase_core.domain.search import InspectionCheck, KeywordSearch, SearchEntry, SynonymSet
 from educase_core.domain.stages import (
     BranchOption,
@@ -25,6 +26,7 @@ from educase_player.ui.branch_widget import BranchWidget
 from educase_player.ui.document_widget import DocumentWidget
 from educase_player.ui.inspection_widget import InspectionWidget
 from educase_player.ui.patient_card_widget import PatientCardWidget
+from educase_player.ui.scheme_viewer import SchemeViewerWidget
 from educase_player.ui.search_widget import SearchWidget
 from educase_player.ui.stage_views import build_stage_view
 from educase_player.ui.timeline_widget import TimelineWidget
@@ -212,25 +214,25 @@ def test_stage_ses_with_documents_contains_document_widget(qtbot: QtBot) -> None
 def test_contacts_scheme_present_renders_image(
     qtbot: QtBot, png_bytes: Callable[..., bytes]
 ) -> None:
-    """StageContacts со scheme, присутствующей в assets → AssetImageWidget с изображением."""
-    stage = StageContacts(scheme="scheme-1")
+    """StageContacts со scheme, чей фон присутствует в assets → SchemeViewerWidget с фоном."""
+    stage = StageContacts(scheme=SchemeDocument(root=SchemeView(background="scheme-1")))
     view = build_stage_view(stage, {"scheme-1": png_bytes()})
     qtbot.addWidget(view)
 
-    images: list[AssetImageWidget] = view.findChildren(AssetImageWidget)
-    assert len(images) == 1
-    assert images[0].has_image() is True
+    viewers: list[SchemeViewerWidget] = view.findChildren(SchemeViewerWidget)
+    assert len(viewers) == 1
+    assert viewers[0].has_background() is True
 
 
 def test_contacts_scheme_missing_shows_placeholder(qtbot: QtBot) -> None:
-    """StageContacts со scheme без байт в assets → AssetImageWidget-плейсхолдер, без падения."""
-    stage = StageContacts(scheme="ghost")
+    """StageContacts со scheme без байт фона → SchemeViewerWidget-плейсхолдер, без падения."""
+    stage = StageContacts(scheme=SchemeDocument(root=SchemeView(background="ghost")))
     view = build_stage_view(stage, {})  # байт нет
     qtbot.addWidget(view)
 
-    images: list[AssetImageWidget] = view.findChildren(AssetImageWidget)
-    assert len(images) == 1
-    assert images[0].has_image() is False
+    viewers: list[SchemeViewerWidget] = view.findChildren(SchemeViewerWidget)
+    assert len(viewers) == 1
+    assert viewers[0].has_background() is False
 
 
 def test_environment_two_photos_render_images(
@@ -249,25 +251,25 @@ def test_environment_two_photos_render_images(
 def test_environment_scheme_present_renders_image(
     qtbot: QtBot, png_bytes: Callable[..., bytes]
 ) -> None:
-    """StageEnvironment со scheme в assets → AssetImageWidget схемы с изображением."""
-    stage = StageEnvironment(scheme="env-scheme")
+    """StageEnvironment со scheme, чей фон в assets → SchemeViewerWidget с фоном."""
+    stage = StageEnvironment(scheme=SchemeDocument(root=SchemeView(background="env-scheme")))
     view = build_stage_view(stage, {"env-scheme": png_bytes()})
     qtbot.addWidget(view)
 
-    images: list[AssetImageWidget] = view.findChildren(AssetImageWidget)
-    assert len(images) == 1
-    assert images[0].has_image() is True
+    viewers: list[SchemeViewerWidget] = view.findChildren(SchemeViewerWidget)
+    assert len(viewers) == 1
+    assert viewers[0].has_background() is True
 
 
 def test_environment_scheme_missing_shows_placeholder(qtbot: QtBot) -> None:
-    """StageEnvironment со scheme без байт → AssetImageWidget-плейсхолдер, без падения."""
-    stage = StageEnvironment(scheme="ghost")
+    """StageEnvironment со scheme без байт фона → SchemeViewerWidget-плейсхолдер, без падения."""
+    stage = StageEnvironment(scheme=SchemeDocument(root=SchemeView(background="ghost")))
     view = build_stage_view(stage, {})
     qtbot.addWidget(view)
 
-    images: list[AssetImageWidget] = view.findChildren(AssetImageWidget)
-    assert len(images) == 1
-    assert images[0].has_image() is False
+    viewers: list[SchemeViewerWidget] = view.findChildren(SchemeViewerWidget)
+    assert len(viewers) == 1
+    assert viewers[0].has_background() is False
 
 
 def test_environment_photos_dangling_refs_show_placeholders(qtbot: QtBot) -> None:

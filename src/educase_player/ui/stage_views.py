@@ -51,6 +51,7 @@ from educase_player.ui.document_field_widget import DocumentFieldWidget
 from educase_player.ui.document_widget import DocumentWidget
 from educase_player.ui.inspection_widget import InspectionWidget
 from educase_player.ui.patient_card_widget import PatientCardWidget
+from educase_player.ui.scheme_viewer import SchemeViewerWidget
 from educase_player.ui.search_widget import SearchWidget
 from educase_player.ui.timeline_widget import TimelineWidget
 
@@ -194,9 +195,7 @@ class ContactsStageView(StageView):
 
         has_content = False
         if stage.scheme is not None:
-            self._layout.addWidget(
-                AssetImageWidget(stage.scheme, self._assets, caption="Схема")
-            )
+            self._layout.addWidget(SchemeViewerWidget(stage.scheme, self._assets))
             has_content = True
         if stage.inspection is not None:
             self._inspection = InspectionWidget(stage.inspection)
@@ -223,9 +222,7 @@ class EnvironmentStageView(StageView):
 
         has_content = False
         if stage.scheme is not None:
-            self._layout.addWidget(
-                AssetImageWidget(stage.scheme, self._assets, caption="Схема")
-            )
+            self._layout.addWidget(SchemeViewerWidget(stage.scheme, self._assets))
             has_content = True
         for photo_id in stage.photos:
             self._layout.addWidget(

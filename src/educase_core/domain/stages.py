@@ -2,8 +2,8 @@
 
 Этапы — независимые frozen-dataclass'ы без наследования полей (чтобы не ловить ordering
 дефолтов); идентичность этапа задаёт ``ClassVar KIND``. Ветвление «Вариант B» (ADR-005) —
-запись выбора на этапе 2, навигацию не меняет. Схему осмотра (этапы 3/4) здесь НЕ моделируем:
-только ссылка на ассет по id (векторная ``SchemeDocument`` — отдельная фича, ADR-012).
+запись выбора на этапе 2, навигацию не меняет. Схему осмотра (этапы 3/4) моделирует
+``SchemeDocument`` (фон + хотспоты, ADR-013).
 """
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ from educase_core.domain._serde import (
     as_map,
     opt_bool,
     opt_str,
-    opt_str_or_none,
     pair_tuple,
     req_str,
     seq,
     str_tuple,
 )
 from educase_core.domain.documents import DocumentField, DocumentTask
+from educase_core.domain.scheme import SchemeDocument
 from educase_core.domain.search import InspectionCheck, KeywordSearch
 
 
@@ -216,12 +216,12 @@ class StageClinical:
 
 @dataclass(frozen=True)
 class StageContacts:
-    """Этап 3 «Обследование контактных лиц»: ссылка на схему (ассет) + сверка осмотра."""
+    """Этап 3 «Обследование контактных лиц»: схема осмотра (SchemeDocument) + сверка осмотра."""
 
     KIND: ClassVar[StageKind] = StageKind.CONTACTS
     title: str = "Обследование контактных лиц"
     intro: str = ""
-    scheme: str | None = None
+    scheme: SchemeDocument | None = None
     inspection: InspectionCheck | None = None
 
     def to_dict(self) -> dict[str, object]:
@@ -229,7 +229,7 @@ class StageContacts:
             "kind": self.KIND.value,
             "title": self.title,
             "intro": self.intro,
-            "scheme": self.scheme,
+            "scheme": self.scheme.to_dict() if self.scheme is not None else None,
             "inspection": (
                 self.inspection.to_dict() if self.inspection is not None else None
             ),
@@ -237,11 +237,16 @@ class StageContacts:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, object]) -> StageContacts:
+        raw_scheme = data.get("scheme")
         raw_inspection = data.get("inspection")
         return cls(
             title=opt_str(data, "title", "Обследование контактных лиц"),
             intro=opt_str(data, "intro"),
-            scheme=opt_str_or_none(data, "scheme"),
+            scheme=(
+                SchemeDocument.from_dict(as_map(raw_scheme))
+                if raw_scheme is not None
+                else None
+            ),
             inspection=(
                 InspectionCheck.from_dict(as_map(raw_inspection))
                 if raw_inspection is not None
@@ -252,12 +257,12 @@ class StageContacts:
 
 @dataclass(frozen=True)
 class StageEnvironment:
-    """Этап 4 «Обследование объектов внешней среды»: схема (ассет), фото, документы, осмотр."""
+    """Этап 4 «Обследование объектов внешней среды»: схема, фото, документы, осмотр."""
 
     KIND: ClassVar[StageKind] = StageKind.ENVIRONMENT
     title: str = "Обследование объектов внешней среды"
     intro: str = ""
-    scheme: str | None = None
+    scheme: SchemeDocument | None = None
     photos: tuple[str, ...] = ()
     documents: tuple[DocumentTask, ...] = ()
     inspection: InspectionCheck | None = None
@@ -267,7 +272,7 @@ class StageEnvironment:
             "kind": self.KIND.value,
             "title": self.title,
             "intro": self.intro,
-            "scheme": self.scheme,
+            "scheme": self.scheme.to_dict() if self.scheme is not None else None,
             "photos": list(self.photos),
             "documents": [d.to_dict() for d in self.documents],
             "inspection": (
@@ -277,11 +282,16 @@ class StageEnvironment:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, object]) -> StageEnvironment:
+        raw_scheme = data.get("scheme")
         raw_inspection = data.get("inspection")
         return cls(
             title=opt_str(data, "title", "Обследование объектов внешней среды"),
             intro=opt_str(data, "intro"),
-            scheme=opt_str_or_none(data, "scheme"),
+            scheme=(
+                SchemeDocument.from_dict(as_map(raw_scheme))
+                if raw_scheme is not None
+                else None
+            ),
             photos=str_tuple(data, "photos"),
             documents=tuple(
                 DocumentTask.from_dict(as_map(item)) for item in seq(data, "documents")

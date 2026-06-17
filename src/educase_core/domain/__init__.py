@@ -47,6 +47,12 @@ from educase_core.domain.report import (
     StageReport,
     grade_case,
 )
+from educase_core.domain.scheme import (
+    Hotspot,
+    HotspotShape,
+    SchemeDocument,
+    SchemeView,
+)
 from educase_core.domain.search import (
     InspectionCheck,
     KeywordSearch,
@@ -96,12 +102,16 @@ __all__ = [
     "FieldType",
     "Finding",
     "FindingKind",
+    "Hotspot",
+    "HotspotShape",
     "InspectionCheck",
     "InspectionResponse",
     "KeywordSearch",
     "MatchRule",
     "NumberMatch",
     "PatientCard",
+    "SchemeDocument",
+    "SchemeView",
     "SearchEntry",
     "SearchLog",
     "SesLevel",

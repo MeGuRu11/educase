@@ -35,6 +35,12 @@ from educase_core.domain.documents import (  # noqa: E402
     NumberMatch,
     TextMatch,
 )
+from educase_core.domain.scheme import (  # noqa: E402
+    Hotspot,
+    HotspotShape,
+    SchemeDocument,
+    SchemeView,
+)
 from educase_core.domain.search import (  # noqa: E402
     InspectionCheck,
     KeywordSearch,
@@ -225,9 +231,39 @@ def _stage_contacts() -> StageContacts:
             SynonymSet(canonical="изоляция", synonyms=("изолятор", "разобщение")),
         )
     )
+    scheme = SchemeDocument(
+        title="Схема казармы",
+        root=SchemeView(
+            background="scheme-barracks-1",
+            caption="Общая схема казармы: кликните по зоне для осмотра.",
+            hotspots=(
+                Hotspot(
+                    id="hs-beds",
+                    shape=HotspotShape(x=0.08, y=0.15, w=0.40, h=0.50),
+                    label="Спальное помещение",
+                    reveal_text=(
+                        "Двухъярусные койки, расстояние между рядами менее 0.5 м — "
+                        "выраженная скученность."
+                    ),
+                ),
+                Hotspot(
+                    id="hs-vent",
+                    shape=HotspotShape(x=0.55, y=0.10, w=0.30, h=0.20),
+                    label="Окна и вентиляция",
+                    reveal_text="Часть окон не открывается, приточная вентиляция не работает.",
+                ),
+                Hotspot(
+                    id="hs-isolation",
+                    shape=HotspotShape(x=0.55, y=0.55, w=0.30, h=0.30),
+                    label="Изолятор",
+                    reveal_text="Помещение под изолятор не выделено, разобщение не организовано.",
+                ),
+            ),
+        ),
+    )
     return StageContacts(
         intro="Обследуйте контактных лиц по схеме казармы и опишите условия размещения.",
-        scheme="scheme-barracks-1",
+        scheme=scheme,
         inspection=inspection,
     )
 
@@ -283,9 +319,46 @@ def _stage_environment() -> StageEnvironment:
             SynonymSet(canonical="мухи", synonyms=("насекомые", "грызуны")),
         )
     )
+    scheme = SchemeDocument(
+        title="Схема пищеблока",
+        root=SchemeView(
+            background="scheme-canteen-1",
+            caption="Общая схема пищеблока: кликните по зоне.",
+            hotspots=(
+                Hotspot(
+                    id="hs-kitchen",
+                    shape=HotspotShape(x=0.10, y=0.12, w=0.45, h=0.50),
+                    label="Горячий цех",
+                    icon="zoom",
+                    child=SchemeView(
+                        background="photo-kitchen-1",
+                        caption="Горячий цех (фото): кликните по оборудованию.",
+                        hotspots=(
+                            Hotspot(
+                                id="hs-fridge",
+                                shape=HotspotShape(x=0.60, y=0.20, w=0.30, h=0.60),
+                                label="Холодильная камера",
+                                reveal_text=(
+                                    "Температура +9 °C при норме +2…+6 °C — "
+                                    "нарушение условий хранения."
+                                ),
+                                reveal_assets=("photo-store-1",),
+                            ),
+                        ),
+                    ),
+                ),
+                Hotspot(
+                    id="hs-store",
+                    shape=HotspotShape(x=0.60, y=0.55, w=0.30, h=0.30),
+                    label="Складское помещение",
+                    reveal_text="Следы грызунов, продукты хранятся на полу.",
+                ),
+            ),
+        ),
+    )
     return StageEnvironment(
         intro="Обследуйте объекты внешней среды (столовая) по схеме и фото.",
-        scheme="scheme-canteen-1",
+        scheme=scheme,
         photos=("photo-kitchen-1", "photo-store-1"),
         documents=documents,
         inspection=inspection,
@@ -494,13 +567,15 @@ def _describe(case: Case) -> str:
         f"развилка={n_branch} опции, документов={len(c.documents)}"
     )
     ct = case.contacts
+    n_ct_hotspots = len(ct.scheme.root.hotspots) if ct.scheme else 0
     lines.append(
-        f"3 Контактные: схема={ct.scheme!r}, "
+        f"3 Контактные: хотспотов на схеме={n_ct_hotspots}, "
         f"осмотр={len(ct.inspection.expected) if ct.inspection else 0} групп"
     )
     e = case.environment
+    n_e_hotspots = len(e.scheme.root.hotspots) if e.scheme else 0
     lines.append(
-        f"4 Внешняя среда: схема={e.scheme!r}, фото={len(e.photos)}, "
+        f"4 Внешняя среда: хотспотов на схеме={n_e_hotspots}, фото={len(e.photos)}, "
         f"документов={len(e.documents)}, осмотр={len(e.inspection.expected) if e.inspection else 0}"
     )
     s = case.ses

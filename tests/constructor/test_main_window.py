@@ -145,9 +145,12 @@ def test_save_packs_scheme_asset_bytes(qtbot: QtBot, tmp_path: Path) -> None:
     assert window.save_case_to_path(dst) is True
 
     loaded = load_case(dst)
-    # Case ссылается на схему по стабильному asset_id…
-    assert loaded.case.contacts.scheme == contacts_ref.asset_id
-    assert loaded.case.environment.scheme == env_ref.asset_id
+    # Case ссылается на схему по стабильному asset_id (фон корневого вида SchemeDocument)…
+    contacts_doc = loaded.case.contacts.scheme
+    env_doc = loaded.case.environment.scheme
+    assert contacts_doc is not None and env_doc is not None
+    assert contacts_doc.root.background == contacts_ref.asset_id
+    assert env_doc.root.background == env_ref.asset_id
     # …а реальные байты файлов лежат в архиве под этими id.
     assert loaded.assets[contacts_ref.asset_id] == b"\x89PNG-contacts"
     assert loaded.assets[env_ref.asset_id] == b"JPG-env"

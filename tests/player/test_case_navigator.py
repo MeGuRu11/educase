@@ -5,9 +5,10 @@ from pytestqt.qtbot import QtBot
 
 from educase_core.application.cases import load_case, save_case
 from educase_core.domain.case import Case, CaseMeta
+from educase_core.domain.scheme import SchemeDocument, SchemeView
 from educase_core.domain.stages import StageContacts
-from educase_player.ui.asset_image_widget import AssetImageWidget
 from educase_player.ui.case_navigator import CaseNavigator
+from educase_player.ui.scheme_viewer import SchemeViewerWidget
 
 
 def test_initial_state(qtbot: QtBot) -> None:
@@ -65,19 +66,21 @@ def test_non_blocking_navigation(qtbot: QtBot) -> None:
 def test_scheme_image_round_trips_to_navigator(
     qtbot: QtBot, tmp_path: Path, png_bytes: Callable[..., bytes]
 ) -> None:
-    """Сквозная цепочка: .educase со схемой-картинкой → CaseNavigator рисует изображение."""
+    """Сквозная цепочка: .educase со схемой-картинкой → CaseNavigator рисует фон схемы."""
     case = Case(
         meta=CaseMeta("c1", "Тест"),
-        contacts=StageContacts(scheme="scheme-1"),
+        contacts=StageContacts(scheme=SchemeDocument(root=SchemeView(background="scheme-1"))),
     )
     dst = tmp_path / "case.educase"
     save_case(case, dst, assets={"scheme-1": png_bytes()})
 
     loaded = load_case(dst)
-    assert loaded.case.contacts.scheme == "scheme-1"
+    scheme = loaded.case.contacts.scheme
+    assert scheme is not None
+    assert scheme.root.background == "scheme-1"
 
     nav = CaseNavigator(loaded.case, loaded.assets)
     qtbot.addWidget(nav)
 
-    images: list[AssetImageWidget] = nav.findChildren(AssetImageWidget)
-    assert any(img.has_image() for img in images)
+    viewers: list[SchemeViewerWidget] = nav.findChildren(SchemeViewerWidget)
+    assert any(v.has_background() for v in viewers)

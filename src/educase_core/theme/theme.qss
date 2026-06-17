@@ -181,3 +181,29 @@ QLabel#stageIntro {
 QLabel#mutedHint {
     color: #66727E;
 }
+
+/* --- Просмотрщик схемы объекта (Player, ADR-013): фон + хотспоты --- */
+/* Заголовок схемы — подзаголовок секции этапа. */
+QLabel#schemeTitle {
+    color: #1F2A33;
+    font-size: 16px;
+    font-weight: bold;
+}
+/* Подпись уровня схемы (caption вложенного вида). */
+QLabel#schemeCaption {
+    color: #66727E;
+}
+/* Сцена схемы — нейтральная рамка вокруг фонового изображения. */
+QGraphicsView#schemeView {
+    background: #FFFFFF;
+    border: 1px solid #D4DAE0;
+    border-radius: 6px;
+}
+/* Кнопка возврата из вложенного интерьерного вида к общей схеме. */
+QPushButton#schemeBack {
+    color: #0F766E;
+}
+/* Текст панели раскрытия хотспота. */
+QLabel#schemeRevealText {
+    color: #1F2A33;
+}

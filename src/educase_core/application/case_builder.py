@@ -27,6 +27,8 @@ from educase_core.domain import (
     MatchRule,
     NumberMatch,
     PatientCard,
+    SchemeDocument,
+    SchemeView,
     SearchEntry,
     StageClinical,
     StageContacts,
@@ -459,7 +461,11 @@ def build_contacts(draft: ContactsDraft) -> StageContacts:
     """Собрать этап «Обследование контактных лиц» из ``ContactsDraft``."""
     return StageContacts(
         intro=draft.intro,
-        scheme=draft.scheme.asset_id if draft.scheme is not None else None,
+        scheme=(
+            SchemeDocument(root=SchemeView(background=draft.scheme.asset_id))
+            if draft.scheme is not None
+            else None
+        ),
         inspection=_build_inspection(draft.inspection),
     )
 
@@ -469,7 +475,11 @@ def build_environment(draft: EnvironmentDraft) -> StageEnvironment:
     photos = tuple(ref.asset_id for ref in draft.photos)
     return StageEnvironment(
         intro=draft.intro,
-        scheme=draft.scheme.asset_id if draft.scheme is not None else None,
+        scheme=(
+            SchemeDocument(root=SchemeView(background=draft.scheme.asset_id))
+            if draft.scheme is not None
+            else None
+        ),
         photos=photos,
         documents=_build_documents(draft.documents),
         inspection=_build_inspection(draft.inspection),
