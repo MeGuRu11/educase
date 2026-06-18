@@ -203,7 +203,115 @@ QGraphicsView#schemeView {
 QPushButton#schemeBack {
     color: #0F766E;
 }
+/* --- C4: мягкая валидация — подсветка незаполненного combobox --- */
+QComboBox[invalid="true"] {
+    border: 1px solid #C0392B;
+    background: #FFF5F5;
+}
+
+/* --- C6: диалог раскрытия хотспота --- */
+/* Заголовок зоны — крупный жирный. */
+QLabel#schemeRevealTitle {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1F2A33;
+}
+/* Карточка содержимого — вложенная поверхность с мягким фоном и рамкой. */
+QFrame#schemeRevealCard {
+    background: #F6F8FA;
+    border: 1px solid #D4DAE0;
+    border-radius: 8px;
+}
 /* Текст панели раскрытия хотспота. */
 QLabel#schemeRevealText {
+    color: #1F2A33;
+}
+/* Кнопка закрытия — акцентная, правый край. */
+QPushButton#schemeRevealClose {
+    background: #0F766E;
+    color: #FFFFFF;
+    border: 1px solid #0F766E;
+    border-radius: 6px;
+    padding: 6px 18px;
+}
+QPushButton#schemeRevealClose:hover {
+    background: #0B5E57;
+    border-color: #0B5E57;
+}
+QPushButton#schemeRevealClose:pressed {
+    background: #0A524C;
+}
+
+/* --- C7/C8: стартовые экраны Constructor и Player --- */
+QLabel#startTitle {
+    font-size: 28px;
+    font-weight: bold;
+    color: #1F2A33;
+}
+QLabel#startSubtitle {
+    font-size: 15px;
+    color: #66727E;
+}
+QLabel#startHint {
+    font-size: 13px;
+    color: #9AA5AF;
+}
+/* Акцентная кнопка — teal-заливка, основное действие. */
+QPushButton#startAccentButton {
+    background: #0F766E;
+    color: #FFFFFF;
+    border: 1px solid #0F766E;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 15px;
+    font-weight: bold;
+}
+QPushButton#startAccentButton:hover {
+    background: #0B5E57;
+    border-color: #0B5E57;
+}
+QPushButton#startAccentButton:pressed {
+    background: #0A524C;
+}
+/* Вторичная кнопка — белый фон, teal-обводка. */
+QPushButton#startSecondaryButton {
+    background: #FFFFFF;
+    color: #0F766E;
+    border: 2px solid #0F766E;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 15px;
+}
+QPushButton#startSecondaryButton:hover {
+    background: #E6F2F1;
+}
+QPushButton#startSecondaryButton:pressed {
+    background: #D0EAE8;
+}
+
+/* --- C9: вкладки Constructor (objectName="caseTabs") --- */
+QTabWidget#caseTabs::pane {
+    border: 1px solid #D4DAE0;
+    border-radius: 6px;
+    padding: 8px;
+}
+QTabWidget#caseTabs QTabBar::tab {
+    padding: 8px 18px;
+    font-size: 14px;
+    min-width: 90px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    margin-right: 2px;
+    color: #66727E;
+    background: #F0F3F5;
+}
+QTabWidget#caseTabs QTabBar::tab:selected {
+    color: #0F766E;
+    font-weight: bold;
+    background: #FFFFFF;
+    border-bottom: 3px solid #0F766E;
+}
+QTabWidget#caseTabs QTabBar::tab:hover:!selected {
+    background: #E6F2F1;
     color: #1F2A33;
 }

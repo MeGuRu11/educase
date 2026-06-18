@@ -94,6 +94,8 @@ class CaseEditor(QWidget):
         case_tab_layout.addWidget(patients_box)
 
         self.tabs = QTabWidget(self)
+        self.tabs.setObjectName("caseTabs")
+        self.tabs.setDocumentMode(True)
         self.tabs.addTab(self._scroll_tab(case_tab), "Кейс и пациенты")
         self.tabs.addTab(self._scroll_tab(self.clinical_editor), "Клинический")
         self.tabs.addTab(self._scroll_tab(self.contacts_editor), "Контакты")

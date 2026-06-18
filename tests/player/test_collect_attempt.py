@@ -171,10 +171,10 @@ def _mount_and_fill(qtbot: QtBot) -> tuple[CaseNavigator, Case]:
     search_w.btn_search.click()
 
     branch_w: BranchWidget = clinical_view.findChildren(BranchWidget)[0]
-    branch_w.options_combo.setCurrentIndex(1)  # «Верно» (b-correct)
+    branch_w.options_combo.setCurrentIndex(0)  # «Верно» (b-correct) — первая реальная опция
 
     clin_doc_w: DocumentWidget = clinical_view.findChildren(DocumentWidget)[0]
-    clin_doc_w.options_combo.setCurrentIndex(1)  # «Правильный документ» → перестроить форму
+    clin_doc_w.options_combo.setCurrentIndex(0)  # «Правильный документ» — первая реальная опция
     clin_field = clin_doc_w.current_field_widgets()[0].input
     assert isinstance(clin_field, QLineEdit)
     clin_field.setText("ответ")
@@ -190,15 +190,15 @@ def _mount_and_fill(qtbot: QtBot) -> tuple[CaseNavigator, Case]:
     assert ses_view is not None
     level_input = ses_view.findChildren(DocumentFieldWidget)[0].input
     assert isinstance(level_input, QComboBox)
-    level_input.setCurrentIndex(3)  # «III»
+    level_input.setCurrentIndex(2)  # «III» (0=I, 1=II, 2=III — без фиктивного пункта)
     ses_doc_w: DocumentWidget = ses_view.findChildren(DocumentWidget)[0]
-    ses_doc_w.options_combo.setCurrentIndex(1)  # «Приказ» (ses-correct)
+    ses_doc_w.options_combo.setCurrentIndex(0)  # «Приказ» (ses-correct) — первая реальная опция
 
     # Этап 6 «Окончательный»: документ + поле.
     final_view = nav.stack.widget(5)
     assert final_view is not None
     final_doc_w: DocumentWidget = final_view.findChildren(DocumentWidget)[0]
-    final_doc_w.options_combo.setCurrentIndex(1)  # «Итоговый» (final-correct)
+    final_doc_w.options_combo.setCurrentIndex(0)  # «Итоговый» (final-correct)
     final_field = final_doc_w.current_field_widgets()[0].input
     assert isinstance(final_field, QLineEdit)
     final_field.setText("итог")

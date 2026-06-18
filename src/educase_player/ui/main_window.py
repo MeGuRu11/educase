@@ -5,16 +5,12 @@ from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFileDialog,
     QInputDialog,
-    QLabel,
     QMainWindow,
     QMessageBox,
-    QVBoxLayout,
-    QWidget,
 )
 
 from educase_core.application.cases import load_case
@@ -22,6 +18,7 @@ from educase_core.application.results import ArchiveError, record_attempt
 from educase_core.domain.attempt import AttemptMeta
 from educase_core.domain.case import Case
 from educase_player.ui.case_navigator import CaseNavigator
+from educase_player.ui.start_screen import StartScreen
 
 
 class MainWindow(QMainWindow):
@@ -35,12 +32,9 @@ class MainWindow(QMainWindow):
         self._build_menu()
 
     def _set_stub_central(self) -> None:
-        central = QWidget(self)
-        layout = QVBoxLayout(central)
-        label = QLabel("EduCase Player — каркас.\nЗагрузите кейс (.educase).", central)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(label)
-        self.setCentralWidget(central)
+        screen = StartScreen(self)
+        screen.open_requested.connect(self.open_case_dialog)
+        self.setCentralWidget(screen)
 
     def _build_menu(self) -> None:
         menu_bar = self.menuBar()

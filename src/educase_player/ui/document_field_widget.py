@@ -29,9 +29,10 @@ class DocumentFieldWidget(QWidget):
 
         if field.type == FieldType.CHOICE:
             combo = QComboBox()
-            combo.addItem("— выберите —")
+            combo.setPlaceholderText("— выберите —")
             for opt in field.options:
                 combo.addItem(opt)
+            combo.setCurrentIndex(-1)
             self.input: QLineEdit | QComboBox = combo
         else:
             self.input = QLineEdit()
@@ -45,9 +46,9 @@ class DocumentFieldWidget(QWidget):
         layout.addWidget(self.input)
 
     def answer(self) -> str:
-        """Текущее значение; для QComboBox — пусто при плейсхолдере (индекс 0)."""
+        """Текущее значение; для QComboBox — пусто при плейсхолдере (currentIndex < 0)."""
         if isinstance(self.input, QComboBox):
-            return "" if self.input.currentIndex() == 0 else self.input.currentText()
+            return "" if self.input.currentIndex() < 0 else self.input.currentText()
         return self.input.text()
 
     def check(self) -> bool:

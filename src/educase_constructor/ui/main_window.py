@@ -1,18 +1,22 @@
-"""Главное окно Constructor: редактор кейса + сохранение в .educase."""
+"""Главное окно Constructor: стартовый экран → редактор кейса + сохранение в .educase."""
 from __future__ import annotations
 
 from pathlib import Path
 
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget
 
 from educase_constructor.ui.case_editor import CaseEditor
 from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.report_dialog import ReportDialog
+from educase_constructor.ui.start_screen import StartScreen
 from educase_core.application.assets import read_asset_sources
 from educase_core.application.case_builder import build_case
 from educase_core.application.cases import save_case
 from educase_core.application.grading import ArchiveError, report_for_result
+
+_PAGE_START = 0
+_PAGE_EDITOR = 1
 
 
 class MainWindow(QMainWindow):
@@ -21,9 +25,19 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("EduCase Constructor")
         self.resize(1000, 700)
 
-        self.editor = CaseEditor(self)
-        self.setCentralWidget(self.editor)
+        self.editor = CaseEditor()
+        self._stack = QStackedWidget(self)
+        start = StartScreen(self._stack)
+        start.create_requested.connect(self._open_editor)
+        start.check_result_requested.connect(self.open_result_dialog)
+        self._stack.addWidget(start)       # page 0
+        self._stack.addWidget(self.editor)  # page 1
+        self._stack.setCurrentIndex(_PAGE_START)
+        self.setCentralWidget(self._stack)
         self._build_menu()
+
+    def _open_editor(self) -> None:
+        self._stack.setCurrentIndex(_PAGE_EDITOR)
 
     def _build_menu(self) -> None:
         menu_bar = self.menuBar()

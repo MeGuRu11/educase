@@ -42,9 +42,10 @@ class BranchWidget(QWidget):
         layout.addWidget(prompt_label)
 
         self.options_combo = QComboBox()
-        self.options_combo.addItem("— выберите —")
+        self.options_combo.setPlaceholderText("— выберите —")
         for option in branch.options:
             self.options_combo.addItem(option.label)
+        self.options_combo.setCurrentIndex(-1)
         layout.addWidget(self.options_combo)
 
         self.btn_submit = QPushButton("Сохранить")
@@ -65,17 +66,26 @@ class BranchWidget(QWidget):
         return self._result
 
     def selected_option(self) -> BranchOption | None:
-        """Выбранный BranchOption; None при плейсхолдере (индекс 0)."""
+        """Выбранный BranchOption; None при плейсхолдере (currentIndex < 0)."""
         idx = self.options_combo.currentIndex()
-        if idx == 0:
+        if idx < 0:
             return None
-        return self._branch.options[idx - 1]
+        return self._branch.options[idx]
 
     def on_submit(self) -> None:
-        """Сохранить выбор; вердикт не показывать (ADR-005/ADR-008)."""
+        """Сохранить выбор; мягкая подсказка если не выбрано (ADR-005/ADR-008)."""
         option = self.selected_option()
+        if option is None:
+            self.options_combo.setProperty("invalid", True)
+            self.options_combo.style().unpolish(self.options_combo)
+            self.options_combo.style().polish(self.options_combo)
+            self._status_label.setText("Выберите вариант перед сохранением")
+        else:
+            self.options_combo.setProperty("invalid", False)
+            self.options_combo.style().unpolish(self.options_combo)
+            self.options_combo.style().polish(self.options_combo)
+            self._status_label.setText("Сохранено")
         self._result = BranchResult(
             option_id=option.id if option is not None else None,
             option_correct=option is not None and option.is_correct,
         )
-        self._status_label.setText("Сохранено")

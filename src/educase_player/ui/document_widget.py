@@ -46,9 +46,10 @@ class DocumentWidget(QWidget):
         layout.addWidget(prompt_label)
 
         self.options_combo = QComboBox()
-        self.options_combo.addItem("— выберите документ —")
+        self.options_combo.setPlaceholderText("— выберите документ —")
         for opt in task.options:
             self.options_combo.addItem(opt.title)
+        self.options_combo.setCurrentIndex(-1)
         layout.addWidget(self.options_combo)
 
         self.form_area = QWidget()
@@ -75,18 +76,21 @@ class DocumentWidget(QWidget):
         return self._result
 
     def selected_option(self) -> DocumentOption | None:
-        """Выбранный DocumentOption; None при плейсхолдере (индекс 0)."""
+        """Выбранный DocumentOption; None при плейсхолдере (currentIndex < 0)."""
         idx = self.options_combo.currentIndex()
-        if idx == 0:
+        if idx < 0:
             return None
-        return self._task.options[idx - 1]
+        return self._task.options[idx]
 
     def current_field_widgets(self) -> list[DocumentFieldWidget]:
         """Текущие виджеты полей (пусто, если обманка или документ не выбран)."""
         return list(self._field_widgets)
 
     def _rebuild_form(self) -> None:
-        """Перестроить form_area при смене выбора в combo."""
+        """Перестроить form_area при смене выбора в combo; снять подсветку ошибки."""
+        self.options_combo.setProperty("invalid", False)
+        self.options_combo.style().unpolish(self.options_combo)
+        self.options_combo.style().polish(self.options_combo)
         while self._form_layout.count():
             item = self._form_layout.takeAt(0)
             if item is not None:
@@ -111,8 +115,15 @@ class DocumentWidget(QWidget):
             self._field_widgets.append(fw)
 
     def on_submit(self) -> None:
-        """Сохранить результат; курсанту вердикт не показывать (ADR-005/ADR-008)."""
+        """Сохранить результат; мягкая подсказка если не выбрано (ADR-005/ADR-008)."""
         option = self.selected_option()
+        if option is None:
+            self.options_combo.setProperty("invalid", True)
+            self.options_combo.style().unpolish(self.options_combo)
+            self.options_combo.style().polish(self.options_combo)
+            self._status_label.setText("Выберите документ перед сохранением")
+        else:
+            self._status_label.setText("Ответ сохранён")
         option_id = option.id if option is not None else None
         option_correct = option is not None and option.is_correct
         pairs: list[tuple[str, bool]]
@@ -125,4 +136,3 @@ class DocumentWidget(QWidget):
             option_correct=option_correct,
             fields_ok=tuple(pairs),
         )
-        self._status_label.setText("Ответ сохранён")

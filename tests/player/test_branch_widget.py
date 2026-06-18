@@ -30,7 +30,7 @@ def test_correct_option_submit(qtbot: QtBot) -> None:
     """Выбор верной опции → submit → option_correct True."""
     w = BranchWidget(_make_branch())
     qtbot.addWidget(w)
-    w.options_combo.setCurrentIndex(1)  # "Сальмонеллёз" (correct)
+    w.options_combo.setCurrentIndex(0)  # "Сальмонеллёз" (correct) — первая реальная опция
     w.btn_submit.click()
 
     result = w.result
@@ -43,7 +43,7 @@ def test_decoy_option_submit(qtbot: QtBot) -> None:
     """Выбор обманки → submit → option_correct False."""
     w = BranchWidget(_make_branch())
     qtbot.addWidget(w)
-    w.options_combo.setCurrentIndex(2)  # "Грипп" (decoy)
+    w.options_combo.setCurrentIndex(1)  # "Грипп" (decoy) — вторая реальная опция
     w.btn_submit.click()
 
     result = w.result
@@ -53,10 +53,10 @@ def test_decoy_option_submit(qtbot: QtBot) -> None:
 
 
 def test_placeholder_submit(qtbot: QtBot) -> None:
-    """Плейсхолдер (индекс 0) → submit → option_id None, option_correct False."""
+    """Плейсхолдер (currentIndex == -1) → submit → option_id None, option_correct False."""
     w = BranchWidget(_make_branch())
     qtbot.addWidget(w)
-    assert w.options_combo.currentIndex() == 0
+    assert w.options_combo.currentIndex() == -1
     w.btn_submit.click()
 
     result = w.result
@@ -69,7 +69,7 @@ def test_neutral_message_no_verdict(qtbot: QtBot) -> None:
     """После submit — «Сохранено», без слов «верно»/«неверно» (ADR-005)."""
     w = BranchWidget(_make_branch())
     qtbot.addWidget(w)
-    w.options_combo.setCurrentIndex(1)
+    w.options_combo.setCurrentIndex(0)
     w.btn_submit.click()
 
     texts = [lbl.text() for lbl in w.findChildren(QLabel)]
@@ -88,7 +88,7 @@ def test_selected_option_returns_correct_branch_option(qtbot: QtBot) -> None:
     """selected_option() возвращает BranchOption при непустом выборе."""
     w = BranchWidget(_make_branch())
     qtbot.addWidget(w)
-    w.options_combo.setCurrentIndex(1)
+    w.options_combo.setCurrentIndex(0)
     opt = w.selected_option()
     assert opt is not None
     assert opt.id == "opt_correct"

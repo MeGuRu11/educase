@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QScrollArea,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -49,6 +50,7 @@ from educase_player.ui.asset_image_widget import AssetImageWidget
 from educase_player.ui.branch_widget import BranchWidget
 from educase_player.ui.document_field_widget import DocumentFieldWidget
 from educase_player.ui.document_widget import DocumentWidget
+from educase_player.ui.flow_layout import FlowLayout
 from educase_player.ui.inspection_widget import InspectionWidget
 from educase_player.ui.patient_card_widget import PatientCardWidget
 from educase_player.ui.scheme_viewer import SchemeViewerWidget
@@ -133,8 +135,17 @@ class PatientsStageView(StageView):
             self._search = SearchWidget(stage.search)
             self._layout.addWidget(self._search)
             has_content = True
-        for card in stage.patients:
-            self._layout.addWidget(PatientCardWidget(card))
+        if stage.patients:
+            flow_container = QWidget()
+            flow_container.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+            )
+            flow = FlowLayout(flow_container, h_spacing=12, v_spacing=12)
+            for card in stage.patients:
+                card_widget = PatientCardWidget(card)
+                card_widget.setMaximumWidth(340)
+                flow.addWidget(card_widget)
+            self._layout.addWidget(flow_container)
             has_content = True
         self._finish(has_content)
 

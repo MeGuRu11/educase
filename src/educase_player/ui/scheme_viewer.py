@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsSimpleTextItem,
     QGraphicsView,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QStackedWidget,
@@ -214,7 +215,7 @@ class SchemeViewerWidget(QWidget):
             self._open_reveal(hotspot)
 
     def _open_reveal(self, hotspot: Hotspot) -> None:
-        """Немодальный диалог раскрытия: текст и изображения хотспота (без блокировки).
+        """Немодальный диалог раскрытия: заголовок, карточка с текстом/ассетами, кнопка.
 
         Предыдущий диалог раскрытия удаляется, чтобы они не накапливались за сессию
         (одновременно открыт максимум один).
@@ -222,21 +223,48 @@ class SchemeViewerWidget(QWidget):
         if self._reveal is not None:
             self._reveal.deleteLater()
             self._reveal = None
+
         dialog = QDialog(self)
         dialog.setObjectName("schemeReveal")
+        dialog.setMinimumWidth(360)
         if hotspot.label:
             dialog.setWindowTitle(hotspot.label)
-        dlg_layout = QVBoxLayout(dialog)
+
+        outer_layout = QVBoxLayout(dialog)
+        outer_layout.setContentsMargins(16, 16, 16, 16)
+        outer_layout.setSpacing(10)
+
+        if hotspot.label:
+            title_label = QLabel(hotspot.label)
+            title_label.setObjectName("schemeRevealTitle")
+            title_label.setWordWrap(True)
+            outer_layout.addWidget(title_label)
+
+        card = QFrame()
+        card.setObjectName("schemeRevealCard")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(12, 12, 12, 12)
+        card_layout.setSpacing(8)
+
         if hotspot.reveal_text:
             text = QLabel(hotspot.reveal_text)
             text.setObjectName("schemeRevealText")
             text.setWordWrap(True)
-            dlg_layout.addWidget(text)
+            card_layout.addWidget(text)
+
         for asset_id in hotspot.reveal_assets:
-            dlg_layout.addWidget(AssetImageWidget(asset_id, self._assets))
+            card_layout.addWidget(AssetImageWidget(asset_id, self._assets))
+
+        outer_layout.addWidget(card)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
         close = QPushButton("Закрыть")
+        close.setObjectName("schemeRevealClose")
         close.clicked.connect(dialog.accept)
-        dlg_layout.addWidget(close)
+        btn_row.addWidget(close)
+        outer_layout.addLayout(btn_row)
+
         self._reveal = dialog
         dialog.open()
 

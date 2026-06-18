@@ -56,7 +56,7 @@ def test_date_field_gives_line_edit(qtbot: QtBot) -> None:
 
 
 def test_choice_field_gives_combo_with_placeholder_and_options(qtbot: QtBot) -> None:
-    """CHOICE-поле → QComboBox: плейсхолдер + все опции поля."""
+    """CHOICE-поле → QComboBox: только реальные опции, placeholder-текст, начальный index=-1."""
     field = DocumentField(
         id="f4",
         type=FieldType.CHOICE,
@@ -67,10 +67,11 @@ def test_choice_field_gives_combo_with_placeholder_and_options(qtbot: QtBot) -> 
     w = DocumentFieldWidget(field)
     qtbot.addWidget(w)
     assert isinstance(w.input, QComboBox)
-    assert w.input.count() == 3  # плейсхолдер + 2 опции
-    assert w.input.itemText(0) == "— выберите —"
-    assert w.input.itemText(1) == "Вариант А"
-    assert w.input.itemText(2) == "Вариант Б"
+    assert w.input.count() == 2  # только реальные опции, без фиктивного пункта
+    assert w.input.currentIndex() == -1  # старт без выбора
+    assert w.input.placeholderText() == "— выберите —"
+    assert w.input.itemText(0) == "Вариант А"
+    assert w.input.itemText(1) == "Вариант Б"
 
 
 def test_check_correct_text_answer(qtbot: QtBot) -> None:
@@ -104,7 +105,7 @@ def test_check_incorrect_text_answer(qtbot: QtBot) -> None:
 
 
 def test_choice_answer_empty_for_placeholder(qtbot: QtBot) -> None:
-    """answer() для CHOICE с плейсхолдером (index 0) → пустая строка."""
+    """answer() для CHOICE без выбора (currentIndex=-1) → пустая строка."""
     field = DocumentField(
         id="f7",
         type=FieldType.CHOICE,
@@ -115,12 +116,12 @@ def test_choice_answer_empty_for_placeholder(qtbot: QtBot) -> None:
     w = DocumentFieldWidget(field)
     qtbot.addWidget(w)
     assert isinstance(w.input, QComboBox)
-    assert w.input.currentIndex() == 0
+    assert w.input.currentIndex() == -1
     assert w.answer() == ""
 
 
 def test_choice_answer_returns_selected_text(qtbot: QtBot) -> None:
-    """answer() для CHOICE → текст выбранного элемента."""
+    """answer() для CHOICE → текст выбранного элемента (index 0 = первая реальная опция)."""
     field = DocumentField(
         id="f8",
         type=FieldType.CHOICE,
@@ -131,7 +132,7 @@ def test_choice_answer_returns_selected_text(qtbot: QtBot) -> None:
     w = DocumentFieldWidget(field)
     qtbot.addWidget(w)
     assert isinstance(w.input, QComboBox)
-    w.input.setCurrentIndex(1)
+    w.input.setCurrentIndex(0)  # первая реальная опция (нет фиктивного пункта)
     assert w.answer() == "Вариант А"
 
 
@@ -147,7 +148,7 @@ def test_check_delegates_to_domain_choice(qtbot: QtBot) -> None:
     w = DocumentFieldWidget(field)
     qtbot.addWidget(w)
     assert isinstance(w.input, QComboBox)
-    w.input.setCurrentIndex(1)  # "Да"
+    w.input.setCurrentIndex(0)  # "Да" (первая реальная опция)
     assert w.check() is True
-    w.input.setCurrentIndex(2)  # "Нет"
+    w.input.setCurrentIndex(1)  # "Нет"
     assert w.check() is False
