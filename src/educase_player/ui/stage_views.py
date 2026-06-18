@@ -92,6 +92,8 @@ class StageView(QWidget):
         inner_row.addWidget(content)
         inner_row.addStretch(1)
 
+        self._content = content
+        self._inner_row = inner_row
         self._layout = QVBoxLayout(content)
         scroll.setWidget(inner)
 
@@ -104,6 +106,15 @@ class StageView(QWidget):
             intro_label.setObjectName("stageIntro")
             intro_label.setWordWrap(True)
             self._layout.addWidget(intro_label)
+
+    def _stretch_content(self) -> None:
+        """Растянуть колонку контента до maxWidth (центрированно) — для этапов с широкой сеткой."""
+        self._content.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
+        idx = self._inner_row.indexOf(self._content)
+        if idx != -1:
+            self._inner_row.setStretch(idx, 1)
 
     def _finish(self, has_content: bool) -> None:
         """Дозаполнить каркас: заглушка пустого этапа + растяжка снизу."""
@@ -147,6 +158,7 @@ class PatientsStageView(StageView):
                 flow.addWidget(card_widget)
             self._layout.addWidget(flow_container)
             has_content = True
+            self._stretch_content()
         self._finish(has_content)
 
     def to_response(self) -> AttemptPatients:

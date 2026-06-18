@@ -294,22 +294,25 @@ QTabWidget#caseTabs::pane {
     border: 1px solid #D4DAE0;
     border-radius: 6px;
     padding: 8px;
+    top: -1px;
 }
 QTabWidget#caseTabs QTabBar::tab {
     padding: 8px 18px;
     font-size: 14px;
     min-width: 90px;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
     margin-right: 2px;
     color: #66727E;
     background: #F0F3F5;
+    border: 1px solid #D4DAE0;
+    border-bottom: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
 }
 QTabWidget#caseTabs QTabBar::tab:selected {
     color: #0F766E;
     font-weight: bold;
     background: #FFFFFF;
-    border-bottom: 3px solid #0F766E;
+    border-top: 2px solid #0F766E;
 }
 QTabWidget#caseTabs QTabBar::tab:hover:!selected {
     background: #E6F2F1;
