@@ -83,3 +83,40 @@ def test_empty_editor_to_draft(qtbot: QtBot) -> None:
     assert draft.photos == ()
     assert draft.documents == ()
     assert draft.inspection.groups == ()
+
+
+# --- интеграция zone_editor --------------------------------------------------
+
+
+def _make_png(tmp_path: Path, name: str = "bg.png") -> Path:
+    """Сохранить настоящий PNG 80×60 (через Qt) и вернуть путь."""
+    from PySide6.QtGui import QColor, QPixmap
+
+    pixmap = QPixmap(80, 60)
+    pixmap.fill(QColor("white"))
+    path = tmp_path / name
+    assert pixmap.save(str(path))
+    return path
+
+
+def test_scheme_picker_change_wires_zone_editor(qtbot: QtBot, tmp_path: Path) -> None:
+    """Выбор фона через scheme_picker передаёт его в zone_editor; зоны добавляются."""
+    editor = EnvironmentEditor()
+    qtbot.addWidget(editor)
+
+    bg = _make_png(tmp_path)
+    editor.scheme_picker.set_file(str(bg))
+    assert editor.zone_editor.canvas.has_background()
+
+    editor.zone_editor._add_button.click()
+    hotspots = editor.to_draft().hotspots
+    assert len(hotspots) == 1
+    assert 0.0 <= hotspots[0].x <= 1.0
+    assert 0.0 <= hotspots[0].y <= 1.0
+
+
+def test_no_scheme_hotspots_empty(qtbot: QtBot) -> None:
+    """Без схемы to_draft().hotspots пуст ()."""
+    editor = EnvironmentEditor()
+    qtbot.addWidget(editor)
+    assert editor.to_draft().hotspots == ()

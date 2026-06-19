@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from educase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
 from educase_constructor.ui.document_editor import DocumentListEditor
 from educase_constructor.ui.inspection_editor import InspectionEditor
+from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
 from educase_core.application.case_builder import EnvironmentDraft
 
 
@@ -30,14 +31,23 @@ class EnvironmentEditor(QWidget):
         self.intro_edit = QLineEdit(self)
         self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.scheme_picker = AssetPicker(self)
+        self.zone_editor = SchemeZoneEditor(self)
         self.photos_picker = AssetListPicker(self)
         self.documents_editor = DocumentListEditor(self)
         self.inspection_editor = InspectionEditor(self)
+
+        self.scheme_picker.changed.connect(
+            lambda: self.zone_editor.set_background(self.scheme_picker.value())
+        )
 
         form = QFormLayout()
         form.addRow("Вступление", self.intro_edit)
         form.addRow("Схема (изображение)", self.scheme_picker)
         form.addRow("Фото (изображения)", self.photos_picker)
+
+        zones_box = QGroupBox("Зоны схемы")
+        zones_box_layout = QVBoxLayout(zones_box)
+        zones_box_layout.addWidget(self.zone_editor)
 
         documents_box = QGroupBox("Документы")
         documents_box_layout = QVBoxLayout(documents_box)
@@ -49,6 +59,7 @@ class EnvironmentEditor(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addLayout(form)
+        layout.addWidget(zones_box)
         layout.addWidget(documents_box)
         layout.addWidget(inspection_box)
 
@@ -57,6 +68,7 @@ class EnvironmentEditor(QWidget):
         return EnvironmentDraft(
             intro=self.intro_edit.text(),
             scheme=self.scheme_picker.value(),
+            hotspots=self.zone_editor.to_hotspots(),
             photos=self.photos_picker.value(),
             documents=self.documents_editor.to_draft(),
             inspection=self.inspection_editor.to_draft(),

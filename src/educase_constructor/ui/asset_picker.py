@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import uuid4
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -39,6 +40,8 @@ def _make_ref(path: str) -> AssetRef:
 
 class AssetPicker(QWidget):
     """Выбор файла-ассета: метка имени + кнопки «Обзор…»/«Очистить»; стабильный id-ссылка."""
+
+    changed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -72,11 +75,13 @@ class AssetPicker(QWidget):
         """
         self._ref = _make_ref(path)
         self.name_label.setText(self._ref.display_name)
+        self.changed.emit()
 
     def clear(self) -> None:
         """Сбросить выбор: ссылка → ``None``, метка → плейсхолдер."""
         self._ref = None
         self.name_label.setText(_PLACEHOLDER)
+        self.changed.emit()
 
     def value(self) -> AssetRef | None:
         """Вернуть ``AssetRef`` выбранного файла или ``None``, если файл не выбран."""

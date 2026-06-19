@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from educase_constructor.ui.asset_picker import AssetPicker
 from educase_constructor.ui.inspection_editor import InspectionEditor
+from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
 from educase_core.application.case_builder import ContactsDraft
 
 
@@ -28,11 +29,20 @@ class ContactsEditor(QWidget):
         self.intro_edit = QLineEdit(self)
         self.intro_edit.setPlaceholderText("Краткое введение к этапу, которое увидит курсант")
         self.scheme_picker = AssetPicker(self)
+        self.zone_editor = SchemeZoneEditor(self)
         self.inspection_editor = InspectionEditor(self)
+
+        self.scheme_picker.changed.connect(
+            lambda: self.zone_editor.set_background(self.scheme_picker.value())
+        )
 
         form = QFormLayout()
         form.addRow("Вступление", self.intro_edit)
         form.addRow("Схема (изображение)", self.scheme_picker)
+
+        zones_box = QGroupBox("Зоны схемы")
+        zones_box_layout = QVBoxLayout(zones_box)
+        zones_box_layout.addWidget(self.zone_editor)
 
         inspection_box = QGroupBox("Осмотр")
         inspection_box_layout = QVBoxLayout(inspection_box)
@@ -40,6 +50,7 @@ class ContactsEditor(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addLayout(form)
+        layout.addWidget(zones_box)
         layout.addWidget(inspection_box)
 
     def to_draft(self) -> ContactsDraft:
@@ -47,5 +58,6 @@ class ContactsEditor(QWidget):
         return ContactsDraft(
             intro=self.intro_edit.text(),
             scheme=self.scheme_picker.value(),
+            hotspots=self.zone_editor.to_hotspots(),
             inspection=self.inspection_editor.to_draft(),
         )

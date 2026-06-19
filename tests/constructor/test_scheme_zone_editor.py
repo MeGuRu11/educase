@@ -1,0 +1,126 @@
+"""Тесты UI-обёртки редактора зон схемы (Constructor, R2-B.2).
+
+Реальные виджеты (pytest-qt): карточки синхронизируются с холстом, to_hotspots возвращает
+корректные HotspotDraft с геометрией и свойствами.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+from PySide6.QtGui import QColor, QPixmap
+from pytestqt.qtbot import QtBot
+
+from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
+from educase_core.application.case_builder import AssetRef
+
+
+def _make_ref(tmp_path: Path, name: str = "bg.png") -> AssetRef:
+    """Сохранить PNG 80×60 на диск и вернуть AssetRef."""
+    pixmap = QPixmap(80, 60)
+    pixmap.fill(QColor("white"))
+    path = tmp_path / name
+    assert pixmap.save(str(path))
+    return AssetRef(asset_id=name, source_path=str(path), display_name=name)
+
+
+def test_add_zone_creates_card(qtbot: QtBot, tmp_path: Path) -> None:
+    """После выбора фона «Добавить зону» создаёт одну карточку."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+
+    assert len(editor.cards) == 0
+    editor._add_button.click()
+    assert len(editor.cards) == 1
+
+
+def test_card_fields_round_trip_to_hotspots(qtbot: QtBot, tmp_path: Path) -> None:
+    """Заполненные поля карточки → to_hotspots()[0] содержит label, reveal_text, assets."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+
+    card = editor.cards[0]
+    card.label_edit.setText("Спальня")
+    card.reveal_text_edit.setText("Место проживания")
+    photo = tmp_path / "zone.png"
+    photo.write_bytes(b"PNG")
+    card.assets_picker.add_file(str(photo))
+
+    hotspots = editor.to_hotspots()
+    assert len(hotspots) == 1
+    h = hotspots[0]
+    assert h.label == "Спальня"
+    assert h.reveal_text == "Место проживания"
+    assert len(h.reveal_assets) == 1
+    assert h.reveal_assets[0].display_name == "zone.png"
+    # Геометрия должна быть в [0..1]
+    assert 0.0 <= h.x <= 1.0
+    assert 0.0 <= h.y <= 1.0
+    assert h.w > 0.0
+    assert h.h > 0.0
+
+
+def test_two_zones_two_cards(qtbot: QtBot, tmp_path: Path) -> None:
+    """Добавление двух зон → две карточки, to_hotspots() длины 2."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    editor._add_button.click()
+    assert len(editor.cards) == 2
+    assert len(editor.to_hotspots()) == 2
+
+
+def test_delete_last_zone_removes_card(qtbot: QtBot, tmp_path: Path) -> None:
+    """«Удалить зону» убирает последнюю зону и её карточку."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    editor._add_button.click()
+    assert len(editor.cards) == 2
+
+    editor._delete_button.click()
+    assert len(editor.cards) == 1
+    assert len(editor.to_hotspots()) == 1
+
+
+def test_set_background_none_clears_cards(qtbot: QtBot, tmp_path: Path) -> None:
+    """set_background(None) сбрасывает зоны и карточки; to_hotspots() пуст."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    assert len(editor.cards) == 1
+
+    editor.set_background(None)
+    assert len(editor.cards) == 0
+    assert editor.to_hotspots() == ()
+    assert not editor._empty_label.isHidden()
+
+
+def test_to_hotspots_empty_without_background(qtbot: QtBot) -> None:
+    """Без фона холст не хранит зон; to_hotspots() возвращает пустой кортеж."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    assert editor.to_hotspots() == ()
+    assert len(editor.cards) == 0
+
+
+def test_hotspot_geometry_in_unit_range(qtbot: QtBot, tmp_path: Path) -> None:
+    """Геометрия всех добавленных зон → доли x,y,w,h строго в [0..1]."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    editor._add_button.click()
+
+    for h in editor.to_hotspots():
+        assert 0.0 <= h.x <= 1.0, f"x={h.x}"
+        assert 0.0 <= h.y <= 1.0, f"y={h.y}"
+        assert 0.0 < h.w <= 1.0, f"w={h.w}"
+        assert 0.0 < h.h <= 1.0, f"h={h.h}"
+        assert h.x + h.w <= 1.0 + 1e-6, f"x+w={h.x + h.w}"
+        assert h.y + h.h <= 1.0 + 1e-6, f"y+h={h.y + h.h}"

@@ -402,7 +402,18 @@ class SchemeZoneCanvas(QGraphicsView):
             QRectF(nx * self._px_w, ny * self._px_h, nw * self._px_w, nh * self._px_h)
         )
         self._zones.append(item)
+        if self._on_zones_changed is not None:
+            self._on_zones_changed()
         return item
+
+    def remove_last(self) -> None:
+        """Удалить последнюю зону со сцены и из списка; уведомить об изменении."""
+        if not self._zones:
+            return
+        zone = self._zones.pop()
+        self._scene.removeItem(zone)
+        if self._on_zones_changed is not None:
+            self._on_zones_changed()
 
     def remove_selected(self) -> None:
         """Удалить выделенные зоны со сцены и из списка; уведомить об изменении."""
