@@ -10,7 +10,22 @@ from __future__ import annotations
 from collections.abc import Iterator
 from pathlib import Path
 
-from educase_core.application.case_builder import AssetRef, CaseDraft
+from educase_core.application.case_builder import AssetRef, CaseDraft, HotspotDraft
+
+
+def _iter_hotspot_assets(spots: tuple[HotspotDraft, ...]) -> Iterator[AssetRef]:
+    """Рекурсивно выдать ассеты зон: фото вскрытия + фон/фото вложенных видов.
+
+    Для каждой зоны выдаёт её ``reveal_assets``; если у зоны есть вложенный вид с заданным
+    фоном — выдаёт фон вложенного вида и рекурсивно ассеты его зон. Вложенный вид без фона
+    билдер отбрасывает (``_build_scheme_view``), поэтому его ассеты в архив не пакуются (та же
+    orphan-логика на КАЖДОМ уровне вложенности).
+    """
+    for spot in spots:
+        yield from spot.reveal_assets
+        if spot.child is not None and spot.child.background is not None:
+            yield spot.child.background
+            yield from _iter_hotspot_assets(spot.child.hotspots)
 
 
 def _iter_asset_refs(draft: CaseDraft) -> Iterator[AssetRef]:
@@ -20,21 +35,22 @@ def _iter_asset_refs(draft: CaseDraft) -> Iterator[AssetRef]:
     фото этапа «Среда»; изображения вскрытия точек поиска этапов с поиском (клинический, СЭС,
     финал). Этапы и схемы со значением ``None`` пропускаются. Фото зон выдаются только при
     заданном фоне схемы: без фона билдер отбрасывает зоны, поэтому их фото в архив не пакуются
-    (иначе вышли бы недостижимые orphan-блобы). Точки поиска с пустым каноническим триггером
-    пропускаются ТОЧНО как в ``_build_search`` (case_builder): их домен-запись не создаётся,
-    поэтому и байты их ассетов в архив не пакуются (та же orphan-логика).
+    (иначе вышли бы недостижимые orphan-блобы). Зоны обходятся рекурсивно
+    (``_iter_hotspot_assets``): фон и фото вложенных интерьерных видов зон выдаются тоже, но
+    только при заданном фоне СООТВЕТСТВУЮЩЕГО уровня (orphan-логика сохраняется на каждом
+    уровне — согласованно с ``_build_scheme_view``, который роняет вид без фона). Точки поиска с
+    пустым каноническим триггером пропускаются ТОЧНО как в ``_build_search`` (case_builder): их
+    домен-запись не создаётся, поэтому и байты их ассетов в архив не пакуются (та же orphan-логика).
     """
     for patient in draft.patients:
         yield from patient.assets
     if draft.contacts is not None and draft.contacts.scheme is not None:
         yield draft.contacts.scheme
-        for spot in draft.contacts.hotspots:
-            yield from spot.reveal_assets
+        yield from _iter_hotspot_assets(draft.contacts.hotspots)
     if draft.environment is not None:
         if draft.environment.scheme is not None:
             yield draft.environment.scheme
-            for spot in draft.environment.hotspots:
-                yield from spot.reveal_assets
+            yield from _iter_hotspot_assets(draft.environment.hotspots)
         yield from draft.environment.photos
     for stage in (draft.clinical, draft.ses, draft.final):
         if stage is None:

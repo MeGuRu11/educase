@@ -15,6 +15,7 @@ from educase_core.application.case_builder import (
     FinalDraft,
     HotspotDraft,
     PatientDraft,
+    SchemeViewDraft,
     SearchDraft,
     SearchEntryDraft,
     SesDraft,
@@ -207,6 +208,88 @@ def test_hotspot_photo_without_scheme_not_packed(tmp_path: Path) -> None:
         ),
     )
     assert read_asset_sources(draft) == {}
+
+
+def test_nested_scheme_view_assets_packed(tmp_path: Path) -> None:
+    """Фон вложенного вида и фото вложенной зоны пакуются, когда у вложенного вида задан фон."""
+    bg_src = tmp_path / "bg.png"
+    bg_src.write_bytes(b"BG")
+    zone_src = tmp_path / "zone.png"
+    zone_src.write_bytes(b"ZONE")
+    child_bg_src = tmp_path / "child_bg.png"
+    child_bg_src.write_bytes(b"CHILD-BG")
+    child_zone_src = tmp_path / "child_zone.png"
+    child_zone_src.write_bytes(b"CHILD-ZONE")
+
+    draft = CaseDraft(
+        case_id="case-nested",
+        contacts=ContactsDraft(
+            scheme=AssetRef("bg-1", str(bg_src)),
+            hotspots=(
+                HotspotDraft(
+                    0.1,
+                    0.2,
+                    0.3,
+                    0.4,
+                    reveal_assets=(AssetRef("z1", str(zone_src)),),
+                    child=SchemeViewDraft(
+                        background=AssetRef("child-bg", str(child_bg_src)),
+                        hotspots=(
+                            HotspotDraft(
+                                0.5,
+                                0.5,
+                                0.2,
+                                0.2,
+                                reveal_assets=(AssetRef("cz1", str(child_zone_src)),),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assets = read_asset_sources(draft)
+
+    assert assets["bg-1"] == b"BG"
+    assert assets["z1"] == b"ZONE"
+    assert assets["child-bg"] == b"CHILD-BG"
+    assert assets["cz1"] == b"CHILD-ZONE"
+
+
+def test_nested_scheme_view_without_background_not_packed(tmp_path: Path) -> None:
+    """Вложенный вид без фона отброшен билдером → его фон/фото в архив НЕ пакуются (orphan)."""
+    bg_src = tmp_path / "bg.png"
+    bg_src.write_bytes(b"BG")
+    child_zone_src = tmp_path / "child_zone.png"
+    child_zone_src.write_bytes(b"ORPHAN-CHILD-ZONE")
+
+    draft = CaseDraft(
+        case_id="case-nested-orphan",
+        contacts=ContactsDraft(
+            scheme=AssetRef("bg-1", str(bg_src)),
+            hotspots=(
+                HotspotDraft(
+                    0.1,
+                    0.2,
+                    0.3,
+                    0.4,
+                    child=SchemeViewDraft(
+                        background=None,
+                        hotspots=(
+                            HotspotDraft(
+                                0.5,
+                                0.5,
+                                0.2,
+                                0.2,
+                                reveal_assets=(AssetRef("cz1", str(child_zone_src)),),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert read_asset_sources(draft) == {"bg-1": b"BG"}
 
 
 def test_duplicate_asset_id_deduplicated(tmp_path: Path) -> None:

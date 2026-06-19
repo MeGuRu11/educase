@@ -176,12 +176,13 @@ class InspectionDraft:
 
 @dataclass(frozen=True)
 class HotspotDraft:
-    """Сырые значения одной зоны схемы из UI: прямоугольник + подпись + вскрываемое.
+    """Сырые значения одной зоны схемы из UI: прямоугольник + подпись + вскрываемое + вложенный вид.
 
-    Плоская зона (ADR-013, согласованный срез): геометрия в долях [0..1] (левый верх ``x``,
-    ``y`` и размеры ``w``, ``h``), подпись, вскрываемый текст и прикреплённые фото
-    (``reveal_assets``). Без вложенного вида и иконки — их домен (``Hotspot``) получает по
-    умолчанию через ``_build_hotspots``.
+    Геометрия в долях [0..1] (левый верх ``x``, ``y`` и размеры ``w``, ``h``), подпись,
+    вскрываемый текст и прикреплённые фото (``reveal_assets``). ``child`` — опциональный
+    вложенный интерьерный вид зоны (свой фон + свои зоны, рекурсивно); ``None`` у плоской зоны
+    (существующий плоский авторинг этого поля не задаёт). Иконку домен (``Hotspot``) получает
+    по умолчанию через ``_build_hotspots``.
     """
 
     x: float
@@ -191,6 +192,22 @@ class HotspotDraft:
     label: str = ""
     reveal_text: str = ""
     reveal_assets: tuple[AssetRef, ...] = ()
+    child: SchemeViewDraft | None = None
+
+
+@dataclass(frozen=True)
+class SchemeViewDraft:
+    """Сырые значения одного уровня вложенного вида схемы из UI: свой фон + свои зоны.
+
+    ``background`` — ассет фонового изображения вложенного вида (``None``, если фон не выбран —
+    тогда вид недостижим и билдер его отбрасывает). ``caption`` — подпись уровня. ``hotspots`` —
+    зоны поверх фона; рекурсия общая — каждая такая зона тоже может иметь свой ``child`` (потолок
+    глубины здесь не вводится — его задаёт UV R2.1-B).
+    """
+
+    background: AssetRef | None = None
+    caption: str = ""
+    hotspots: tuple[HotspotDraft, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -480,15 +497,35 @@ def _build_inspection(draft: InspectionDraft) -> InspectionCheck | None:
     return InspectionCheck(expected=tuple(groups))
 
 
+def _build_scheme_view(draft: SchemeViewDraft) -> SchemeView | None:
+    """Собрать вложенный доменный ``SchemeView`` из ``SchemeViewDraft`` (или ``None`` без фона).
+
+    Вид без фона недостижим — отбрасывается в ``None`` (та же логика, что роняет схему верхнего
+    уровня без фона в ``build_contacts``/``build_environment``). Иначе фон сворачивается в
+    ``asset_id``, ``caption`` копируется, а зоны собираются рекурсивно через ``_build_hotspots``
+    (каждый уровень нумерует свои ``hotspot-<i>`` независимо с 1).
+    """
+    if draft.background is None:
+        return None
+    return SchemeView(
+        background=draft.background.asset_id,
+        caption=draft.caption,
+        hotspots=_build_hotspots(draft.hotspots),
+    )
+
+
 def _build_hotspots(drafts: tuple[HotspotDraft, ...]) -> tuple[Hotspot, ...]:
-    """Собрать плоские доменные ``Hotspot`` из ``HotspotDraft`` со сквозными id.
+    """Собрать доменные ``Hotspot`` из ``HotspotDraft`` со сквозными id (рекурсивно по ``child``).
 
     Геометрия копируется в ``HotspotShape`` (доли [0..1]); ``reveal_assets`` сворачиваются в
-    кортеж ``asset_id`` (как в ``_build_search``). Зона плоская — ``child``/``icon`` остаются
-    дефолтными. Нумерация сквозная: ``hotspot-<i>`` от 1.
+    кортеж ``asset_id`` (как в ``_build_search``). ``child`` собирается тем же
+    ``_build_scheme_view`` (общая рекурсия); вложенный вид без фона схлопывается в ``None``.
+    ``icon`` остаётся дефолтным. Нумерация сквозная в пределах ОДНОГО вида: ``hotspot-<i>`` от 1
+    (каждый вложенный вид нумерует свои зоны независимо — id уникален лишь в своём ``SchemeView``).
     """
     spots: list[Hotspot] = []
     for d in drafts:
+        child = _build_scheme_view(d.child) if d.child is not None else None
         spots.append(
             Hotspot(
                 id=f"hotspot-{len(spots) + 1}",
@@ -496,6 +533,7 @@ def _build_hotspots(drafts: tuple[HotspotDraft, ...]) -> tuple[Hotspot, ...]:
                 label=d.label,
                 reveal_text=d.reveal_text,
                 reveal_assets=tuple(ref.asset_id for ref in d.reveal_assets),
+                child=child,
             )
         )
     return tuple(spots)
@@ -668,6 +706,7 @@ __all__ = [
     "HotspotDraft",
     "InspectionDraft",
     "PatientDraft",
+    "SchemeViewDraft",
     "SearchDraft",
     "SearchEntryDraft",
     "SesDraft",

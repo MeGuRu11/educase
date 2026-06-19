@@ -20,6 +20,7 @@ from educase_core.application.case_builder import (
     HotspotDraft,
     InspectionDraft,
     PatientDraft,
+    SchemeViewDraft,
     SearchDraft,
     SearchEntryDraft,
     SesDraft,
@@ -37,6 +38,7 @@ from educase_core.domain import (
     FieldType,
     HotspotShape,
     NumberMatch,
+    SchemeView,
     StageClinical,
     StageContacts,
     StageEnvironment,
@@ -587,6 +589,160 @@ def test_build_case_hotspots_round_trip_to_dict() -> None:
     restored = Case.from_dict(case.to_dict())
     assert restored.contacts == case.contacts
     assert restored.environment == case.environment
+
+
+# --- Вложенный интерьерный вид зоны (R2.1-A): рекурсивный child ---
+
+
+def test_build_case_contacts_nested_child_view() -> None:
+    """Зона с child (фон + вложенная reveal-зона) → ``child`` — ``SchemeView`` с её зоной."""
+    contacts = ContactsDraft(
+        scheme=AssetRef("bg-root", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                label="Казарма",
+                child=SchemeViewDraft(
+                    background=AssetRef("bg-child", "/pc"),
+                    caption="Интерьер казармы",
+                    hotspots=(
+                        HotspotDraft(
+                            0.5,
+                            0.5,
+                            0.2,
+                            0.2,
+                            label="Койка",
+                            reveal_text="скученность",
+                            reveal_assets=(AssetRef("zc1", "/pzc"),),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-nest-c", contacts=contacts))
+
+    scheme = case.contacts.scheme
+    assert scheme is not None
+    child = scheme.root.hotspots[0].child
+    assert isinstance(child, SchemeView)
+    assert child.background == "bg-child"  # фон свёрнут в asset_id
+    assert child.caption == "Интерьер казармы"
+    assert len(child.hotspots) == 1
+    inner = child.hotspots[0]
+    assert inner.id == "hotspot-1"  # независимая нумерация вложенного вида с 1
+    assert inner.label == "Койка"
+    assert inner.reveal_text == "скученность"
+    assert inner.reveal_assets == ("zc1",)
+    assert inner.child is None
+
+
+def test_build_case_environment_nested_child_view() -> None:
+    """То же для среды: зона с child → вложенный ``SchemeView`` со своей зоной."""
+    environment = EnvironmentDraft(
+        scheme=AssetRef("bg-root-e", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.0,
+                0.0,
+                0.5,
+                0.5,
+                label="Пищеблок",
+                child=SchemeViewDraft(
+                    background=AssetRef("bg-child-e", "/pc"),
+                    caption="Цех",
+                    hotspots=(HotspotDraft(0.1, 0.1, 0.2, 0.2, label="Котёл"),),
+                ),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-nest-e", environment=environment))
+
+    scheme = case.environment.scheme
+    assert scheme is not None
+    child = scheme.root.hotspots[0].child
+    assert isinstance(child, SchemeView)
+    assert child.background == "bg-child-e"
+    assert child.caption == "Цех"
+    assert len(child.hotspots) == 1
+    assert child.hotspots[0].label == "Котёл"
+
+
+def test_build_case_nested_child_without_background_dropped() -> None:
+    """Вложенный вид без фона → ``child`` зоны схлопывается в ``None`` (вид недостижим)."""
+    contacts = ContactsDraft(
+        scheme=AssetRef("bg-root", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                label="Казарма",
+                child=SchemeViewDraft(
+                    background=None,
+                    hotspots=(HotspotDraft(0.5, 0.5, 0.2, 0.2, label="Койка"),),
+                ),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-nest-nb", contacts=contacts))
+
+    scheme = case.contacts.scheme
+    assert scheme is not None
+    assert scheme.root.hotspots[0].child is None
+
+
+def test_build_case_nested_child_round_trip_to_dict() -> None:
+    """Трёхуровневая вложенность собирается рекурсивно и переживает ``to_dict`` → ``from_dict``."""
+    contacts = ContactsDraft(
+        scheme=AssetRef("bg-l0", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.1,
+                0.1,
+                0.2,
+                0.2,
+                label="L1",
+                child=SchemeViewDraft(
+                    background=AssetRef("bg-l1", "/p1"),
+                    caption="Уровень 1",
+                    hotspots=(
+                        HotspotDraft(
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.2,
+                            label="L2",
+                            child=SchemeViewDraft(
+                                background=AssetRef("bg-l2", "/p2"),
+                                caption="Уровень 2",
+                                hotspots=(HotspotDraft(0.3, 0.3, 0.2, 0.2, label="L3"),),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-nest-rt", contacts=contacts))
+
+    # Факт рекурсии: три уровня собрались и доходят до самого глубокого вида.
+    scheme = case.contacts.scheme
+    assert scheme is not None
+    level1 = scheme.root.hotspots[0].child
+    assert level1 is not None
+    level2 = level1.hotspots[0].child
+    assert level2 is not None
+    assert level2.background == "bg-l2"
+    assert level2.hotspots[0].label == "L3"
+    assert level2.hotspots[0].child is None
+
+    restored = Case.from_dict(case.to_dict())
+    assert restored.contacts == case.contacts
 
 
 # --- Этапы 5–6: оценка СЭС и окончательный диагноз ---
