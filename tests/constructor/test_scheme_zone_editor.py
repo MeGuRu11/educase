@@ -109,6 +109,56 @@ def test_to_hotspots_empty_without_background(qtbot: QtBot) -> None:
     assert len(editor.cards) == 0
 
 
+def test_buttons_disabled_without_background(qtbot: QtBot) -> None:
+    """Без фона обе кнопки недоступны."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    assert not editor._add_button.isEnabled()
+    assert not editor._delete_button.isEnabled()
+
+
+def test_add_enabled_after_background_delete_disabled_when_no_zones(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """После выбора фона «Добавить» доступна; «Удалить» ещё недоступна (зон нет)."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    assert editor._add_button.isEnabled()
+    assert not editor._delete_button.isEnabled()
+
+
+def test_delete_enabled_after_add_zone(qtbot: QtBot, tmp_path: Path) -> None:
+    """После добавления зоны «Удалить» становится доступной."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    assert editor._delete_button.isEnabled()
+
+
+def test_delete_disabled_after_removing_last_zone(qtbot: QtBot, tmp_path: Path) -> None:
+    """После удаления последней зоны «Удалить» снова недоступна."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    editor._delete_button.click()
+    assert len(editor.cards) == 0
+    assert not editor._delete_button.isEnabled()
+
+
+def test_both_disabled_after_set_background_none(qtbot: QtBot, tmp_path: Path) -> None:
+    """set_background(None) снова отключает обе кнопки."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+    editor.set_background(None)
+    assert not editor._add_button.isEnabled()
+    assert not editor._delete_button.isEnabled()
+
+
 def test_hotspot_geometry_in_unit_range(qtbot: QtBot, tmp_path: Path) -> None:
     """Геометрия всех добавленных зон → доли x,y,w,h строго в [0..1]."""
     editor = SchemeZoneEditor()

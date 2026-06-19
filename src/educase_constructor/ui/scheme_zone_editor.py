@@ -84,6 +84,13 @@ class SchemeZoneEditor(QWidget):
         layout.addLayout(self._cards_layout)
 
         refresh_placeholder(self._empty_label, is_empty=True)
+        self._update_buttons()
+
+    def _update_buttons(self) -> None:
+        """Синхронизировать доступность кнопок с состоянием холста."""
+        has_bg = self.canvas.has_background()
+        self._add_button.setEnabled(has_bg)
+        self._delete_button.setEnabled(has_bg and len(self.cards) > 0)
 
     def _add_zone_clicked(self) -> None:
         """Добавить зону по центру холста (если фон загружен); on_zones_changed синхронизирует."""
@@ -104,11 +111,13 @@ class SchemeZoneEditor(QWidget):
             self._cards_layout.removeWidget(box)
             box.deleteLater()
         refresh_placeholder(self._empty_label, is_empty=len(self.cards) == 0)
+        self._update_buttons()
 
     def set_background(self, ref: AssetRef | None) -> None:
         """Сменить фон холста; фон сбрасывает зоны, что синхронизирует карточки в 0."""
         self.canvas.set_background(ref)
         self._on_canvas_changed()
+        self._update_buttons()
 
     def to_hotspots(self) -> tuple[HotspotDraft, ...]:
         """Собрать ``HotspotDraft`` для каждой зоны из долей холста и карточки свойств."""
