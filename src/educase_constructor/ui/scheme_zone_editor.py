@@ -19,18 +19,24 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from educase_constructor.ui.asset_picker import AssetListPicker
+from educase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
 from educase_constructor.ui.icons import load_icon
 from educase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from educase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
-from educase_core.application.case_builder import AssetRef, HotspotDraft
+from educase_core.application.case_builder import AssetRef, HotspotDraft, SchemeViewDraft
 
 
 class ZonePropsCard(QWidget):
-    """Карточка свойств одной зоны: подпись, вскрываемый текст и прикреплённые фото."""
+    """Карточка свойств одной зоны: подпись, вскрываемый текст и прикреплённые фото.
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    При ``allow_nested=True`` (верхний уровень) дополнительно показывает секцию
+    вложенного интерьерного вида: выбор фона + вложенный ``SchemeZoneEditor`` без
+    дальнейшей вложенности (``allow_nested=False``).
+    """
+
+    def __init__(self, parent: QWidget | None = None, allow_nested: bool = False) -> None:
         super().__init__(parent)
+        self._allow_nested = allow_nested
 
         self.label_edit = QLineEdit(self)
         self.label_edit.setPlaceholderText("Подпись зоны, например: Спальное помещение")
@@ -40,10 +46,39 @@ class ZonePropsCard(QWidget):
 
         self.assets_picker = AssetListPicker(self)
 
-        form = QFormLayout(self)
+        form = QFormLayout()
         form.addRow("Подпись", self.label_edit)
         form.addRow("Вскрываемый текст", self.reveal_text_edit)
         form.addRow("Фото зоны", self.assets_picker)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addLayout(form)
+
+        if allow_nested:
+            nested_box = QGroupBox("Вложенный вид (интерьер, необязательно)", self)
+            nested_layout = QVBoxLayout(nested_box)
+
+            self.nested_scheme_picker = AssetPicker(nested_box)
+            self.nested_editor = SchemeZoneEditor(nested_box, allow_nested=False)
+            self.nested_scheme_picker.changed.connect(
+                lambda: self.nested_editor.set_background(self.nested_scheme_picker.value())
+            )
+
+            nested_form = QFormLayout()
+            nested_form.addRow("Фон интерьера", self.nested_scheme_picker)
+            nested_layout.addLayout(nested_form)
+            nested_layout.addWidget(self.nested_editor)
+
+            main_layout.addWidget(nested_box)
+
+    def to_child(self) -> SchemeViewDraft | None:
+        """Собрать вложенный ``SchemeViewDraft`` или ``None`` без интерьерного фона."""
+        if not self._allow_nested:
+            return None
+        ref = self.nested_scheme_picker.value()
+        if ref is None:
+            return None
+        return SchemeViewDraft(background=ref, hotspots=self.nested_editor.to_hotspots())
 
 
 class SchemeZoneEditor(QWidget):
@@ -51,10 +86,14 @@ class SchemeZoneEditor(QWidget):
 
     Карточки синхронизируются с холстом автоматически при каждом изменении состава зон
     (``_on_canvas_changed``). Порядок карточки i = зоне i: оба растут/убывают с конца.
+
+    ``allow_nested=True`` (по умолчанию) — карточки верхнего уровня, имеют секцию
+    интерьерного вида. ``allow_nested=False`` — карточки только reveal (без вложенности).
     """
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, allow_nested: bool = True) -> None:
         super().__init__(parent)
+        self._allow_nested = allow_nested
 
         self.canvas = SchemeZoneCanvas(on_zones_changed=self._on_canvas_changed, parent=self)
         self.cards: list[ZonePropsCard] = []
@@ -100,7 +139,7 @@ class SchemeZoneEditor(QWidget):
         """Привести число карточек к числу зон на холсте (reconcile по длине)."""
         n = len(self.canvas.normalized_zones())
         while len(self.cards) < n:
-            card = ZonePropsCard(self)
+            card = ZonePropsCard(allow_nested=self._allow_nested, parent=self)
             box = wrap_in_card(card, f"Зона {len(self.cards) + 1}")
             self.cards.append(card)
             self._card_boxes.append(box)
@@ -130,6 +169,7 @@ class SchemeZoneEditor(QWidget):
                 label=card.label_edit.text(),
                 reveal_text=card.reveal_text_edit.text(),
                 reveal_assets=card.assets_picker.value(),
+                child=card.to_child(),
             )
             for (x, y, w, h), card in zip(
                 self.canvas.normalized_zones(), self.cards, strict=True

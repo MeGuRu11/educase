@@ -1,7 +1,7 @@
 """Тесты UI-обёртки редактора зон схемы (Constructor, R2-B.2).
 
 Реальные виджеты (pytest-qt): карточки синхронизируются с холстом, to_hotspots возвращает
-корректные HotspotDraft с геометрией и свойствами.
+корректные HotspotDraft с геометрией и свойствами. R2.1-B: вложенный интерьерный вид.
 """
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from pathlib import Path
 from PySide6.QtGui import QColor, QPixmap
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
-from educase_core.application.case_builder import AssetRef
+from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor, ZonePropsCard
+from educase_core.application.case_builder import AssetRef, SchemeViewDraft
 
 
 def _make_ref(tmp_path: Path, name: str = "bg.png") -> AssetRef:
@@ -174,3 +174,100 @@ def test_hotspot_geometry_in_unit_range(qtbot: QtBot, tmp_path: Path) -> None:
         assert 0.0 < h.h <= 1.0, f"h={h.h}"
         assert h.x + h.w <= 1.0 + 1e-6, f"x+w={h.x + h.w}"
         assert h.y + h.h <= 1.0 + 1e-6, f"y+h={h.y + h.h}"
+
+
+# ---------------------------------------------------------------------------
+# R2.1-B: вложенный интерьерный вид
+# ---------------------------------------------------------------------------
+
+
+def test_zone_props_card_allow_nested_true_has_nested_attrs(qtbot: QtBot) -> None:
+    """ZonePropsCard(allow_nested=True) создаёт nested_scheme_picker и nested_editor."""
+    card = ZonePropsCard(allow_nested=True)
+    qtbot.addWidget(card)
+    assert hasattr(card, "nested_scheme_picker")
+    assert hasattr(card, "nested_editor")
+
+
+def test_zone_props_card_allow_nested_true_to_child_none_without_bg(qtbot: QtBot) -> None:
+    """to_child() == None, если интерьерный фон не выбран."""
+    card = ZonePropsCard(allow_nested=True)
+    qtbot.addWidget(card)
+    assert card.to_child() is None
+
+
+def test_zone_props_card_allow_nested_true_to_child_with_bg(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """to_child() возвращает SchemeViewDraft с фоном и зонами после заполнения."""
+    card = ZonePropsCard(allow_nested=True)
+    qtbot.addWidget(card)
+
+    interior_ref = _make_ref(tmp_path, "interior.png")
+    card.nested_scheme_picker.set_file(interior_ref.source_path)
+
+    card.nested_editor.canvas.add_zone(0.4, 0.4, 0.2, 0.15)
+    nested_card = card.nested_editor.cards[0]
+    nested_card.label_edit.setText("Кровать")
+    nested_card.reveal_text_edit.setText("Место сна")
+
+    child = card.to_child()
+    assert child is not None
+    assert child.background is not None
+    assert len(child.hotspots) == 1
+    assert child.hotspots[0].label == "Кровать"
+    assert child.hotspots[0].reveal_text == "Место сна"
+
+
+def test_zone_props_card_allow_nested_false_no_nesting(qtbot: QtBot) -> None:
+    """ZonePropsCard(allow_nested=False): to_child() == None; нет атрибута nested_editor."""
+    card = ZonePropsCard(allow_nested=False)
+    qtbot.addWidget(card)
+    assert card.to_child() is None
+    assert not hasattr(card, "nested_editor")
+
+
+def test_top_level_editor_hotspot_child_with_nested(qtbot: QtBot, tmp_path: Path) -> None:
+    """SchemeZoneEditor (верхний, allow_nested=True): to_hotspots()[0].child — SchemeViewDraft."""
+    editor = SchemeZoneEditor()  # allow_nested=True по умолчанию
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+
+    card = editor.cards[0]
+    interior_ref = _make_ref(tmp_path, "interior.png")
+    card.nested_scheme_picker.set_file(interior_ref.source_path)
+    card.nested_editor.canvas.add_zone(0.4, 0.4, 0.2, 0.15)
+
+    hotspots = editor.to_hotspots()
+    assert len(hotspots) == 1
+    assert isinstance(hotspots[0].child, SchemeViewDraft)
+
+
+def test_top_level_editor_hotspot_child_none_without_interior(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """Зона без настроенного интерьера → to_hotspots()[0].child is None."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+
+    assert editor.to_hotspots()[0].child is None
+
+
+def test_nested_editor_cards_have_no_further_nesting(qtbot: QtBot, tmp_path: Path) -> None:
+    """Карточки вложенного SchemeZoneEditor имеют allow_nested=False."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+
+    card = editor.cards[0]
+    interior_ref = _make_ref(tmp_path, "interior.png")
+    card.nested_scheme_picker.set_file(interior_ref.source_path)
+    card.nested_editor.canvas.add_zone(0.4, 0.4, 0.2, 0.15)
+
+    nested_card = card.nested_editor.cards[0]
+    assert nested_card.to_child() is None
+    assert not hasattr(nested_card, "nested_editor")
