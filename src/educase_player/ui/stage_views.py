@@ -154,7 +154,7 @@ class PatientsStageView(StageView):
             flow = FlowLayout(flow_container, h_spacing=12, v_spacing=12)
             for card in stage.patients:
                 card_widget = PatientCardWidget(card)
-                card_widget.setMaximumWidth(340)
+                card_widget.setFixedWidth(300)
                 flow.addWidget(card_widget)
             self._layout.addWidget(flow_container)
             has_content = True
