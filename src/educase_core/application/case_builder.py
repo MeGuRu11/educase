@@ -22,6 +22,8 @@ from educase_core.domain import (
     DocumentTask,
     DocumentTemplate,
     FieldType,
+    Hotspot,
+    HotspotShape,
     InspectionCheck,
     KeywordSearch,
     MatchRule,
@@ -173,20 +175,41 @@ class InspectionDraft:
 
 
 @dataclass(frozen=True)
+class HotspotDraft:
+    """Сырые значения одной зоны схемы из UI: прямоугольник + подпись + вскрываемое.
+
+    Плоская зона (ADR-013, согласованный срез): геометрия в долях [0..1] (левый верх ``x``,
+    ``y`` и размеры ``w``, ``h``), подпись, вскрываемый текст и прикреплённые фото
+    (``reveal_assets``). Без вложенного вида и иконки — их домен (``Hotspot``) получает по
+    умолчанию через ``_build_hotspots``.
+    """
+
+    x: float
+    y: float
+    w: float
+    h: float
+    label: str = ""
+    reveal_text: str = ""
+    reveal_assets: tuple[AssetRef, ...] = ()
+
+
+@dataclass(frozen=True)
 class ContactsDraft:
-    """Сырые значения этапа «Обследование контактных лиц»: вступление, схема, осмотр."""
+    """Сырые значения этапа «Обследование контактных лиц»: вступление, схема, зоны, осмотр."""
 
     intro: str = ""
     scheme: AssetRef | None = None
+    hotspots: tuple[HotspotDraft, ...] = ()
     inspection: InspectionDraft = InspectionDraft()
 
 
 @dataclass(frozen=True)
 class EnvironmentDraft:
-    """Сырые значения этапа «Объекты внешней среды»: схема, фото, документы, осмотр."""
+    """Сырые значения этапа «Объекты внешней среды»: схема, зоны, фото, документы, осмотр."""
 
     intro: str = ""
     scheme: AssetRef | None = None
+    hotspots: tuple[HotspotDraft, ...] = ()
     photos: tuple[AssetRef, ...] = ()
     documents: tuple[DocumentTaskDraft, ...] = ()
     inspection: InspectionDraft = InspectionDraft()
@@ -457,12 +480,42 @@ def _build_inspection(draft: InspectionDraft) -> InspectionCheck | None:
     return InspectionCheck(expected=tuple(groups))
 
 
+def _build_hotspots(drafts: tuple[HotspotDraft, ...]) -> tuple[Hotspot, ...]:
+    """Собрать плоские доменные ``Hotspot`` из ``HotspotDraft`` со сквозными id.
+
+    Геометрия копируется в ``HotspotShape`` (доли [0..1]); ``reveal_assets`` сворачиваются в
+    кортеж ``asset_id`` (как в ``_build_search``). Зона плоская — ``child``/``icon`` остаются
+    дефолтными. Нумерация сквозная: ``hotspot-<i>`` от 1.
+    """
+    spots: list[Hotspot] = []
+    for d in drafts:
+        spots.append(
+            Hotspot(
+                id=f"hotspot-{len(spots) + 1}",
+                shape=HotspotShape(x=d.x, y=d.y, w=d.w, h=d.h),
+                label=d.label,
+                reveal_text=d.reveal_text,
+                reveal_assets=tuple(ref.asset_id for ref in d.reveal_assets),
+            )
+        )
+    return tuple(spots)
+
+
 def build_contacts(draft: ContactsDraft) -> StageContacts:
-    """Собрать этап «Обследование контактных лиц» из ``ContactsDraft``."""
+    """Собрать этап «Обследование контактных лиц» из ``ContactsDraft``.
+
+    Зоны (``hotspots``) пакуются в ``SchemeView`` только при заданном фоне; без фона схема —
+    ``None`` и зоны игнорируются (зона без фона недостижима).
+    """
     return StageContacts(
         intro=draft.intro,
         scheme=(
-            SchemeDocument(root=SchemeView(background=draft.scheme.asset_id))
+            SchemeDocument(
+                root=SchemeView(
+                    background=draft.scheme.asset_id,
+                    hotspots=_build_hotspots(draft.hotspots),
+                )
+            )
             if draft.scheme is not None
             else None
         ),
@@ -471,12 +524,21 @@ def build_contacts(draft: ContactsDraft) -> StageContacts:
 
 
 def build_environment(draft: EnvironmentDraft) -> StageEnvironment:
-    """Собрать этап «Обследование объектов внешней среды» из ``EnvironmentDraft``."""
+    """Собрать этап «Обследование объектов внешней среды» из ``EnvironmentDraft``.
+
+    Зоны (``hotspots``) пакуются в ``SchemeView`` только при заданном фоне; без фона схема —
+    ``None`` и зоны игнорируются. ``photos``/``documents``/``inspection`` — как раньше.
+    """
     photos = tuple(ref.asset_id for ref in draft.photos)
     return StageEnvironment(
         intro=draft.intro,
         scheme=(
-            SchemeDocument(root=SchemeView(background=draft.scheme.asset_id))
+            SchemeDocument(
+                root=SchemeView(
+                    background=draft.scheme.asset_id,
+                    hotspots=_build_hotspots(draft.hotspots),
+                )
+            )
             if draft.scheme is not None
             else None
         ),
@@ -603,6 +665,7 @@ __all__ = [
     "EnvironmentDraft",
     "FieldDraft",
     "FinalDraft",
+    "HotspotDraft",
     "InspectionDraft",
     "PatientDraft",
     "SearchDraft",

@@ -17,6 +17,7 @@ from educase_core.application.case_builder import (
     EnvironmentDraft,
     FieldDraft,
     FinalDraft,
+    HotspotDraft,
     InspectionDraft,
     PatientDraft,
     SearchDraft,
@@ -34,6 +35,7 @@ from educase_core.domain import (
     ChoiceMatch,
     DateMatch,
     FieldType,
+    HotspotShape,
     NumberMatch,
     StageClinical,
     StageContacts,
@@ -471,6 +473,116 @@ def test_build_case_contacts_environment_round_trip_to_dict() -> None:
     )
     case = build_case(
         CaseDraft(case_id="case-rt34", contacts=contacts, environment=environment)
+    )
+    restored = Case.from_dict(case.to_dict())
+    assert restored.contacts == case.contacts
+    assert restored.environment == case.environment
+
+
+def test_build_case_contacts_hotspots() -> None:
+    """``contacts`` с фоном и зоной → плоский ``Hotspot`` в ``scheme.root.hotspots``."""
+    contacts = ContactsDraft(
+        scheme=AssetRef("bg-1", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                label="Спальное",
+                reveal_text="скученность",
+                reveal_assets=(AssetRef("z1", "/pz"),),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-hc", contacts=contacts))
+
+    scheme = case.contacts.scheme
+    assert scheme is not None
+    assert scheme.root.background == "bg-1"
+    assert len(scheme.root.hotspots) == 1
+    spot = scheme.root.hotspots[0]
+    assert spot.id == "hotspot-1"
+    assert spot.shape == HotspotShape(x=0.1, y=0.2, w=0.3, h=0.4)
+    assert spot.label == "Спальное"
+    assert spot.reveal_text == "скученность"
+    assert spot.reveal_assets == ("z1",)
+    assert spot.child is None
+
+
+def test_build_case_environment_hotspots() -> None:
+    """``environment`` с фоном и зоной → плоский ``Hotspot`` в ``scheme.root.hotspots``."""
+    environment = EnvironmentDraft(
+        scheme=AssetRef("bg-2", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.5,
+                0.6,
+                0.2,
+                0.1,
+                label="Пищеблок",
+                reveal_text="нарушение",
+                reveal_assets=(AssetRef("z2", "/pz"),),
+            ),
+        ),
+    )
+    case = build_case(CaseDraft(case_id="case-he", environment=environment))
+
+    scheme = case.environment.scheme
+    assert scheme is not None
+    assert scheme.root.background == "bg-2"
+    assert len(scheme.root.hotspots) == 1
+    spot = scheme.root.hotspots[0]
+    assert spot.id == "hotspot-1"
+    assert spot.shape == HotspotShape(x=0.5, y=0.6, w=0.2, h=0.1)
+    assert spot.label == "Пищеблок"
+    assert spot.reveal_text == "нарушение"
+    assert spot.reveal_assets == ("z2",)
+    assert spot.child is None
+
+
+def test_build_case_contacts_hotspots_ignored_without_scheme() -> None:
+    """Фон ``None`` → схема ``None``, зоны игнорируются (зона без фона недостижима)."""
+    contacts = ContactsDraft(
+        scheme=None,
+        hotspots=(HotspotDraft(0.1, 0.2, 0.3, 0.4, label="x"),),
+    )
+    case = build_case(CaseDraft(case_id="case-hn", contacts=contacts))
+    assert case.contacts.scheme is None
+
+
+def test_build_case_environment_hotspots_ignored_without_scheme() -> None:
+    """Фон ``None`` у среды → схема ``None``, зоны игнорируются."""
+    environment = EnvironmentDraft(
+        scheme=None,
+        hotspots=(HotspotDraft(0.1, 0.2, 0.3, 0.4),),
+    )
+    case = build_case(CaseDraft(case_id="case-hen", environment=environment))
+    assert case.environment.scheme is None
+
+
+def test_build_case_hotspots_round_trip_to_dict() -> None:
+    """round-trip: зоны контактов и среды сохраняются через ``to_dict`` → ``from_dict``."""
+    contacts = ContactsDraft(
+        scheme=AssetRef("bg-1", "/p"),
+        hotspots=(
+            HotspotDraft(
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                label="A",
+                reveal_text="t",
+                reveal_assets=(AssetRef("z1", "/pz"),),
+            ),
+        ),
+    )
+    environment = EnvironmentDraft(
+        scheme=AssetRef("bg-2", "/p"),
+        hotspots=(HotspotDraft(0.0, 0.0, 1.0, 1.0, label="B"),),
+    )
+    case = build_case(
+        CaseDraft(case_id="case-hrt", contacts=contacts, environment=environment)
     )
     restored = Case.from_dict(case.to_dict())
     assert restored.contacts == case.contacts

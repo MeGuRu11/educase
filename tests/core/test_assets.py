@@ -13,6 +13,7 @@ from educase_core.application.case_builder import (
     ContactsDraft,
     EnvironmentDraft,
     FinalDraft,
+    HotspotDraft,
     PatientDraft,
     SearchDraft,
     SearchEntryDraft,
@@ -134,6 +135,74 @@ def test_reveal_assets_of_dropped_entry_not_packed(tmp_path: Path) -> None:
                         reveal_assets=(AssetRef("or.png", str(reveal_src)),),
                     ),
                 ),
+            ),
+        ),
+    )
+    assert read_asset_sources(draft) == {}
+
+
+def test_reads_contacts_hotspot_photo_packed(tmp_path: Path) -> None:
+    """Фото зоны (``hotspot.reveal_assets``) при заданном фоне → попадает в архив."""
+    bg_src = tmp_path / "bg.png"
+    bg_src.write_bytes(b"BG")
+    zone_src = tmp_path / "zone.png"
+    zone_src.write_bytes(b"ZONE-BYTES")
+
+    draft = CaseDraft(
+        case_id="case-hz",
+        contacts=ContactsDraft(
+            scheme=AssetRef("bg-1", str(bg_src)),
+            hotspots=(
+                HotspotDraft(
+                    0.1,
+                    0.2,
+                    0.3,
+                    0.4,
+                    label="Спальное",
+                    reveal_text="скученность",
+                    reveal_assets=(AssetRef("z1", str(zone_src)),),
+                ),
+            ),
+        ),
+    )
+    assets = read_asset_sources(draft)
+
+    assert assets["z1"] == b"ZONE-BYTES"
+    assert assets["bg-1"] == b"BG"
+
+
+def test_environment_hotspot_photo_packed(tmp_path: Path) -> None:
+    """Фото зоны этапа «Среда» при заданном фоне → попадает в архив."""
+    bg_src = tmp_path / "bg.png"
+    bg_src.write_bytes(b"BG")
+    zone_src = tmp_path / "zone.png"
+    zone_src.write_bytes(b"ZONE")
+
+    draft = CaseDraft(
+        case_id="case-ehz",
+        environment=EnvironmentDraft(
+            scheme=AssetRef("bg-2", str(bg_src)),
+            hotspots=(
+                HotspotDraft(0.0, 0.0, 0.5, 0.5, reveal_assets=(AssetRef("z2", str(zone_src)),)),
+            ),
+        ),
+    )
+    assets = read_asset_sources(draft)
+
+    assert assets["z2"] == b"ZONE"
+
+
+def test_hotspot_photo_without_scheme_not_packed(tmp_path: Path) -> None:
+    """Зона без фона отбрасывается билдером → её фото в архив НЕ пакуется (orphan-логика)."""
+    zone_src = tmp_path / "zone.png"
+    zone_src.write_bytes(b"ORPHAN-ZONE")
+
+    draft = CaseDraft(
+        case_id="case-hz0",
+        contacts=ContactsDraft(
+            scheme=None,
+            hotspots=(
+                HotspotDraft(0.0, 0.0, 0.1, 0.1, reveal_assets=(AssetRef("z1", str(zone_src)),)),
             ),
         ),
     )

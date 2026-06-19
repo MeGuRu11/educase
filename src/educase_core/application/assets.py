@@ -2,8 +2,8 @@
 
 Единственное место чтения файлов в цепочке сборки кейса: ``build_case`` и ``build_*`` —
 чистые функции без I/O, поэтому чтение байтов ассетов вынесено сюда. Обход охватывает ВЕСЬ
-драфт: ассеты карточек пациентов, схему и фото этапа «Среда», схему этапа «Контакты» и
-изображения вскрытия всех точек поиска (клинический, СЭС, финал).
+драфт: ассеты карточек пациентов, схему/зоны/фото этапа «Среда», схему и зоны этапа
+«Контакты» и изображения вскрытия всех точек поиска (клинический, СЭС, финал).
 """
 from __future__ import annotations
 
@@ -16,19 +16,25 @@ from educase_core.application.case_builder import AssetRef, CaseDraft
 def _iter_asset_refs(draft: CaseDraft) -> Iterator[AssetRef]:
     """Выдать все ``AssetRef`` драфта по всем местам ассетов кейса.
 
-    Источники: ассеты карточек пациентов; схема этапа «Контакты»; схема и фото этапа «Среда»;
-    изображения вскрытия точек поиска этапов с поиском (клинический, СЭС, финал). Этапы и схемы
-    со значением ``None`` пропускаются. Точки поиска с пустым каноническим триггером
+    Источники: ассеты карточек пациентов; схема и фото зон этапа «Контакты»; схема, фото зон и
+    фото этапа «Среда»; изображения вскрытия точек поиска этапов с поиском (клинический, СЭС,
+    финал). Этапы и схемы со значением ``None`` пропускаются. Фото зон выдаются только при
+    заданном фоне схемы: без фона билдер отбрасывает зоны, поэтому их фото в архив не пакуются
+    (иначе вышли бы недостижимые orphan-блобы). Точки поиска с пустым каноническим триггером
     пропускаются ТОЧНО как в ``_build_search`` (case_builder): их домен-запись не создаётся,
-    поэтому и байты их ассетов в архив не пакуются (иначе вышли бы недостижимые orphan-блобы).
+    поэтому и байты их ассетов в архив не пакуются (та же orphan-логика).
     """
     for patient in draft.patients:
         yield from patient.assets
     if draft.contacts is not None and draft.contacts.scheme is not None:
         yield draft.contacts.scheme
+        for spot in draft.contacts.hotspots:
+            yield from spot.reveal_assets
     if draft.environment is not None:
         if draft.environment.scheme is not None:
             yield draft.environment.scheme
+            for spot in draft.environment.hotspots:
+                yield from spot.reveal_assets
         yield from draft.environment.photos
     for stage in (draft.clinical, draft.ses, draft.final):
         if stage is None:
