@@ -114,7 +114,9 @@ class StageView(QWidget):
         )
         idx = self._inner_row.indexOf(self._content)
         if idx != -1:
-            self._inner_row.setStretch(idx, 1)
+            self._inner_row.setStretch(0, 1)
+            self._inner_row.setStretch(idx, 50)
+            self._inner_row.setStretch(self._inner_row.count() - 1, 1)
 
     def _finish(self, has_content: bool) -> None:
         """Дозаполнить каркас: заглушка пустого этапа + растяжка снизу."""
