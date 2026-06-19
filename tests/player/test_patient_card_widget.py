@@ -1,6 +1,7 @@
-"""Тесты PatientCardWidget: отображение полей и заглушки ассетов."""
+"""Тесты PatientCardWidget: отображение полей, заглушки ассетов и сигнал clicked."""
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
@@ -46,3 +47,14 @@ def test_no_assets_stub_when_absent(qtbot: QtBot) -> None:
 
     texts = [lbl.text() for lbl in w.findChildren(QLabel)]
     assert not any("Материалы:" in t for t in texts)
+
+
+def test_clicked_signal_emitted_on_mouse_press(qtbot: QtBot) -> None:
+    """Сигнал clicked испускается при mousePressEvent."""
+    card = PatientCard(id="p4", title="Пациент 4", fields=())
+    w = PatientCardWidget(card)
+    qtbot.addWidget(w)
+    w.show()
+
+    with qtbot.waitSignal(w.clicked, timeout=1000):
+        qtbot.mouseClick(w, Qt.MouseButton.LeftButton)  # type: ignore[no-untyped-call]  # pytest-qt lacks stubs

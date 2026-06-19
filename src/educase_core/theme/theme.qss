@@ -318,3 +318,9 @@ QTabWidget#caseTabs QTabBar::tab:hover:!selected {
     background: #E6F2F1;
     color: #1F2A33;
 }
+
+/* --- Карточки пациентов: ховер-подсветка кликабельности --- */
+QWidget#patientCard:hover {
+    background: #F2F6F7;
+    border-radius: 8px;
+}

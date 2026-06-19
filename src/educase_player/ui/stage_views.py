@@ -38,6 +38,7 @@ from educase_core.domain.attempt import (
 from educase_core.domain.documents import DocumentField, DocumentTask
 from educase_core.domain.stages import (
     BranchPoint,
+    PatientCard,
     Stage,
     StageClinical,
     StageContacts,
@@ -53,6 +54,7 @@ from educase_player.ui.document_widget import DocumentWidget
 from educase_player.ui.flow_layout import FlowLayout
 from educase_player.ui.inspection_widget import InspectionWidget
 from educase_player.ui.patient_card_widget import PatientCardWidget
+from educase_player.ui.patient_detail_dialog import PatientDetailDialog
 from educase_player.ui.scheme_viewer import SchemeViewerWidget
 from educase_player.ui.search_widget import SearchWidget
 from educase_player.ui.timeline_widget import TimelineWidget
@@ -157,11 +159,15 @@ class PatientsStageView(StageView):
             for card in stage.patients:
                 card_widget = PatientCardWidget(card)
                 card_widget.setFixedWidth(300)
+                card_widget.clicked.connect(lambda c=card: self._open_patient_detail(c))
                 flow.addWidget(card_widget)
             self._layout.addWidget(flow_container)
             has_content = True
             self._stretch_content()
         self._finish(has_content)
+
+    def _open_patient_detail(self, card: PatientCard) -> None:
+        PatientDetailDialog(card, self._assets, self).exec()
 
     def to_response(self) -> AttemptPatients:
         return AttemptPatients(search=_search_log(self._search))

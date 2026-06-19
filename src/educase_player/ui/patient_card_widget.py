@@ -1,6 +1,8 @@
 """Виджет карточки пациента: поля + заглушка ассетов (ADR-012)."""
 from __future__ import annotations
 
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
@@ -14,9 +16,13 @@ from educase_core.domain.stages import PatientCard
 class PatientCardWidget(QWidget):
     """Отображение карточки пациента: заголовок, строки «ключ: значение», ассеты-заглушка."""
 
+    clicked = Signal()
+
     def __init__(self, card: PatientCard, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.card = card
+        self.setObjectName("patientCard")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QVBoxLayout(self)
 
@@ -35,3 +41,7 @@ class PatientCardWidget(QWidget):
             group_layout.addWidget(stub)
 
         layout.addWidget(group)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self.clicked.emit()
+        super().mousePressEvent(event)
