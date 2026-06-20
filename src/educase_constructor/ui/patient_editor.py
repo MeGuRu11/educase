@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -84,6 +85,21 @@ class PatientEditor(QWidget):
             value = value_item.text() if value_item is not None else ""
             rows.append((key, value))
         return tuple(rows)
+
+    def load(self, draft: PatientDraft) -> None:
+        """Заполнить редактор значениями ``PatientDraft`` (открытие кейса на правку).
+
+        Таблица полей полностью пересобирается; ассеты восстанавливаются из памяти через
+        ``AssetListPicker.load`` (байты из архива, имена = ``asset_id``).
+        """
+        self.title_edit.setText(draft.title)
+        self.fields_table.setRowCount(0)
+        for key, value in draft.fields:
+            row = self.fields_table.rowCount()
+            self.fields_table.insertRow(row)
+            self.fields_table.setItem(row, 0, QTableWidgetItem(key))
+            self.fields_table.setItem(row, 1, QTableWidgetItem(value))
+        self.assets_picker.load(draft.assets)
 
     def to_draft(self) -> PatientDraft:
         """Собрать ``PatientDraft`` из текущих значений виджетов."""

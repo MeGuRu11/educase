@@ -12,7 +12,8 @@ from educase_constructor.ui.report_dialog import ReportDialog
 from educase_constructor.ui.start_screen import StartScreen
 from educase_core.application.assets import read_asset_sources
 from educase_core.application.case_builder import build_case
-from educase_core.application.cases import save_case
+from educase_core.application.case_loader import case_to_draft
+from educase_core.application.cases import load_case, save_case
 from educase_core.application.grading import ArchiveError, report_for_result
 
 _PAGE_START = 0
@@ -29,6 +30,7 @@ class MainWindow(QMainWindow):
         self._stack = QStackedWidget(self)
         start = StartScreen(self._stack)
         start.create_requested.connect(self._open_editor)
+        start.open_requested.connect(self.open_case_dialog)
         start.check_result_requested.connect(self.open_result_dialog)
         self._stack.addWidget(start)       # page 0
         self._stack.addWidget(self.editor)  # page 1
@@ -48,6 +50,11 @@ class MainWindow(QMainWindow):
         save_action.setIcon(load_icon("save"))
         save_action.triggered.connect(self.save_case_dialog)
         file_menu.addAction(save_action)
+
+        open_case_action = QAction("Открыть кейс…", self)
+        open_case_action.setIcon(load_icon("open"))
+        open_case_action.triggered.connect(self.open_case_dialog)
+        file_menu.addAction(open_case_action)
 
         open_result_action = QAction("Открыть результат…", self)
         open_result_action.setIcon(load_icon("open"))
@@ -82,6 +89,35 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Не удалось сохранить", str(exc))
             return False
         save_case(case, path, assets=assets)
+        return True
+
+    def open_case_dialog(self) -> None:
+        """Показать диалог открытия и загрузить выбранный .educase в редактор."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Открыть кейс",
+            "",
+            "Кейсы EduCase (*.educase)",
+        )
+        if path:
+            self.load_case_from_path(Path(path))
+
+    def load_case_from_path(self, path: Path) -> bool:
+        """Загрузить .educase и заполнить редактор (этот срез: мета + пациенты).
+
+        Тестируемый шов: вызывается без диалога выбора файла (как ``save_case_to_path``). При
+        ошибке формата/типа/версии архива (``load_case`` → ``ArchiveError``) — предупреждение и
+        ``False``, редактор не меняется. Ассеты восстанавливаются из памяти (байты архива): путь
+        к исходному файлу и его имя при загрузке утрачены.
+        """
+        try:
+            loaded = load_case(path)
+            draft = case_to_draft(loaded)
+        except ArchiveError as exc:
+            QMessageBox.warning(self, "Не удалось открыть кейс", str(exc))
+            return False
+        self.editor.load(draft)
+        self._stack.setCurrentIndex(_PAGE_EDITOR)
         return True
 
     def open_result_dialog(self) -> None:

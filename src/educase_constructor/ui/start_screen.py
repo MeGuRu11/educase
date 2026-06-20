@@ -16,10 +16,12 @@ class StartScreen(QWidget):
 
     Сигналы:
         create_requested — нажата кнопка «Создать новый кейс»
+        open_requested — нажата кнопка «Открыть кейс для правки»
         check_result_requested — нажата кнопка «Проверить результат курсанта»
     """
 
     create_requested: Signal = Signal()
+    open_requested: Signal = Signal()
     check_result_requested: Signal = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -51,6 +53,13 @@ class StartScreen(QWidget):
         btn_create.setObjectName("startAccentButton")
         btn_create.clicked.connect(self.create_requested)
         col.addWidget(btn_create)
+
+        col.addSpacing(8)
+
+        btn_open = QPushButton("Открыть кейс для правки")
+        btn_open.setObjectName("startSecondaryButton")
+        btn_open.clicked.connect(self.open_requested)
+        col.addWidget(btn_open)
 
         col.addSpacing(8)
 

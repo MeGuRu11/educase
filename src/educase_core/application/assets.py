@@ -61,18 +61,27 @@ def _iter_asset_refs(draft: CaseDraft) -> Iterator[AssetRef]:
             yield from entry.reveal_assets
 
 
-def read_asset_sources(draft: CaseDraft) -> dict[str, bytes]:
-    """Прочитать байты исходных файлов всех ассетов драфта в ``{asset_id: bytes}``.
+def _asset_bytes(ref: AssetRef) -> bytes:
+    """Байты ассета: из памяти (``ref.data`` загруженного кейса) либо из файла-источника.
 
-    Обходит весь драфт (``_iter_asset_refs``), для каждого ``AssetRef`` читает
-    ``Path(ref.source_path).read_bytes()``. Словарь по ``asset_id`` естественно дедуплицирует
-    повторные ссылки. ``OSError`` (нет файла/нет доступа) пробрасывается наверх — обработает
-    окно. Если ассетов нет — пустой словарь.
+    При открытии кейса на правку байты приходят прямо из архива (``ref.data``) — путь к
+    исходному файлу утрачен. У нового/заменённого выбора в пикере ``data`` пуст, поэтому байты
+    читаются ``Path(ref.source_path).read_bytes()``.
     """
-    return {
-        ref.asset_id: Path(ref.source_path).read_bytes()
-        for ref in _iter_asset_refs(draft)
-    }
+    if ref.data is not None:
+        return ref.data
+    return Path(ref.source_path).read_bytes()
+
+
+def read_asset_sources(draft: CaseDraft) -> dict[str, bytes]:
+    """Прочитать байты всех ассетов драфта в ``{asset_id: bytes}``.
+
+    Обходит весь драфт (``_iter_asset_refs``), для каждого ``AssetRef`` берёт байты через
+    ``_asset_bytes`` (из памяти или из файла). Словарь по ``asset_id`` естественно
+    дедуплицирует повторные ссылки. ``OSError`` (нет файла/нет доступа) пробрасывается
+    наверх — обработает окно. Если ассетов нет — пустой словарь.
+    """
+    return {ref.asset_id: _asset_bytes(ref) for ref in _iter_asset_refs(draft)}
 
 
 __all__ = ["read_asset_sources"]

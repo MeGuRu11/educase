@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from uuid import uuid4
 
@@ -77,6 +78,16 @@ class AssetPicker(QWidget):
         self.name_label.setText(self._ref.display_name)
         self.changed.emit()
 
+    def set_ref(self, ref: AssetRef) -> None:
+        """Восстановить готовую ссылку на ассет без файла/диалога (открытие кейса на правку).
+
+        Имя исходного файла при загрузке утрачено — показываем ``display_name`` (= ``asset_id``)
+        или запасное «вложение», если он пуст.
+        """
+        self._ref = ref
+        self.name_label.setText(ref.display_name or "вложение")
+        self.changed.emit()
+
     def clear(self) -> None:
         """Сбросить выбор: ссылка → ``None``, метка → плейсхолдер."""
         self._ref = None
@@ -126,6 +137,17 @@ class AssetListPicker(QWidget):
         ref = _make_ref(path)
         self._refs.append(ref)
         self.files_list.addItem(ref.display_name)
+
+    def load(self, refs: Sequence[AssetRef]) -> None:
+        """Восстановить список готовых ссылок на ассеты без файлов/диалога (открытие на правку).
+
+        Сбрасывает текущий выбор и заполняет список из ``refs``; имя строки — ``display_name``
+        (= ``asset_id``) или запасное «вложение».
+        """
+        self.clear()
+        for ref in refs:
+            self._refs.append(ref)
+            self.files_list.addItem(ref.display_name or "вложение")
 
     def remove_last(self) -> None:
         """Удалить последний выбранный файл (если он есть)."""

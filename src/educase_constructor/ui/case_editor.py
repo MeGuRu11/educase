@@ -164,6 +164,27 @@ class CaseEditor(QWidget):
         except ValueError:
             return None
 
+    def load(self, draft: CaseDraft) -> None:
+        """Заполнить редактор значениями загруженного кейса (этот срез: мета + пациенты).
+
+        ``case_id`` берётся из драфта — правка сохраняет идентичность кейса. Текущие пациенты
+        удаляются и пересобираются из ``draft.patients``. Этапы 2–6 в этом срезе не трогаются
+        (их обращение — следующие срезы).
+        """
+        self._case_id = draft.case_id
+        self.title_edit.setText(draft.title)
+        self.author_edit.setText(draft.author)
+        self.nosology_edit.setText(draft.nosology)
+        self.unit_personnel_edit.setText(
+            str(draft.unit_personnel) if draft.unit_personnel is not None else ""
+        )
+        while self.patient_editors:
+            self.remove_last_patient()
+        for pd in draft.patients:
+            self.add_patient()
+            self.patient_editors[-1].load(pd)
+        self._refresh_empty()
+
     def to_draft(self) -> CaseDraft:
         """Собрать ``CaseDraft`` из меты и всех редакторов пациентов."""
         return CaseDraft(
