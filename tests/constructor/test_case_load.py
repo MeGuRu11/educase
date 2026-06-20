@@ -10,13 +10,24 @@ from pytestqt.qtbot import QtBot
 
 from educase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
 from educase_constructor.ui.case_editor import CaseEditor
+from educase_constructor.ui.clinical_editor import ClinicalEditor
+from educase_constructor.ui.field_editor import FieldEditor
 from educase_constructor.ui.main_window import MainWindow
 from educase_constructor.ui.start_screen import StartScreen
 from educase_core.application.assets import read_asset_sources
 from educase_core.application.case_builder import (
     AssetRef,
+    BranchDraft,
+    BranchOptionDraft,
     CaseDraft,
+    ClinicalDraft,
+    DocumentOptionDraft,
+    DocumentTaskDraft,
+    FieldDraft,
     PatientDraft,
+    SearchDraft,
+    SearchEntryDraft,
+    SynonymSetDraft,
     build_case,
 )
 from educase_core.application.cases import save_case
@@ -127,6 +138,92 @@ def test_asset_list_picker_load_shows_names(qtbot: QtBot) -> None:
     assert picker.files_list.count() == 2
     assert picker.files_list.item(0).text() == "a.png"
     assert picker.files_list.item(1).text() == "b.png"
+
+
+def _clinical_draft() -> ClinicalDraft:
+    """Непустой ``ClinicalDraft`` для проверки заполнения под-редакторов этапа 2."""
+    return ClinicalDraft(
+        intro="Введение",
+        search=SearchDraft(
+            entries=(
+                SearchEntryDraft(
+                    triggers=SynonymSetDraft("температура", ("жар",)),
+                    reveal_text="38.5",
+                ),
+            ),
+            optional=True,
+        ),
+        branch=BranchDraft(
+            prompt="Выбор пути",
+            options=(
+                BranchOptionDraft("Верный", is_correct=True),
+                BranchOptionDraft("Неверный", is_correct=False),
+            ),
+        ),
+        documents=(
+            DocumentTaskDraft(
+                prompt="Документ",
+                options=(DocumentOptionDraft(title="ДМ-4", is_correct=True),),
+            ),
+        ),
+    )
+
+
+def test_field_editor_load_sets_type_and_subform(qtbot: QtBot) -> None:
+    """``FieldEditor.load`` выставляет тип (страницу rule_stack) и значения под-формы."""
+    editor = FieldEditor()
+    qtbot.addWidget(editor)
+
+    editor.load(
+        FieldDraft(
+            label="Число заболевших",
+            field_type="number",
+            required=False,
+            number_value="25",
+            number_tolerance="2",
+            number_ndigits="0",
+        )
+    )
+
+    assert editor.label_edit.text() == "Число заболевших"
+    assert editor.type_combo.currentData() == "number"
+    # Страница number в rule_stack (порядок FieldType: text=0, number=1, date=2, choice=3).
+    assert editor.rule_stack.currentIndex() == 1
+    assert editor.required_checkbox.isChecked() is False
+    assert editor.number_value_edit.text() == "25"
+    assert editor.tolerance_edit.text() == "2"
+    assert editor.ndigits_edit.text() == "0"
+
+
+def test_clinical_editor_load_fills_sections(qtbot: QtBot) -> None:
+    """``ClinicalEditor.load`` заполняет вступление, поиск, ветку и документы."""
+    editor = ClinicalEditor()
+    qtbot.addWidget(editor)
+
+    editor.load(_clinical_draft())
+
+    assert editor.intro_edit.text() == "Введение"
+    assert editor.search_editor.optional_checkbox.isChecked() is True
+    assert len(editor.search_editor.entry_editors) == 1
+    assert editor.search_editor.entry_editors[0].reveal_text_edit.text() == "38.5"
+    assert editor.branch_editor.prompt_edit.text() == "Выбор пути"
+    assert len(editor.branch_editor.option_editors) == 2
+    assert editor.branch_editor.option_editors[0].correct_checkbox.isChecked() is True
+    assert len(editor.documents_editor.task_editors) == 1
+    option = editor.documents_editor.task_editors[0].option_editors[0]
+    assert option.title_edit.text() == "ДМ-4"
+    assert option.correct_checkbox.isChecked() is True
+
+
+def test_case_editor_load_fills_clinical_tab(qtbot: QtBot) -> None:
+    """``CaseEditor.load`` с непустым clinical заполняет вкладку «Клинический»."""
+    editor = CaseEditor()
+    qtbot.addWidget(editor)
+
+    editor.load(CaseDraft(case_id="c", title="T", clinical=_clinical_draft()))
+
+    assert editor.clinical_editor.intro_edit.text() == "Введение"
+    assert editor.clinical_editor.branch_editor.prompt_edit.text() == "Выбор пути"
 
 
 def test_start_screen_has_open_button(qtbot: QtBot) -> None:

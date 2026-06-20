@@ -36,6 +36,11 @@ class BranchOptionEditor(QWidget):
         layout.addWidget(self.label_edit)
         layout.addWidget(self.correct_checkbox)
 
+    def load(self, draft: BranchOptionDraft) -> None:
+        """Заполнить виджеты значениями ``BranchOptionDraft`` (открытие кейса на правку)."""
+        self.label_edit.setText(draft.label)
+        self.correct_checkbox.setChecked(draft.is_correct)
+
     def to_draft(self) -> BranchOptionDraft:
         """Собрать ``BranchOptionDraft`` из текущих значений виджетов."""
         return BranchOptionDraft(
@@ -106,6 +111,19 @@ class BranchEditor(QWidget):
     def _refresh_empty(self) -> None:
         """Обновить видимость подсказки пустого состояния списка вариантов."""
         refresh_placeholder(self._empty_label, is_empty=len(self.option_editors) == 0)
+
+    def load(self, draft: BranchDraft) -> None:
+        """Заполнить редактор значениями ``BranchDraft`` (открытие кейса на правку).
+
+        Текущие опции удаляются и пересобираются из ``draft.options`` (симметрично ``to_draft``).
+        """
+        self.prompt_edit.setText(draft.prompt)
+        while self.option_editors:
+            self.remove_last_option()
+        for option in draft.options:
+            self.add_option()
+            self.option_editors[-1].load(option)
+        self._refresh_empty()
 
     def to_draft(self) -> BranchDraft:
         """Собрать ``BranchDraft`` из формулировки и всех редакторов опций."""

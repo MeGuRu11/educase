@@ -53,6 +53,13 @@ class ClinicalEditor(QWidget):
         layout.addWidget(branch_box)
         layout.addWidget(documents_box)
 
+    def load(self, draft: ClinicalDraft) -> None:
+        """Заполнить редактор значениями ``ClinicalDraft`` (открытие кейса на правку)."""
+        self.intro_edit.setText(draft.intro)
+        self.search_editor.load(draft.search)
+        self.branch_editor.load(draft.branch)
+        self.documents_editor.load(draft.documents)
+
     def to_draft(self) -> ClinicalDraft:
         """Собрать ``ClinicalDraft`` из вступления, поиска, развилки и документов."""
         return ClinicalDraft(

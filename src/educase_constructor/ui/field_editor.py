@@ -96,6 +96,25 @@ class FieldEditor(QWidget):
         layout.addWidget(self.required_checkbox)
         layout.addWidget(self.rule_stack)
 
+    def load(self, draft: FieldDraft) -> None:
+        """Заполнить виджеты значениями ``FieldDraft`` (открытие кейса на правку).
+
+        Тип выставляется по ``userData`` (англ. ``FieldType.value``); смена индекса combo
+        переключает ``rule_stack`` на нужную под-форму через тот же обработчик, что и ручной
+        выбор. Заполняются под-формы всех типов (как и ``to_draft`` читает все) — активная
+        выбирается типом; CSV-поля выводятся через запятую симметрично разбору.
+        """
+        self.label_edit.setText(draft.label)
+        self.type_combo.setCurrentIndex(self.type_combo.findData(draft.field_type))
+        self.required_checkbox.setChecked(draft.required)
+        self.keywords_editor.load(draft.keywords)
+        self.number_value_edit.setText(draft.number_value)
+        self.tolerance_edit.setText(draft.number_tolerance)
+        self.ndigits_edit.setText(draft.number_ndigits)
+        self.date_value_edit.setText(draft.date_value)
+        self.options_edit.setText(", ".join(draft.choice_options))
+        self.correct_edit.setText(", ".join(draft.choice_correct))
+
     def to_draft(self) -> FieldDraft:
         """Собрать ``FieldDraft`` из текущих значений виджетов всех под-форм.
 

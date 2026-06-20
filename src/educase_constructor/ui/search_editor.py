@@ -45,6 +45,12 @@ class SearchEntryEditor(QWidget):
         layout.addWidget(self.triggers)
         layout.addLayout(form)
 
+    def load(self, draft: SearchEntryDraft) -> None:
+        """Заполнить виджеты значениями ``SearchEntryDraft`` (открытие кейса на правку)."""
+        self.triggers.load(draft.triggers)
+        self.reveal_text_edit.setText(draft.reveal_text)
+        self.reveal_assets_picker.load(draft.reveal_assets)
+
     def to_draft(self) -> SearchEntryDraft:
         """Собрать ``SearchEntryDraft`` из текущих значений виджетов."""
         return SearchEntryDraft(
@@ -115,6 +121,19 @@ class SearchEditor(QWidget):
     def _refresh_empty(self) -> None:
         """Обновить видимость подсказки пустого состояния списка точек поиска."""
         refresh_placeholder(self._empty_label, is_empty=len(self.entry_editors) == 0)
+
+    def load(self, draft: SearchDraft) -> None:
+        """Заполнить редактор значениями ``SearchDraft`` (открытие кейса на правку).
+
+        Текущие точки удаляются и пересобираются из ``draft.entries`` (симметрично ``to_draft``).
+        """
+        self.optional_checkbox.setChecked(draft.optional)
+        while self.entry_editors:
+            self.remove_last_entry()
+        for entry in draft.entries:
+            self.add_entry()
+            self.entry_editors[-1].load(entry)
+        self._refresh_empty()
 
     def to_draft(self) -> SearchDraft:
         """Собрать ``SearchDraft`` из флага и всех редакторов точек поиска."""

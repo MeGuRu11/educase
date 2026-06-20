@@ -30,6 +30,14 @@ class SynonymSetEditor(QWidget):
         parts = (chunk.strip() for chunk in self.synonyms_edit.text().split(","))
         return tuple(part for part in parts if part)
 
+    def load(self, draft: SynonymSetDraft) -> None:
+        """Заполнить виджеты значениями ``SynonymSetDraft`` (открытие кейса на правку).
+
+        Синонимы выводятся через запятую — симметрично разбору в ``_collect_synonyms``.
+        """
+        self.canonical_edit.setText(draft.canonical)
+        self.synonyms_edit.setText(", ".join(draft.synonyms))
+
     def to_draft(self) -> SynonymSetDraft:
         """Собрать ``SynonymSetDraft`` из текущих значений виджетов."""
         return SynonymSetDraft(

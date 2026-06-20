@@ -73,6 +73,18 @@ class TemplateEditor(QWidget):
         self._fields_layout.removeWidget(card)
         card.deleteLater()
 
+    def load(self, draft: TemplateDraft) -> None:
+        """Заполнить редактор значениями ``TemplateDraft`` (открытие кейса на правку).
+
+        Текущие поля удаляются и пересобираются из ``draft.fields`` (симметрично ``to_draft``).
+        """
+        self.title_edit.setText(draft.title)
+        while self.field_editors:
+            self.remove_last_field()
+        for field in draft.fields:
+            self.add_field()
+            self.field_editors[-1].load(field)
+
     def to_draft(self) -> TemplateDraft:
         """Собрать ``TemplateDraft`` из заголовка и всех редакторов полей."""
         return TemplateDraft(

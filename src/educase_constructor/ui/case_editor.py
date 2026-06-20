@@ -168,8 +168,8 @@ class CaseEditor(QWidget):
         """Заполнить редактор значениями загруженного кейса (этот срез: мета + пациенты).
 
         ``case_id`` берётся из драфта — правка сохраняет идентичность кейса. Текущие пациенты
-        удаляются и пересобираются из ``draft.patients``. Этапы 2–6 в этом срезе не трогаются
-        (их обращение — следующие срезы).
+        удаляются и пересобираются из ``draft.patients``. Этап 2 (клинический) загружается, если
+        задан; этапы 3–6 в этом срезе не трогаются (их обращение — следующие срезы).
         """
         self._case_id = draft.case_id
         self.title_edit.setText(draft.title)
@@ -183,6 +183,8 @@ class CaseEditor(QWidget):
         for pd in draft.patients:
             self.add_patient()
             self.patient_editors[-1].load(pd)
+        if draft.clinical is not None:
+            self.clinical_editor.load(draft.clinical)
         self._refresh_empty()
 
     def to_draft(self) -> CaseDraft:

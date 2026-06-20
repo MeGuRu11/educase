@@ -56,6 +56,16 @@ class DocumentOptionEditor(QWidget):
         layout.addWidget(self.correct_checkbox)
         layout.addWidget(self.template_editor)
 
+    def load(self, draft: DocumentOptionDraft) -> None:
+        """Заполнить редактор значениями ``DocumentOptionDraft`` (открытие кейса на правку).
+
+        Флаг «Верный документ» через ``toggled`` управляет видимостью шаблона; для обманки
+        шаблон пуст и скрыт (флаг снят).
+        """
+        self.title_edit.setText(draft.title)
+        self.correct_checkbox.setChecked(draft.is_correct)
+        self.template_editor.load(draft.template)
+
     def to_draft(self) -> DocumentOptionDraft:
         """Собрать ``DocumentOptionDraft`` из заголовка, флага и редактора шаблона."""
         return DocumentOptionDraft(
@@ -115,6 +125,18 @@ class DocumentTaskEditor(QWidget):
         card = self._option_cards.pop()
         self._options_layout.removeWidget(card)
         card.deleteLater()
+
+    def load(self, draft: DocumentTaskDraft) -> None:
+        """Заполнить редактор значениями ``DocumentTaskDraft`` (открытие кейса на правку).
+
+        Текущие варианты удаляются и пересобираются из ``draft.options`` (симметрично ``to_draft``).
+        """
+        self.prompt_edit.setText(draft.prompt)
+        while self.option_editors:
+            self.remove_last_option()
+        for option in draft.options:
+            self.add_option()
+            self.option_editors[-1].load(option)
 
     def to_draft(self) -> DocumentTaskDraft:
         """Собрать ``DocumentTaskDraft`` из формулировки и всех редакторов вариантов."""
@@ -178,6 +200,18 @@ class DocumentListEditor(QWidget):
     def _refresh_empty(self) -> None:
         """Обновить видимость подсказки пустого состояния списка заданий."""
         refresh_placeholder(self._empty_label, is_empty=len(self.task_editors) == 0)
+
+    def load(self, tasks: tuple[DocumentTaskDraft, ...]) -> None:
+        """Заполнить редактор заданиями (открытие кейса на правку).
+
+        Текущие задания удаляются и пересобираются из ``tasks`` (симметрично ``to_draft``).
+        """
+        while self.task_editors:
+            self.remove_last_task()
+        for task in tasks:
+            self.add_task()
+            self.task_editors[-1].load(task)
+        self._refresh_empty()
 
     def to_draft(self) -> tuple[DocumentTaskDraft, ...]:
         """Собрать драфты всех заданий по документам."""
