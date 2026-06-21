@@ -63,6 +63,23 @@ class EnvironmentEditor(QWidget):
         layout.addWidget(documents_box)
         layout.addWidget(inspection_box)
 
+    def load(self, draft: EnvironmentDraft) -> None:
+        """Заполнить редактор значениями ``EnvironmentDraft`` (открытие кейса на правку).
+
+        Фон схемы ставится ПЕРВЫМ (``set_ref``/``clear`` → сигнал ``changed`` →
+        ``zone_editor.set_background``), и только потом восстанавливаются зоны: без фона холст
+        не примет зоны. Фото/документы/осмотр заполняются симметрично ``to_draft``.
+        """
+        self.intro_edit.setText(draft.intro)
+        if draft.scheme is not None:
+            self.scheme_picker.set_ref(draft.scheme)
+        else:
+            self.scheme_picker.clear()
+        self.zone_editor.load_hotspots(draft.hotspots)
+        self.photos_picker.load(draft.photos)
+        self.documents_editor.load(draft.documents)
+        self.inspection_editor.load(draft.inspection)
+
     def to_draft(self) -> EnvironmentDraft:
         """Собрать ``EnvironmentDraft`` из вступления, схемы, фото, документов и осмотра."""
         return EnvironmentDraft(

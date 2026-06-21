@@ -10,10 +10,15 @@ from educase_core.application.case_builder import (
     BranchOptionDraft,
     CaseDraft,
     ClinicalDraft,
+    ContactsDraft,
     DocumentOptionDraft,
     DocumentTaskDraft,
+    EnvironmentDraft,
     FieldDraft,
+    HotspotDraft,
+    InspectionDraft,
     PatientDraft,
+    SchemeViewDraft,
     SearchDraft,
     SearchEntryDraft,
     SynonymSetDraft,
@@ -23,7 +28,8 @@ from educase_core.application.case_builder import (
 from educase_core.application.case_loader import case_to_draft
 from educase_core.application.cases import LoadedCase, load_case, save_case
 from educase_core.domain import Case, CaseMeta
-from educase_core.domain.stages import PatientCard, StagePatients
+from educase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
+from educase_core.domain.stages import PatientCard, StageContacts, StagePatients
 
 
 def test_case_to_draft_round_trip(tmp_path: Path) -> None:
@@ -61,11 +67,11 @@ def test_case_to_draft_round_trip(tmp_path: Path) -> None:
     assert reloaded.nosology == "Сальмонеллёз"
     assert reloaded.unit_personnel == 150
 
-    # Этап 2 обращается всегда: пустой StageClinical() → пустой ClinicalDraft. Этапы 3–6 в
-    # этом срезе ещё не обращаются — остаются None.
+    # Этапы 2–4 обращаются всегда: пустые этапы → пустые драфты. Этапы 5–6 в этом срезе ещё
+    # не обращаются — остаются None.
     assert reloaded.clinical == ClinicalDraft()
-    assert reloaded.contacts is None
-    assert reloaded.environment is None
+    assert reloaded.contacts == ContactsDraft()
+    assert reloaded.environment == EnvironmentDraft()
     assert reloaded.ses is None
     assert reloaded.final is None
 
@@ -220,6 +226,237 @@ def test_clinical_round_trip(tmp_path: Path) -> None:
     decoy = clinical.documents[0].options[1]
     assert decoy.is_correct is False
     assert decoy.template == TemplateDraft()
+
+
+def _contacts_draft() -> ContactsDraft:
+    """Непустой ``ContactsDraft``: схема с фоном и 2 зонами (одна с вложенным видом), осмотр.
+
+    Первая зона несёт вложенный интерьерный вид (свой фон + 1 зона) — проверяем рекурсию;
+    вторая зона плоская. Все ассеты — байты из памяти (``AssetRef`` с ``data``).
+    """
+    return ContactsDraft(
+        intro="Введение к этапу контактов",
+        scheme=AssetRef("ct-bg.png", "", data=b"CTBG"),
+        hotspots=(
+            HotspotDraft(
+                x=0.1,
+                y=0.2,
+                w=0.3,
+                h=0.25,
+                label="Казарма",
+                reveal_text="Спальное помещение",
+                reveal_assets=(AssetRef("ct-z1.png", "", data=b"CTZ1"),),
+                child=SchemeViewDraft(
+                    background=AssetRef("ct-int.png", "", data=b"CTINT"),
+                    caption="Интерьер казармы",
+                    hotspots=(
+                        HotspotDraft(
+                            x=0.4,
+                            y=0.5,
+                            w=0.2,
+                            h=0.2,
+                            label="Койка",
+                            reveal_text="Спальное место",
+                            reveal_assets=(AssetRef("ct-int-z1.png", "", data=b"CTIZ"),),
+                        ),
+                    ),
+                ),
+            ),
+            HotspotDraft(
+                x=0.6,
+                y=0.55,
+                w=0.25,
+                h=0.3,
+                label="Пищеблок",
+                reveal_text="Кухня",
+            ),
+        ),
+        inspection=InspectionDraft(
+            groups=(
+                SynonymSetDraft("вентиляция", ("проветривание",)),
+                SynonymSetDraft("скученность", ("теснота",)),
+            )
+        ),
+    )
+
+
+def _environment_draft() -> EnvironmentDraft:
+    """Непустой ``EnvironmentDraft``: схема с фоном и 2 зонами, 2 фото, 1 документ, осмотр."""
+    return EnvironmentDraft(
+        intro="Введение к этапу среды",
+        scheme=AssetRef("env-bg.png", "", data=b"ENVBG"),
+        hotspots=(
+            HotspotDraft(
+                x=0.15,
+                y=0.15,
+                w=0.2,
+                h=0.2,
+                label="Колодец",
+                reveal_text="Источник воды",
+                reveal_assets=(AssetRef("env-z1.png", "", data=b"ENVZ1"),),
+            ),
+            HotspotDraft(
+                x=0.5,
+                y=0.5,
+                w=0.3,
+                h=0.2,
+                label="Склад",
+                reveal_text="Хранение продуктов",
+            ),
+        ),
+        photos=(
+            AssetRef("env-p1.png", "", data=b"ENVP1"),
+            AssetRef("env-p2.png", "", data=b"ENVP2"),
+        ),
+        documents=(
+            DocumentTaskDraft(
+                prompt="Выберите документ среды",
+                options=(
+                    DocumentOptionDraft(
+                        title="Протокол отбора проб",
+                        is_correct=True,
+                        template=TemplateDraft(
+                            title="Протокол",
+                            fields=(
+                                FieldDraft(
+                                    label="Объект",
+                                    field_type="text",
+                                    keywords=SynonymSetDraft("вода", ("h2o",)),
+                                ),
+                            ),
+                        ),
+                    ),
+                    DocumentOptionDraft(title="Обманка", is_correct=False),
+                ),
+            ),
+        ),
+        inspection=InspectionDraft(
+            groups=(
+                SynonymSetDraft("загрязнение", ("контаминация",)),
+                SynonymSetDraft("санитария"),
+            )
+        ),
+    )
+
+
+def test_contacts_environment_round_trip(tmp_path: Path) -> None:
+    """Этапы 3–4: CaseDraft → .educase → case_to_draft даёт симметричный домен (рекурсия схемы)."""
+    draft = CaseDraft(
+        case_id="case-l3",
+        title="Очаг",
+        contacts=_contacts_draft(),
+        environment=_environment_draft(),
+    )
+
+    case = build_case(draft)
+    assets = read_asset_sources(draft)
+    dst = tmp_path / "c.educase"
+    save_case(case, dst, assets=assets)
+
+    reloaded = case_to_draft(load_case(dst))
+
+    # ГЛАВНЫЙ инвариант: повторная сборка из reloaded даёт ТЕ ЖЕ доменные этапы 3–4 — доменное
+    # равенство ловит асимметрию геометрии, вложенности, ассетов, инспекции и фото.
+    assert build_case(reloaded).contacts == build_case(draft).contacts
+    assert build_case(reloaded).environment == build_case(draft).environment
+
+    # Точечно — контакты: фон и зоны восстановлены.
+    contacts = reloaded.contacts
+    assert contacts is not None
+    assert contacts.intro == "Введение к этапу контактов"
+    assert contacts.scheme is not None
+    assert contacts.scheme.asset_id == "ct-bg.png"
+    assert contacts.scheme.data == b"CTBG"
+    assert len(contacts.hotspots) == 2
+
+    # Первая зона несёт вложенный вид (фон + 1 зона); вторая — плоская.
+    nested = contacts.hotspots[0].child
+    assert nested is not None
+    assert nested.background is not None
+    assert nested.background.data == b"CTINT"
+    assert len(nested.hotspots) == 1
+    assert contacts.hotspots[1].child is None
+
+    # reveal_assets зоны: байты восстановлены из архива.
+    z1_refs = contacts.hotspots[0].reveal_assets
+    assert len(z1_refs) == 1
+    assert z1_refs[0].data == b"CTZ1"
+
+    # Осмотр: 2 группы.
+    assert len(contacts.inspection.groups) == 2
+
+    # Точечно — среда: фон, зоны, фото и документы.
+    env = reloaded.environment
+    assert env is not None
+    assert env.scheme is not None
+    assert env.scheme.asset_id == "env-bg.png"
+    assert len(env.hotspots) == 2
+    assert {p.asset_id for p in env.photos} == {"env-p1.png", "env-p2.png"}
+    assert {p.data for p in env.photos} == {b"ENVP1", b"ENVP2"}
+    assert len(env.documents) == 1
+
+
+def test_contacts_scheme_background_orphan_dropped() -> None:
+    """Схема, чьи байты фона отсутствуют в архиве → схема и зоны отбрасываются (``None``, ())."""
+    case = Case(
+        meta=CaseMeta(id="case-orphan-scheme"),
+        contacts=StageContacts(
+            scheme=SchemeDocument(
+                root=SchemeView(
+                    background="missing-bg.png",
+                    hotspots=(
+                        Hotspot(id="hotspot-1", shape=HotspotShape(0.1, 0.1, 0.2, 0.2)),
+                    ),
+                )
+            ),
+        ),
+    )
+    loaded = LoadedCase(case=case, assets={})  # байтов фона в архиве нет
+
+    reloaded = case_to_draft(loaded)
+    assert reloaded.contacts is not None
+    # Без восстановленного фона зоны недостижимы — как build пакует их лишь при фоне.
+    assert reloaded.contacts.scheme is None
+    assert reloaded.contacts.hotspots == ()
+
+
+def test_nested_scheme_background_orphan_dropped() -> None:
+    """Вложенный вид без байтов фона в архиве → child схлопывается в None (orphan глубины)."""
+    case = Case(
+        meta=CaseMeta(id="case-orphan-nested"),
+        contacts=StageContacts(
+            scheme=SchemeDocument(
+                root=SchemeView(
+                    background="root-bg.png",
+                    hotspots=(
+                        Hotspot(
+                            id="hotspot-1",
+                            shape=HotspotShape(0.1, 0.1, 0.2, 0.2),
+                            child=SchemeView(
+                                background="missing-child-bg.png",
+                                caption="Интерьер",
+                                hotspots=(
+                                    Hotspot(
+                                        id="hotspot-1",
+                                        shape=HotspotShape(0.3, 0.3, 0.2, 0.2),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
+    )
+    # Корневой фон в архиве есть, фона вложенного вида — нет.
+    loaded = LoadedCase(case=case, assets={"root-bg.png": b"ROOT"})
+
+    reloaded = case_to_draft(loaded)
+    assert reloaded.contacts is not None
+    assert reloaded.contacts.scheme is not None  # корневой фон восстановлен
+    assert len(reloaded.contacts.hotspots) == 1
+    # Вложенный вид без восстановимого фона схлопнут в None — симметрично корню (depth >= 2).
+    assert reloaded.contacts.hotspots[0].child is None
 
 
 def test_read_asset_sources_uses_data_then_file(tmp_path: Path) -> None:

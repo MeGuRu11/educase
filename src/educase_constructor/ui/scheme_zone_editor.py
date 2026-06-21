@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+from loguru import logger
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -70,6 +71,23 @@ class ZonePropsCard(QWidget):
             nested_layout.addWidget(self.nested_editor)
 
             main_layout.addWidget(nested_box)
+
+    def load(self, draft: HotspotDraft) -> None:
+        """Заполнить карточку значениями ``HotspotDraft`` (открытие кейса на правку).
+
+        При ``allow_nested`` и наличии вложенного вида (``child``): фон интерьера через
+        ``set_ref``/``clear`` (сигнал ``changed`` поставит фон вложенному холсту), затем
+        рекурсивно зоны вложенного редактора через ``load_hotspots`` (ПОСЛЕ установки фона).
+        """
+        self.label_edit.setText(draft.label)
+        self.reveal_text_edit.setText(draft.reveal_text)
+        self.assets_picker.load(draft.reveal_assets)
+        if self._allow_nested and draft.child is not None:
+            if draft.child.background is not None:
+                self.nested_scheme_picker.set_ref(draft.child.background)
+            else:
+                self.nested_scheme_picker.clear()
+            self.nested_editor.load_hotspots(draft.child.hotspots)
 
     def to_child(self) -> SchemeViewDraft | None:
         """Собрать вложенный ``SchemeViewDraft`` или ``None`` без интерьерного фона."""
@@ -157,6 +175,29 @@ class SchemeZoneEditor(QWidget):
         self.canvas.set_background(ref)
         self._on_canvas_changed()
         self._update_buttons()
+
+    def load_hotspots(self, hotspots: tuple[HotspotDraft, ...]) -> None:
+        """Восстановить зоны на холсте и карточки свойств из драфтов (открытие кейса на правку).
+
+        Фон должен быть уже установлен (``set_background``) — без фона ``add_zone`` вернёт
+        ``None`` и зоны не восстановятся. Холст и карточки сбрасываются в 0, затем каждая зона
+        добавляется по долям (каждый успешный ``add_zone`` реконсилит +1 карточку), и карточки
+        заполняются по порядку. Пояс на случай битого/невостановленного фона: соединяем только
+        фактически созданные зоны (``strict=False``) и предупреждаем при рассинхроне — вместо
+        падения; зоны при этом не теряются молча (см. ``logger.warning``).
+        """
+        self.canvas.clear_zones()
+        self._on_canvas_changed()
+        for draft in hotspots:
+            self.canvas.add_zone(draft.x, draft.y, draft.w, draft.h)
+        if len(self.cards) != len(hotspots):
+            logger.warning(
+                "Восстановлено {} зон схемы из {} — фон не загрузился, часть зон пропущена",
+                len(self.cards),
+                len(hotspots),
+            )
+        for card, draft in zip(self.cards, hotspots, strict=False):
+            card.load(draft)
 
     def to_hotspots(self) -> tuple[HotspotDraft, ...]:
         """Собрать ``HotspotDraft`` для каждой зоны из долей холста и карточки свойств."""

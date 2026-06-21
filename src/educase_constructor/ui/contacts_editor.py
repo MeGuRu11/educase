@@ -53,6 +53,21 @@ class ContactsEditor(QWidget):
         layout.addWidget(zones_box)
         layout.addWidget(inspection_box)
 
+    def load(self, draft: ContactsDraft) -> None:
+        """Заполнить редактор значениями ``ContactsDraft`` (открытие кейса на правку).
+
+        Фон схемы ставится ПЕРВЫМ (``set_ref``/``clear`` → сигнал ``changed`` →
+        ``zone_editor.set_background``), и только потом восстанавливаются зоны: без фона холст
+        не примет зоны.
+        """
+        self.intro_edit.setText(draft.intro)
+        if draft.scheme is not None:
+            self.scheme_picker.set_ref(draft.scheme)
+        else:
+            self.scheme_picker.clear()
+        self.zone_editor.load_hotspots(draft.hotspots)
+        self.inspection_editor.load(draft.inspection)
+
     def to_draft(self) -> ContactsDraft:
         """Собрать ``ContactsDraft`` из вступления, схемы и осмотра."""
         return ContactsDraft(

@@ -1,9 +1,11 @@
 """Тесты открытия кейса на правку (L1): CaseEditor.load, пикеры, StartScreen, шов MainWindow."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from PySide6.QtWidgets import QMessageBox, QPushButton
 from pytestqt.qtbot import QtBot
@@ -11,8 +13,12 @@ from pytestqt.qtbot import QtBot
 from educase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
 from educase_constructor.ui.case_editor import CaseEditor
 from educase_constructor.ui.clinical_editor import ClinicalEditor
+from educase_constructor.ui.contacts_editor import ContactsEditor
+from educase_constructor.ui.environment_editor import EnvironmentEditor
 from educase_constructor.ui.field_editor import FieldEditor
 from educase_constructor.ui.main_window import MainWindow
+from educase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
+from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
 from educase_constructor.ui.start_screen import StartScreen
 from educase_core.application.assets import read_asset_sources
 from educase_core.application.case_builder import (
@@ -21,10 +27,15 @@ from educase_core.application.case_builder import (
     BranchOptionDraft,
     CaseDraft,
     ClinicalDraft,
+    ContactsDraft,
     DocumentOptionDraft,
     DocumentTaskDraft,
+    EnvironmentDraft,
     FieldDraft,
+    HotspotDraft,
+    InspectionDraft,
     PatientDraft,
+    SchemeViewDraft,
     SearchDraft,
     SearchEntryDraft,
     SynonymSetDraft,
@@ -283,3 +294,164 @@ def test_load_case_from_path_broken_returns_false(
 
     assert window.load_case_from_path(bad) is False
     assert window._stack.currentIndex() == _PAGE_START
+
+
+def test_canvas_set_background_from_data(
+    qtbot: QtBot, png_bytes: Callable[..., bytes]
+) -> None:
+    """``SchemeZoneCanvas.set_background`` с data-backed ``AssetRef`` рендерит фон из памяти."""
+    canvas = SchemeZoneCanvas()
+    qtbot.addWidget(canvas)
+
+    canvas.set_background(AssetRef("bg.png", "", data=png_bytes(200, 150)))
+    assert canvas.has_background() is True
+
+
+def _contacts_ui_draft(png: bytes) -> ContactsDraft:
+    """``ContactsDraft`` с data-backed фоном (PNG) и 2 зонами; первая — с вложенным видом."""
+    return ContactsDraft(
+        intro="Контакты",
+        scheme=AssetRef("ct-bg.png", "", data=png),
+        hotspots=(
+            HotspotDraft(
+                x=0.1,
+                y=0.2,
+                w=0.3,
+                h=0.25,
+                label="Казарма",
+                reveal_text="Спальное",
+                child=SchemeViewDraft(
+                    background=AssetRef("ct-int.png", "", data=png),
+                    hotspots=(
+                        HotspotDraft(
+                            x=0.4,
+                            y=0.4,
+                            w=0.2,
+                            h=0.2,
+                            label="Койка",
+                            reveal_text="Место",
+                        ),
+                    ),
+                ),
+            ),
+            HotspotDraft(
+                x=0.55,
+                y=0.5,
+                w=0.25,
+                h=0.3,
+                label="Пищеблок",
+                reveal_text="Кухня",
+            ),
+        ),
+        inspection=InspectionDraft(groups=(SynonymSetDraft("вентиляция"),)),
+    )
+
+
+def test_contacts_editor_load_restores_scheme_zones(
+    qtbot: QtBot, png_bytes: Callable[..., bytes]
+) -> None:
+    """``ContactsEditor.load`` восстанавливает фон, зоны (координаты ~), карточки, вложенный вид."""
+    editor = ContactsEditor()
+    qtbot.addWidget(editor)
+
+    editor.load(_contacts_ui_draft(png_bytes(200, 150)))
+
+    assert editor.intro_edit.text() == "Контакты"
+    # Фон восстановлен из байтов памяти → холст имеет фон, зоны созданы.
+    assert editor.zone_editor.canvas.has_background() is True
+    assert len(editor.zone_editor.cards) == 2
+    assert editor.zone_editor.cards[0].label_edit.text() == "Казарма"
+    assert editor.zone_editor.cards[0].reveal_text_edit.text() == "Спальное"
+    assert editor.zone_editor.cards[1].label_edit.text() == "Пищеблок"
+
+    # Координаты зон близки к исходным (пиксельное округление холста).
+    coords = editor.zone_editor.canvas.normalized_zones()
+    assert coords[0][0] == pytest.approx(0.1, abs=0.02)
+    assert coords[0][1] == pytest.approx(0.2, abs=0.02)
+    assert coords[0][2] == pytest.approx(0.3, abs=0.02)
+    assert coords[0][3] == pytest.approx(0.25, abs=0.02)
+
+    # Вложенный вид первой зоны восстановлен: фон + 1 зона.
+    nested = editor.zone_editor.cards[0].nested_editor
+    assert nested.canvas.has_background() is True
+    assert len(nested.cards) == 1
+    assert nested.cards[0].label_edit.text() == "Койка"
+
+    # Осмотр восстановлен.
+    assert len(editor.inspection_editor.group_editors) == 1
+
+
+def test_environment_editor_load_fills_photos_documents_inspection(
+    qtbot: QtBot, png_bytes: Callable[..., bytes]
+) -> None:
+    """``EnvironmentEditor.load`` заполняет фон/зоны, фото, документы и осмотр."""
+    editor = EnvironmentEditor()
+    qtbot.addWidget(editor)
+
+    editor.load(
+        EnvironmentDraft(
+            intro="Среда",
+            scheme=AssetRef("env-bg.png", "", data=png_bytes(200, 150)),
+            hotspots=(
+                HotspotDraft(
+                    x=0.2,
+                    y=0.2,
+                    w=0.2,
+                    h=0.2,
+                    label="Колодец",
+                    reveal_text="Вода",
+                ),
+            ),
+            photos=(
+                AssetRef("p1.png", "", display_name="p1.png", data=b"P1"),
+                AssetRef("p2.png", "", display_name="p2.png", data=b"P2"),
+            ),
+            documents=(
+                DocumentTaskDraft(
+                    prompt="Документ",
+                    options=(DocumentOptionDraft(title="Протокол", is_correct=True),),
+                ),
+            ),
+            inspection=InspectionDraft(groups=(SynonymSetDraft("санитария"),)),
+        )
+    )
+
+    assert editor.intro_edit.text() == "Среда"
+    assert editor.zone_editor.canvas.has_background() is True
+    assert len(editor.zone_editor.cards) == 1
+    assert editor.photos_picker.files_list.count() == 2
+    assert len(editor.photos_picker.value()) == 2
+    assert len(editor.documents_editor.task_editors) == 1
+    assert len(editor.inspection_editor.group_editors) == 1
+
+
+def test_load_hotspots_without_background_is_crash_safe(qtbot: QtBot) -> None:
+    """``load_hotspots`` без фона не падает (пояс ``strict=False``): зон нет, карточек 0."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+
+    # Фон не установлен → каждый ``add_zone`` вернёт None, карточки не создаются.
+    editor.load_hotspots(
+        (HotspotDraft(x=0.1, y=0.1, w=0.2, h=0.2, label="X", reveal_text="Y"),)
+    )
+
+    assert editor.canvas.has_background() is False
+    assert len(editor.cards) == 0
+
+
+def test_case_editor_load_fills_contacts_and_environment_tabs(qtbot: QtBot) -> None:
+    """``CaseEditor.load`` с contacts+environment заполняет вкладки «Контакты» и «Среда»."""
+    editor = CaseEditor()
+    qtbot.addWidget(editor)
+
+    editor.load(
+        CaseDraft(
+            case_id="c",
+            title="T",
+            contacts=ContactsDraft(intro="Контакты-введение"),
+            environment=EnvironmentDraft(intro="Среда-введение"),
+        )
+    )
+
+    assert editor.contacts_editor.intro_edit.text() == "Контакты-введение"
+    assert editor.environment_editor.intro_edit.text() == "Среда-введение"

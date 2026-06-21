@@ -6,8 +6,10 @@
 это R2-B.2. Зоны плоские, без вложенности (R2.1), без зума/панорамы (R3).
 
 Отрисовка повторяет ``educase_player.ui.scheme_viewer`` (teal-обводка, лёгкая заливка,
-фиксированный масштаб 1:1, фон шириной до ``_MAX_WIDTH``). Отличие: фон грузится из файла
-на диске по ``AssetRef.source_path`` (байты ассета ещё не упакованы), а не из байт.
+фиксированный масштаб 1:1, фон шириной до ``_MAX_WIDTH``). Фон грузится из байт
+``AssetRef.data`` при открытии кейса на правку (ассет восстановлен из памяти архива, путь к
+файлу утрачен) — как в Player; иначе из файла на диске по ``AssetRef.source_path`` (новый
+выбор в пикере, байты ещё не упакованы).
 
 Только виджеты (без QML); перо/кисть ``QGraphicsItem`` задаются через API сцены — QSS на
 графические элементы не распространяется. ``objectName`` вью — ``schemeView`` (визуальную
@@ -358,9 +360,20 @@ class SchemeZoneCanvas(QGraphicsView):
             self._show_placeholder()
             return
 
-        pixmap = QPixmap(ref.source_path)
+        # Открытие кейса на правку: байты ассета восстановлены из памяти архива (``data``),
+        # путь к исходному файлу утрачен — грузим из байт (как Player). Новый выбор в пикере
+        # байтов ещё не имеет — грузим из файла по ``source_path``.
+        if ref.data is not None:
+            pixmap = QPixmap()
+            pixmap.loadFromData(ref.data)
+        else:
+            pixmap = QPixmap(ref.source_path)
         if pixmap.isNull():
-            logger.warning("Не удалось загрузить фон схемы из {}", ref.source_path)
+            logger.warning(
+                "Не удалось загрузить фон схемы (из памяти: {}, файл: {!r})",
+                ref.data is not None,
+                ref.source_path,
+            )
             self._show_placeholder()
             return
 

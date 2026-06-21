@@ -75,6 +75,18 @@ class InspectionEditor(QWidget):
         """Обновить видимость подсказки пустого состояния списка групп осмотра."""
         refresh_placeholder(self._empty_label, is_empty=len(self.group_editors) == 0)
 
+    def load(self, draft: InspectionDraft) -> None:
+        """Заполнить редактор значениями ``InspectionDraft`` (открытие кейса на правку).
+
+        Текущие группы удаляются и пересобираются из ``draft.groups`` (симметрично ``to_draft``).
+        """
+        while self.group_editors:
+            self.remove_last_group()
+        for group in draft.groups:
+            self.add_group()
+            self.group_editors[-1].load(group)
+        self._refresh_empty()
+
     def to_draft(self) -> InspectionDraft:
         """Собрать ``InspectionDraft`` из всех редакторов групп осмотра."""
         return InspectionDraft(
