@@ -5,7 +5,16 @@ from PySide6.QtWidgets import QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
 from educase_constructor.ui.final_editor import FinalEditor
-from educase_core.application.case_builder import build_final
+from educase_core.application.case_builder import (
+    DocumentOptionDraft,
+    DocumentTaskDraft,
+    FinalDraft,
+    SearchDraft,
+    SearchEntryDraft,
+    SynonymSetDraft,
+    TimelineDraft,
+    build_final,
+)
 
 
 def test_add_and_remove_timeline(qtbot: QtBot) -> None:
@@ -122,3 +131,39 @@ def test_build_final_drops_timeline_with_only_blank_rows(qtbot: QtBot) -> None:
 
     stage = build_final(editor.to_draft())
     assert stage.timelines == ()
+
+
+def test_final_editor_load_round_trip(qtbot: QtBot) -> None:
+    """``FinalEditor.load`` заполняет поиск, документы и таймлайны; ``to_draft`` идемпотентен."""
+    editor = FinalEditor()
+    qtbot.addWidget(editor)
+
+    draft = FinalDraft(
+        intro="Окончательный диагноз",
+        search=SearchDraft(
+            entries=(
+                SearchEntryDraft(
+                    triggers=SynonymSetDraft("источник"), reveal_text="вода"
+                ),
+            )
+        ),
+        documents=(
+            DocumentTaskDraft(
+                prompt="Выберите акт расследования",
+                options=(
+                    DocumentOptionDraft(title="Акт расследования", is_correct=True),
+                ),
+            ),
+        ),
+        timelines=(
+            TimelineDraft(
+                title="Наблюдение",
+                events=(("01.06", "выявление"), ("03.06", "госпитализация")),
+            ),
+            TimelineDraft(title="Контроль", events=(("10.06", "снятие"),)),
+        ),
+    )
+
+    editor.load(draft)
+    assert len(editor.timelines_editor.timeline_editors) == 2
+    assert editor.to_draft() == draft

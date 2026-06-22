@@ -57,6 +57,20 @@ class SesEditor(QWidget):
         layout.addWidget(level_box)
         layout.addWidget(documents_box)
 
+    def load(self, draft: SesDraft) -> None:
+        """Заполнить редактор значениями ``SesDraft`` (открытие кейса на правку).
+
+        Флаг выбора уровня ставится по наличию ``level_choice``; при его отсутствии флаг
+        снимается (поле уровня не собирается — ``to_draft`` гейтит его по флагу). Поиск и
+        документы — через ``load`` вложенных редакторов.
+        """
+        self.intro_edit.setText(draft.intro)
+        self.search_editor.load(draft.search)
+        self.include_level_checkbox.setChecked(draft.level_choice is not None)
+        if draft.level_choice is not None:
+            self.level_field_editor.load(draft.level_choice)
+        self.documents_editor.load(draft.documents)
+
     def to_draft(self) -> SesDraft:
         """Собрать ``SesDraft`` из вступления, поиска, выбора уровня и документов."""
         level_choice = (

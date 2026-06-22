@@ -5,6 +5,15 @@ from pytestqt.qtbot import QtBot
 
 from educase_constructor.ui.field_editor import FieldEditor
 from educase_constructor.ui.ses_editor import SesEditor
+from educase_core.application.case_builder import (
+    DocumentOptionDraft,
+    DocumentTaskDraft,
+    FieldDraft,
+    SearchDraft,
+    SearchEntryDraft,
+    SesDraft,
+    SynonymSetDraft,
+)
 
 
 def _select_type(field: FieldEditor, value: str) -> None:
@@ -87,3 +96,49 @@ def test_empty_editor_to_draft(qtbot: QtBot) -> None:
     assert draft.search.entries == ()
     assert draft.level_choice is None
     assert draft.documents == ()
+
+
+def test_load_round_trip_with_level(qtbot: QtBot) -> None:
+    """``SesEditor.load`` с непустым уровнем: флаг включён, ``to_draft`` идемпотентен."""
+    editor = SesEditor()
+    qtbot.addWidget(editor)
+
+    draft = SesDraft(
+        intro="Оцените СЭС",
+        search=SearchDraft(
+            entries=(
+                SearchEntryDraft(
+                    triggers=SynonymSetDraft("заболеваемость", ("рост",)),
+                    reveal_text="данные",
+                ),
+            )
+        ),
+        level_choice=FieldDraft(
+            label="Уровень", field_type="number", number_value="2"
+        ),
+        documents=(
+            DocumentTaskDraft(
+                prompt="Выберите донесение",
+                options=(
+                    DocumentOptionDraft(title="Прил. 22", is_correct=True),
+                    DocumentOptionDraft(title="Обманка"),
+                ),
+            ),
+        ),
+    )
+
+    editor.load(draft)
+    assert editor.include_level_checkbox.isChecked() is True
+    assert editor.to_draft() == draft
+
+
+def test_load_without_level_unchecks_flag(qtbot: QtBot) -> None:
+    """``SesEditor.load`` без уровня снимает флаг; ``level_choice`` остаётся ``None``."""
+    editor = SesEditor()
+    qtbot.addWidget(editor)
+
+    editor.include_level_checkbox.setChecked(True)  # был включён до загрузки
+    editor.load(SesDraft(intro="Без уровня"))
+
+    assert editor.include_level_checkbox.isChecked() is False
+    assert editor.to_draft().level_choice is None

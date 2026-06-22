@@ -15,14 +15,17 @@ from educase_core.application.case_builder import (
     DocumentTaskDraft,
     EnvironmentDraft,
     FieldDraft,
+    FinalDraft,
     HotspotDraft,
     InspectionDraft,
     PatientDraft,
     SchemeViewDraft,
     SearchDraft,
     SearchEntryDraft,
+    SesDraft,
     SynonymSetDraft,
     TemplateDraft,
+    TimelineDraft,
     build_case,
 )
 from educase_core.application.case_loader import case_to_draft
@@ -67,13 +70,12 @@ def test_case_to_draft_round_trip(tmp_path: Path) -> None:
     assert reloaded.nosology == "Сальмонеллёз"
     assert reloaded.unit_personnel == 150
 
-    # Этапы 2–4 обращаются всегда: пустые этапы → пустые драфты. Этапы 5–6 в этом срезе ещё
-    # не обращаются — остаются None.
+    # Все шесть этапов обращаются всегда: пустые этапы → пустые драфты.
     assert reloaded.clinical == ClinicalDraft()
     assert reloaded.contacts == ContactsDraft()
     assert reloaded.environment == EnvironmentDraft()
-    assert reloaded.ses is None
-    assert reloaded.final is None
+    assert reloaded.ses == SesDraft()
+    assert reloaded.final == FinalDraft()
 
     # Пациенты: заголовки и поля.
     assert [p.title for p in reloaded.patients] == ["Пациент 1", "Пациент 2"]
@@ -457,6 +459,98 @@ def test_nested_scheme_background_orphan_dropped() -> None:
     assert len(reloaded.contacts.hotspots) == 1
     # Вложенный вид без восстановимого фона схлопнут в None — симметрично корню (depth >= 2).
     assert reloaded.contacts.hotspots[0].child is None
+
+
+def test_case_to_draft_round_trip_ses_final(tmp_path: Path) -> None:
+    """СЭС и Финал обращаются: build_case(reloaded).<stage> == build_case(draft).<stage>."""
+    draft = CaseDraft(
+        case_id="case-l4",
+        title="Кейс L4",
+        ses=SesDraft(
+            intro="Оцените СЭС",
+            search=SearchDraft(
+                entries=(
+                    SearchEntryDraft(
+                        triggers=SynonymSetDraft("приказ", ("распоряжение",)),
+                        reveal_text="текст приказа",
+                    ),
+                )
+            ),
+            level_choice=FieldDraft(
+                label="Уровень", field_type="number", number_value="2"
+            ),
+            documents=(
+                DocumentTaskDraft(
+                    prompt="Выберите акт",
+                    options=(
+                        DocumentOptionDraft(
+                            title="Акт ГСЭН",
+                            is_correct=True,
+                            template=TemplateDraft(
+                                title="Акт",
+                                fields=(
+                                    FieldDraft(
+                                        label="Дата",
+                                        field_type="date",
+                                        date_value="01.06.2026",
+                                    ),
+                                ),
+                            ),
+                        ),
+                        DocumentOptionDraft(title="Обманка"),
+                    ),
+                ),
+            ),
+        ),
+        final=FinalDraft(
+            intro="Окончательный диагноз",
+            search=SearchDraft(
+                entries=(
+                    SearchEntryDraft(
+                        triggers=SynonymSetDraft("вспышка"), reveal_text="..."
+                    ),
+                )
+            ),
+            documents=(
+                DocumentTaskDraft(
+                    prompt="Выберите акт расследования",
+                    options=(
+                        DocumentOptionDraft(
+                            title="Акт расследования", is_correct=True
+                        ),
+                    ),
+                ),
+            ),
+            timelines=(
+                TimelineDraft(
+                    title="Наблюдение",
+                    events=(("01.06", "выявление"), ("03.06", "госпитализация")),
+                ),
+                TimelineDraft(title="Контроль", events=(("10.06", "снятие"),)),
+            ),
+        ),
+    )
+
+    case = build_case(draft)
+    assets = read_asset_sources(draft)
+    dst = tmp_path / "c.educase"
+    save_case(case, dst, assets=assets)
+    reloaded = case_to_draft(load_case(dst))
+
+    # Доменный инвариант симметрии.
+    assert build_case(reloaded).ses == build_case(draft).ses
+    assert build_case(reloaded).final == build_case(draft).final
+
+    # Точечно (Optional -> assert до доступа, mypy strict).
+    assert reloaded.ses is not None
+    assert reloaded.ses.level_choice is not None
+    assert reloaded.ses.level_choice.number_value == "2"
+    assert reloaded.final is not None
+    assert tuple(tl.title for tl in reloaded.final.timelines) == ("Наблюдение", "Контроль")
+    assert reloaded.final.timelines[0].events == (
+        ("01.06", "выявление"),
+        ("03.06", "госпитализация"),
+    )
 
 
 def test_read_asset_sources_uses_data_then_file(tmp_path: Path) -> None:

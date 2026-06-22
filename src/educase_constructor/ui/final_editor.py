@@ -54,6 +54,13 @@ class FinalEditor(QWidget):
         layout.addWidget(documents_box)
         layout.addWidget(timelines_box)
 
+    def load(self, draft: FinalDraft) -> None:
+        """Заполнить редактор значениями ``FinalDraft``: вступление, поиск, документы, таймлайны."""
+        self.intro_edit.setText(draft.intro)
+        self.search_editor.load(draft.search)
+        self.documents_editor.load(draft.documents)
+        self.timelines_editor.load(draft.timelines)
+
     def to_draft(self) -> FinalDraft:
         """Собрать ``FinalDraft`` из вступления, поиска, документов и таймлайнов."""
         return FinalDraft(

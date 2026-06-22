@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -74,6 +75,20 @@ class TimelineEditor(QWidget):
                 continue
             rows.append((date, event))
         return tuple(rows)
+
+    def load(self, draft: TimelineDraft) -> None:
+        """Заполнить заголовок и таблицу событий из ``TimelineDraft`` (открытие кейса на правку).
+
+        Текущие строки сбрасываются; пары «дата → событие» вставляются по порядку
+        (симметрично ``_collect_events``; пустые строки в драфте не ожидаются — их отбросил сбор).
+        """
+        self.title_edit.setText(draft.title)
+        self.events_table.setRowCount(0)
+        for date, event in draft.events:
+            row = self.events_table.rowCount()
+            self.events_table.insertRow(row)
+            self.events_table.setItem(row, 0, QTableWidgetItem(date))
+            self.events_table.setItem(row, 1, QTableWidgetItem(event))
 
     def to_draft(self) -> TimelineDraft:
         """Собрать ``TimelineDraft`` из заголовка и таблицы событий."""
@@ -137,6 +152,18 @@ class TimelineListEditor(QWidget):
     def _refresh_empty(self) -> None:
         """Обновить видимость подсказки пустого состояния списка таймлайнов."""
         refresh_placeholder(self._empty_label, is_empty=len(self.timeline_editors) == 0)
+
+    def load(self, drafts: tuple[TimelineDraft, ...]) -> None:
+        """Заполнить редактор таймлайнами (открытие кейса на правку).
+
+        Текущие таймлайны удаляются и пересобираются из ``drafts`` (симметрично ``to_draft``).
+        """
+        while self.timeline_editors:
+            self.remove_last_timeline()
+        for draft in drafts:
+            self.add_timeline()
+            self.timeline_editors[-1].load(draft)
+        self._refresh_empty()
 
     def to_draft(self) -> tuple[TimelineDraft, ...]:
         """Собрать драфты всех таймлайнов."""

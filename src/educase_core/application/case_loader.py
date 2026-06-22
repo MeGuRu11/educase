@@ -1,12 +1,12 @@
-"""Обращение доменного ``Case`` в ``CaseDraft`` для правки (этот срез: мета + пациенты + этапы 2–4).
+"""Обращение доменного ``Case`` в ``CaseDraft`` для правки (все шесть этапов кейса).
 
 Зеркало ``case_builder`` (драфт → домен): здесь домен раскладывается обратно в «сырые»
 ``*Draft``-структуры UI, чтобы редактор мог открыть сохранённый кейс. Ассеты восстанавливаются
 ИЗ ПАМЯТИ (байты из архива ``LoadedCase.assets``): путь к исходному файлу и его имя при
 загрузке утрачены, поэтому ``AssetRef`` собирается с ``data=<байты>``, пустым ``source_path`` и
-``display_name=asset_id`` (для показа в пикере этого достаточно). Этапы 2–4 (клинический,
-контакты, среда) уже обращаются; этапы 5–6 пока не обращаются (остаются ``None``) — их добьют
-следующие срезы. Чистые функции без I/O.
+``display_name=asset_id`` (для показа в пикере этого достаточно). Обращаются все шесть этапов
+(пациенты, клинический, контакты, среда, СЭС, финал) — переоткрытие заполненного кейса на правку
+ничего не теряет. Чистые функции без I/O.
 """
 from __future__ import annotations
 
@@ -23,14 +23,17 @@ from educase_core.application.case_builder import (
     DocumentTaskDraft,
     EnvironmentDraft,
     FieldDraft,
+    FinalDraft,
     HotspotDraft,
     InspectionDraft,
     PatientDraft,
     SchemeViewDraft,
     SearchDraft,
     SearchEntryDraft,
+    SesDraft,
     SynonymSetDraft,
     TemplateDraft,
+    TimelineDraft,
 )
 from educase_core.application.cases import LoadedCase
 from educase_core.domain.documents import (
@@ -52,6 +55,9 @@ from educase_core.domain.stages import (
     StageClinical,
     StageContacts,
     StageEnvironment,
+    StageFinal,
+    StageSes,
+    Timeline,
 )
 
 
@@ -333,13 +339,60 @@ def _environment_to_draft(
     )
 
 
-def case_to_draft(loaded: LoadedCase) -> CaseDraft:
-    """Обратить загруженный ``Case`` в ``CaseDraft`` для правки (срез: мета + пациенты + этапы 2–4).
+def _level_to_draft(field: DocumentField | None) -> FieldDraft | None:
+    """Обратить поле выбора уровня СЭС в ``FieldDraft`` (зеркало ``_build_level``).
 
-    ``case_id`` берётся из меты — правка сохраняет идентичность кейса. Этапы 2–4 (клинический,
-    контакты, среда) обращаются; этапы 5–6 в этом срезе остаются ``None`` (их обращение —
-    следующие срезы). Ассеты карточек пациентов, точек поиска и схем восстанавливаются из памяти
-    (``loaded.assets``).
+    ``None`` -> ``None``; иначе ``_field_to_draft``. Пустого уровня в домене не бывает
+    (``_build_level`` уже схлопнул его через ``_field_is_blank``), поэтому обращение всегда даёт
+    непустой ``FieldDraft`` — re-build его сохраняет. Симметрия ``_build_level``/``_field_is_blank``
+    сохраняется.
+    """
+    if field is None:
+        return None
+    return _field_to_draft(field)
+
+
+def _timeline_to_draft(tl: Timeline) -> TimelineDraft:
+    """Обратить ``Timeline`` в ``TimelineDraft`` (зеркало ``_build_timelines``).
+
+    Заголовок и события переносятся как есть. Домен уже отбросил пустые таймлайны при сборке;
+    id таймлайна генерит билдер (``tl-<i>``) и в драфте не воспроизводится.
+    """
+    return TimelineDraft(title=tl.title, events=tl.events)
+
+
+def _ses_to_draft(stage: StageSes, assets: Mapping[str, bytes]) -> SesDraft:
+    """Обратить этап 5 ``StageSes`` в ``SesDraft`` (зеркало ``build_ses``).
+
+    Вступление, поиск, выбор уровня (``_level_to_draft``) и задания по документам.
+    """
+    return SesDraft(
+        intro=stage.intro,
+        search=_search_to_draft(stage.search, assets),
+        level_choice=_level_to_draft(stage.level_choice),
+        documents=tuple(_task_to_draft(t) for t in stage.documents),
+    )
+
+
+def _final_to_draft(stage: StageFinal, assets: Mapping[str, bytes]) -> FinalDraft:
+    """Обратить этап 6 ``StageFinal`` в ``FinalDraft`` (зеркало ``build_final``).
+
+    Вступление, поиск, задания по документам и таймлайны (``_timeline_to_draft``).
+    """
+    return FinalDraft(
+        intro=stage.intro,
+        search=_search_to_draft(stage.search, assets),
+        documents=tuple(_task_to_draft(t) for t in stage.documents),
+        timelines=tuple(_timeline_to_draft(t) for t in stage.timelines),
+    )
+
+
+def case_to_draft(loaded: LoadedCase) -> CaseDraft:
+    """Обратить загруженный ``Case`` в ``CaseDraft`` для правки (все шесть этапов).
+
+    ``case_id`` берётся из меты — правка сохраняет идентичность кейса. Обращаются все шесть этапов
+    (пациенты, клинический, контакты, среда, СЭС, финал). Ассеты карточек пациентов, точек поиска
+    и схем восстанавливаются из памяти (``loaded.assets``).
     """
     case = loaded.case
     return CaseDraft(
@@ -354,8 +407,8 @@ def case_to_draft(loaded: LoadedCase) -> CaseDraft:
         clinical=_clinical_to_draft(case.clinical, loaded.assets),
         contacts=_contacts_to_draft(case.contacts, loaded.assets),
         environment=_environment_to_draft(case.environment, loaded.assets),
-        ses=None,
-        final=None,
+        ses=_ses_to_draft(case.ses, loaded.assets),
+        final=_final_to_draft(case.final, loaded.assets),
     )
 
 
