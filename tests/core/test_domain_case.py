@@ -215,6 +215,20 @@ def test_empty_case_round_trip() -> None:
     assert len(case.ordered()) == 6
 
 
+def test_case_meta_author_rank_round_trip() -> None:
+    # Звание преподавателя должно пережить сериализацию вместе с ФИО (author).
+    case = Case(
+        meta=CaseMeta(
+            id="case-4",
+            author="Петров Пётр Петрович",
+            author_rank="полковник медицинской службы",
+        ),
+    )
+    restored = Case.from_dict(case.to_dict())
+    assert restored == case
+    assert restored.meta.author_rank == "полковник медицинской службы"
+
+
 def test_case_via_educase_archive(tmp_path: Path) -> None:
     case = _rich_case()
     dst = write_educase(case.to_dict(), tmp_path / "case")

@@ -317,17 +317,26 @@ AttemptStage = (
 
 @dataclass(frozen=True)
 class AttemptMeta:
-    """Метаданные прохождения. Без авторизации/ролей: ``trainee_label`` — свободная подпись."""
+    """Метаданные прохождения. Без авторизации/ролей.
+
+    ``trainee_label`` — ФИО курсанта; ``rank`` — звание; ``study_group`` — учебная группа.
+    Звание и учебная группа необязательны на уровне модели (дефолт ``""``); обязательность
+    ФИО — забота UI.
+    """
 
     case_id: str
     trainee_label: str = ""
     created_at: str = ""
+    rank: str = ""
+    study_group: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return {
             "case_id": self.case_id,
             "trainee_label": self.trainee_label,
             "created_at": self.created_at,
+            "rank": self.rank,
+            "study_group": self.study_group,
         }
 
     @classmethod
@@ -336,6 +345,8 @@ class AttemptMeta:
             case_id=req_str(data, "case_id"),
             trainee_label=opt_str(data, "trainee_label"),
             created_at=opt_str(data, "created_at"),
+            rank=opt_str(data, "rank"),
+            study_group=opt_str(data, "study_group"),
         )
 
 

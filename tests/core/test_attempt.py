@@ -102,6 +102,22 @@ def test_attempt_stage_kinds_fixed() -> None:
     )
 
 
+def test_attempt_meta_identity_fields_round_trip() -> None:
+    # Звание и учебная группа должны пережить сериализацию вместе с ФИО (trainee_label).
+    attempt = Attempt(
+        meta=AttemptMeta(
+            case_id="case-3",
+            trainee_label="Иванов Иван Иванович",
+            rank="лейтенант",
+            study_group="121",
+        ),
+    )
+    restored = Attempt.from_dict(attempt.to_dict())
+    assert restored == attempt
+    assert restored.meta.rank == "лейтенант"
+    assert restored.meta.study_group == "121"
+
+
 def test_attempt_optional_none_round_trip() -> None:
     # branch / inspection / level_choice = None должны пережить сериализацию как null.
     attempt = Attempt(

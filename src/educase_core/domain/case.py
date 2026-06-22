@@ -23,7 +23,11 @@ from educase_core.domain.stages import (
 
 @dataclass(frozen=True)
 class CaseMeta:
-    """Метаданные кейса (без версии формата — она только в manifest, ADR-010)."""
+    """Метаданные кейса (без версии формата — она только в manifest, ADR-010).
+
+    ``author`` — ФИО преподавателя; ``author_rank`` — звание. Звание необязательно на
+    уровне модели (дефолт ``""``); обязательность ФИО — забота UI.
+    """
 
     id: str
     title: str = ""
@@ -31,6 +35,7 @@ class CaseMeta:
     nosology: str = ""
     unit_personnel: int | None = None
     created_at: str = ""
+    author_rank: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -40,6 +45,7 @@ class CaseMeta:
             "nosology": self.nosology,
             "unit_personnel": self.unit_personnel,
             "created_at": self.created_at,
+            "author_rank": self.author_rank,
         }
 
     @classmethod
@@ -51,6 +57,7 @@ class CaseMeta:
             nosology=opt_str(data, "nosology"),
             unit_personnel=opt_int(data, "unit_personnel"),
             created_at=opt_str(data, "created_at"),
+            author_rank=opt_str(data, "author_rank"),
         )
 
 
