@@ -7,8 +7,8 @@ from pathlib import Path
 from loguru import logger
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
-    QInputDialog,
     QMainWindow,
     QMessageBox,
 )
@@ -18,6 +18,7 @@ from educase_core.application.results import ArchiveError, record_attempt
 from educase_core.domain.attempt import AttemptMeta
 from educase_core.domain.case import Case
 from educase_player.ui.case_navigator import CaseNavigator
+from educase_player.ui.identity_dialog import IdentityDialog
 from educase_player.ui.start_screen import StartScreen
 
 
@@ -89,15 +90,11 @@ class MainWindow(QMainWindow):
         return True
 
     def save_result_dialog(self) -> None:
-        """Спросить подпись курсанта и путь, затем записать .eduresult."""
+        """Спросить данные курсанта и путь, затем записать .eduresult."""
         if self._case is None or self._navigator is None:
             return
-        trainee_label, ok = QInputDialog.getText(
-            self,
-            "Подпись курсанта",
-            "Подпись (необязательно):",
-        )
-        if not ok:
+        dialog = IdentityDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -106,13 +103,26 @@ class MainWindow(QMainWindow):
             "Результаты EduCase (*.eduresult)",
         )
         if path:
-            self.save_result_to_path(Path(path), trainee_label)
+            self.save_result_to_path(
+                Path(path),
+                dialog.full_name(),
+                dialog.rank(),
+                dialog.study_group(),
+            )
 
-    def save_result_to_path(self, path: Path, trainee_label: str = "") -> bool:
+    def save_result_to_path(
+        self,
+        path: Path,
+        trainee_label: str = "",
+        rank: str = "",
+        study_group: str = "",
+    ) -> bool:
         """Собрать прохождение и записать .eduresult.
 
-        Тестируемый шов: вызывается без диалогов. ``False``, если кейс не загружен
-        или запись провалилась (битый путь / ошибка архива) — без исключения наружу.
+        ``trainee_label`` — ФИО курсанта, ``rank`` — звание, ``study_group`` —
+        учебная группа. Тестируемый шов: вызывается без диалогов. ``False``, если
+        кейс не загружен или запись провалилась (битый путь / ошибка архива) — без
+        исключения наружу.
         """
         if self._case is None or self._navigator is None:
             return False
@@ -120,6 +130,8 @@ class MainWindow(QMainWindow):
             case_id=self._case.meta.id,
             trainee_label=trainee_label,
             created_at=datetime.now().isoformat(timespec="seconds"),
+            rank=rank,
+            study_group=study_group,
         )
         attempt = self._navigator.collect_attempt(meta)
         try:

@@ -90,3 +90,25 @@ def test_load_then_save_result_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
     loaded = load_result(out)
     assert loaded.attempt.meta.case_id == "c1"
     assert loaded.attempt.meta.trainee_label == "Курсант Иванов"
+
+
+def test_save_result_round_trip_identity_fields(qtbot: QtBot, tmp_path: Path) -> None:
+    """Шов: ФИО/звание/группа проходят через save_result_to_path в .eduresult."""
+    case = Case(meta=CaseMeta("c1", "Тест"))
+    src = tmp_path / "test.educase"
+    save_case(case, src)
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    assert window.load_case_from_path(src) is True
+
+    out = tmp_path / "result.eduresult"
+    assert (
+        window.save_result_to_path(out, "Иванов И.И.", rank="лейтенант", study_group="121")
+        is True
+    )
+
+    loaded = load_result(out)
+    assert loaded.attempt.meta.trainee_label == "Иванов И.И."
+    assert loaded.attempt.meta.rank == "лейтенант"
+    assert loaded.attempt.meta.study_group == "121"
