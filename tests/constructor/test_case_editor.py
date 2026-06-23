@@ -74,6 +74,7 @@ def test_filled_editor_to_draft(qtbot: QtBot, tmp_path: Path) -> None:
 
     editor.title_edit.setText("Вспышка ОКИ")
     editor.author_edit.setText("Иванов")
+    editor.author_rank_edit.setText("полковник")
     editor.nosology_edit.setText("Сальмонеллёз")
     editor.unit_personnel_edit.setText("150")
 
@@ -94,6 +95,7 @@ def test_filled_editor_to_draft(qtbot: QtBot, tmp_path: Path) -> None:
     assert draft.case_id  # непустой автогенерированный id
     assert draft.title == "Вспышка ОКИ"
     assert draft.author == "Иванов"
+    assert draft.author_rank == "полковник"
     assert draft.nosology == "Сальмонеллёз"
     assert draft.unit_personnel == 150
     assert len(draft.patients) == 1

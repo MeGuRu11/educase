@@ -271,6 +271,7 @@ class CaseDraft:
     case_id: str
     title: str = ""
     author: str = ""
+    author_rank: str = ""
     nosology: str = ""
     unit_personnel: int | None = None
     patients: tuple[PatientDraft, ...] = ()
@@ -652,6 +653,7 @@ def build_case(draft: CaseDraft) -> Case:
         id=case_id,
         title=draft.title,
         author=draft.author,
+        author_rank=draft.author_rank,
         nosology=draft.nosology,
         unit_personnel=draft.unit_personnel,
         created_at=date.today().isoformat(),

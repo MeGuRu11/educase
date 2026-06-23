@@ -54,6 +54,7 @@ def test_build_case_with_meta_and_patients() -> None:
         case_id="case-1",
         title="Вспышка ОКИ",
         author="Иванов",
+        author_rank="полковник",
         nosology="Сальмонеллёз",
         unit_personnel=150,
         patients=(
@@ -69,6 +70,7 @@ def test_build_case_with_meta_and_patients() -> None:
     assert case.meta.id == "case-1"
     assert case.meta.title == "Вспышка ОКИ"
     assert case.meta.author == "Иванов"
+    assert case.meta.author_rank == "полковник"
     assert case.meta.nosology == "Сальмонеллёз"
     assert case.meta.unit_personnel == 150
     assert case.meta.created_at  # ISO-дата проставлена

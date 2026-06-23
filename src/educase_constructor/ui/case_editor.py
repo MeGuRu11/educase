@@ -44,7 +44,9 @@ class CaseEditor(QWidget):
         self.title_edit = QLineEdit(self)
         self.title_edit.setPlaceholderText("Краткое название кейса (видит только преподаватель)")
         self.author_edit = QLineEdit(self)
-        self.author_edit.setPlaceholderText("ФИО или должность автора")
+        self.author_edit.setPlaceholderText("ФИО преподавателя")
+        self.author_rank_edit = QLineEdit(self)
+        self.author_rank_edit.setPlaceholderText("Звание, например: полковник медицинской службы")
         self.nosology_edit = QLineEdit(self)
         self.nosology_edit.setPlaceholderText("Предполагаемая нозология")
         self.unit_personnel_edit = QLineEdit(self)
@@ -55,7 +57,8 @@ class CaseEditor(QWidget):
 
         meta_form = QFormLayout()
         meta_form.addRow("Название", self.title_edit)
-        meta_form.addRow("Автор", self.author_edit)
+        meta_form.addRow("ФИО преподавателя", self.author_edit)
+        meta_form.addRow("Звание", self.author_rank_edit)
         meta_form.addRow("Нозология", self.nosology_edit)
         meta_form.addRow("Личный состав", self.unit_personnel_edit)
 
@@ -174,6 +177,7 @@ class CaseEditor(QWidget):
         self._case_id = draft.case_id
         self.title_edit.setText(draft.title)
         self.author_edit.setText(draft.author)
+        self.author_rank_edit.setText(draft.author_rank)
         self.nosology_edit.setText(draft.nosology)
         self.unit_personnel_edit.setText(
             str(draft.unit_personnel) if draft.unit_personnel is not None else ""
@@ -201,6 +205,7 @@ class CaseEditor(QWidget):
             case_id=self._case_id,
             title=self.title_edit.text(),
             author=self.author_edit.text(),
+            author_rank=self.author_rank_edit.text(),
             nosology=self.nosology_edit.text(),
             unit_personnel=self._unit_personnel(),
             patients=tuple(editor.to_draft() for editor in self.patient_editors),

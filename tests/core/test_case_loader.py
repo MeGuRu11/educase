@@ -41,6 +41,7 @@ def test_case_to_draft_round_trip(tmp_path: Path) -> None:
         case_id="case-l1",
         title="Вспышка ОКИ",
         author="Иванов",
+        author_rank="полковник",
         nosology="Сальмонеллёз",
         unit_personnel=150,
         patients=(
@@ -67,6 +68,7 @@ def test_case_to_draft_round_trip(tmp_path: Path) -> None:
     assert reloaded.case_id == "case-l1"
     assert reloaded.title == "Вспышка ОКИ"
     assert reloaded.author == "Иванов"
+    assert reloaded.author_rank == "полковник"
     assert reloaded.nosology == "Сальмонеллёз"
     assert reloaded.unit_personnel == 150
 

@@ -399,6 +399,7 @@ def case_to_draft(loaded: LoadedCase) -> CaseDraft:
         case_id=case.meta.id,
         title=case.meta.title,
         author=case.meta.author,
+        author_rank=case.meta.author_rank,
         nosology=case.meta.nosology,
         unit_personnel=case.meta.unit_personnel,
         patients=tuple(
