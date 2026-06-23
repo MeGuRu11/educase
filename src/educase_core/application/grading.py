@@ -30,6 +30,8 @@ class GradedResult:
     case_id: str
     attempt_case_id: str
     trainee_label: str
+    rank: str
+    study_group: str
 
     @property
     def case_id_matches(self) -> bool:
@@ -50,6 +52,8 @@ def report_for_result(result_path: Path, case_path: Path) -> GradedResult:
         case_id=case.meta.id,
         attempt_case_id=attempt.meta.case_id,
         trainee_label=attempt.meta.trainee_label,
+        rank=attempt.meta.rank,
+        study_group=attempt.meta.study_group,
     )
 
 

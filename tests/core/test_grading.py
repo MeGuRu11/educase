@@ -84,7 +84,9 @@ def _case() -> Case:
 def _attempt(case_id: str = "case-1") -> Attempt:
     """Прохождение с верными ответами на клиническом этапе."""
     return Attempt(
-        meta=AttemptMeta(case_id=case_id, trainee_label="Иванов"),
+        meta=AttemptMeta(
+            case_id=case_id, trainee_label="Иванов", rank="лейтенант", study_group="121"
+        ),
         clinical=AttemptClinical(
             branch=BranchResponse(point_id="branch", chosen_option_id="b-ok"),
             documents=(
@@ -115,6 +117,8 @@ def test_report_for_result_grades_correct_attempt(tmp_path: Path) -> None:
     assert graded.case_id == "case-1"
     assert graded.attempt_case_id == "case-1"
     assert graded.trainee_label == "Иванов"
+    assert graded.rank == "лейтенант"
+    assert graded.study_group == "121"
     assert graded.case_id_matches is True
     assert graded.report.case_id == "case-1"
     assert len(graded.report.stages) == 6
