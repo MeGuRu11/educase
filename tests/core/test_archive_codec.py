@@ -10,10 +10,10 @@ import pytest
 
 from epicase_core.infrastructure.archive import DATA_NAME, MANIFEST_NAME
 from epicase_core.infrastructure.archive.codec import (
-    read_educase,
-    read_eduresult,
-    write_educase,
-    write_eduresult,
+    read_epicase,
+    read_epiresult,
+    write_epicase,
+    write_epiresult,
 )
 from epicase_core.infrastructure.archive.errors import (
     ArchiveError,
@@ -25,31 +25,31 @@ _PAYLOAD: dict[str, object] = {"title": "Тестовый кейс", "stages": [
 _ASSETS: dict[str, bytes] = {"plan.png": b"\x89PNG\x00binary", "doc.txt": "текст".encode()}
 
 
-def test_educase_round_trip(tmp_path: Path) -> None:
-    dst = write_educase(_PAYLOAD, tmp_path / "case", assets=_ASSETS, meta={"case_id": "42"})
+def test_epicase_round_trip(tmp_path: Path) -> None:
+    dst = write_epicase(_PAYLOAD, tmp_path / "case", assets=_ASSETS, meta={"case_id": "42"})
     assert dst.suffix == ".epicase"
-    bundle = read_educase(dst)
+    bundle = read_epicase(dst)
     assert bundle.payload == _PAYLOAD
     assert bundle.assets == _ASSETS
-    assert bundle.manifest.kind == "educase"
+    assert bundle.manifest.kind == "epicase"
     assert bundle.manifest.meta["case_id"] == "42"
 
 
-def test_eduresult_round_trip(tmp_path: Path) -> None:
-    dst = write_eduresult(_PAYLOAD, tmp_path / "res", assets=_ASSETS)
+def test_epiresult_round_trip(tmp_path: Path) -> None:
+    dst = write_epiresult(_PAYLOAD, tmp_path / "res", assets=_ASSETS)
     assert dst.suffix == ".epiresult"
-    bundle = read_eduresult(dst)
+    bundle = read_epiresult(dst)
     assert bundle.payload == _PAYLOAD
-    assert bundle.manifest.kind == "eduresult"
+    assert bundle.manifest.kind == "epiresult"
 
 
 def test_suffix_is_forced(tmp_path: Path) -> None:
-    dst = write_educase(_PAYLOAD, tmp_path / "case.zip")
+    dst = write_epicase(_PAYLOAD, tmp_path / "case.zip")
     assert dst.name == "case.epicase"
 
 
 def test_tampered_data_fails_checksum(tmp_path: Path) -> None:
-    dst = write_educase(_PAYLOAD, tmp_path / "case")
+    dst = write_epicase(_PAYLOAD, tmp_path / "case")
     # Перепаковываем архив с подменённым data.json (manifest.checksum остаётся прежним).
     with zipfile.ZipFile(dst, "r") as zf:
         items = {n: zf.read(n) for n in zf.namelist()}
@@ -61,11 +61,11 @@ def test_tampered_data_fails_checksum(tmp_path: Path) -> None:
     dst.write_bytes(buf.getvalue())
 
     with pytest.raises(CorruptedArchiveError):
-        read_educase(dst)
+        read_epicase(dst)
 
 
 def test_future_version_rejected(tmp_path: Path) -> None:
-    dst = write_educase(_PAYLOAD, tmp_path / "case")
+    dst = write_epicase(_PAYLOAD, tmp_path / "case")
     with zipfile.ZipFile(dst, "r") as zf:
         items = {n: zf.read(n) for n in zf.namelist()}
     manifest = json.loads(items[MANIFEST_NAME].decode("utf-8"))
@@ -78,20 +78,20 @@ def test_future_version_rejected(tmp_path: Path) -> None:
     dst.write_bytes(buf.getvalue())
 
     with pytest.raises(IncompatibleVersionError):
-        read_educase(dst)
+        read_epicase(dst)
 
 
 def test_kind_mismatch_rejected(tmp_path: Path) -> None:
-    dst = write_eduresult(_PAYLOAD, tmp_path / "res")
+    dst = write_epiresult(_PAYLOAD, tmp_path / "res")
     with pytest.raises(ArchiveError):
-        read_educase(dst)
+        read_epicase(dst)
 
 
 def test_not_a_zip_rejected(tmp_path: Path) -> None:
     bad = tmp_path / "broken.epicase"
     bad.write_bytes("это не zip-архив".encode())
     with pytest.raises(CorruptedArchiveError):
-        read_educase(bad)
+        read_epicase(bad)
 
 
 def test_missing_parts_rejected(tmp_path: Path) -> None:
@@ -99,4 +99,4 @@ def test_missing_parts_rejected(tmp_path: Path) -> None:
     with zipfile.ZipFile(bad, "w") as zf:
         zf.writestr("readme.txt", b"nothing useful")
     with pytest.raises(CorruptedArchiveError):
-        read_educase(bad)
+        read_epicase(bad)

@@ -49,8 +49,8 @@ def _qt_handler(mode: QtMsgType, context: QMessageLogContext, message: str) -> N
 
 
 def _scratch_dir() -> Path:
-    """Каталог пруфов: ``EDUCASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
-    base = os.environ.get("EDUCASE_SCRATCH")
+    """Каталог пруфов: ``EPICASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
+    base = os.environ.get("EPICASE_SCRATCH")
     return Path(base) if base else _REPO_ROOT / "_scratch"
 
 

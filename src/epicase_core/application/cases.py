@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from epicase_core.domain.case import Case
-from epicase_core.infrastructure.archive.codec import read_educase, write_educase
+from epicase_core.infrastructure.archive.codec import read_epicase, write_epicase
 from epicase_core.infrastructure.archive.errors import ArchiveError
 
 
@@ -41,7 +41,7 @@ def save_case(
     }
     if meta is not None:
         merged_meta.update(meta)
-    return write_educase(case.to_dict(), dst, assets=assets, meta=merged_meta)
+    return write_epicase(case.to_dict(), dst, assets=assets, meta=merged_meta)
 
 
 def load_case(src: Path) -> LoadedCase:
@@ -49,7 +49,7 @@ def load_case(src: Path) -> LoadedCase:
 
     Ошибки формата/версии/типа архива поднимаются как ``ArchiveError`` (из кодека).
     """
-    bundle = read_educase(src)
+    bundle = read_epicase(src)
     return LoadedCase(case=Case.from_dict(bundle.payload), assets=bundle.assets)
 
 

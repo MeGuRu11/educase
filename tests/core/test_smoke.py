@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import epicase_core
-from epicase_core.infrastructure.archive import EDUCASE_EXT, EDURESULT_EXT
+from epicase_core.infrastructure.archive import EPICASE_EXT, EPIRESULT_EXT
 
 
 def test_core_version_present() -> None:
@@ -10,5 +10,5 @@ def test_core_version_present() -> None:
 
 
 def test_archive_extensions() -> None:
-    assert EDUCASE_EXT == ".epicase"
-    assert EDURESULT_EXT == ".epiresult"
+    assert EPICASE_EXT == ".epicase"
+    assert EPIRESULT_EXT == ".epiresult"

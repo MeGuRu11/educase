@@ -1,11 +1,11 @@
-# CLAUDE.md — EduCase
+# CLAUDE.md — EpiCase
 
 > Этот файл читается Claude Code в начале каждой сессии. Держим его коротким и
 > императивным. Подробности — в `.claude/skills/*/SKILL.md`.
 
 ## Что это за проект
 
-**EduCase** — десктоп-тренажёр для подготовки военных эпидемиологов (ВМА им. Кирова),
+**EpiCase** — десктоп-тренажёр для подготовки военных эпидемиологов (ВМА им. Кирова),
 Windows 10/11, компьютерный класс. **Две раздельные программы:**
 
 - **Constructor** — для преподавателя. Без авторизации, работает как инструмент.
@@ -95,7 +95,7 @@ manifest.json + ассеты). Версионирование формата —
    Обмен — только файлы `.epicase`/`.epiresult` вручную через Проводник.
 2. **JSON не показывается пользователю.** Это внутренний формат внутри ZIP-архива.
 3. **Шесть фиксированных этапов** кейса (никакого редактора графа узлов). Подробности —
-   `.claude/skills/educase-stage-mechanics`.
+   `.claude/skills/epicase-stage-mechanics`.
 4. **Неверные ответы не блокируют прохождение.** Ошибка вскрывается только в финальном
    отчёте (ветвление «Вариант B»: оба пути проходят одни и те же этапы).
 5. **Поиск по ключевым словам — строгий:** синонимы задаёт преподаватель, никакого
@@ -103,10 +103,10 @@ manifest.json + ассеты). Версионирование формата —
 
 ## Где что лежит
 
-- Контекст и правила → `.claude/skills/educase-project`
-- Механика этапов/поиска/документов/осмотра → `.claude/skills/educase-stage-mechanics`
-- Шаблоны документов (DM4, прил. 22/23, акт расследования) → `.claude/skills/educase-document-templates`
-- Формат `.epicase`/`.epiresult` → `.claude/skills/educase-archive-format`
+- Контекст и правила → `.claude/skills/epicase-project`
+- Механика этапов/поиска/документов/осмотра → `.claude/skills/epicase-stage-mechanics`
+- Шаблоны документов (DM4, прил. 22/23, акт расследования) → `.claude/skills/epicase-document-templates`
+- Формат `.epicase`/`.epiresult` → `.claude/skills/epicase-archive-format`
 - ADR → `docs/adr/`
 
 ## Старт окружения
@@ -114,6 +114,6 @@ manifest.json + ассеты). Версионирование формата —
 ```bash
 python -m venv .venv && . .venv/Scripts/activate   # Windows
 pip install -e ".[dev]"
-educase-constructor   # или: python -m epicase_constructor
-educase-player        # или: python -m epicase_player
+epicase-constructor   # или: python -m epicase_constructor
+epicase-player        # или: python -m epicase_player
 ```

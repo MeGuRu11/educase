@@ -14,7 +14,7 @@ from epicase_player.ui.main_window import MainWindow
 def test_player_window_title(qtbot: QtBot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    assert window.windowTitle() == "EduCase Player"
+    assert window.windowTitle() == "EpiCase Player"
 
 
 def test_load_case_from_path_success(qtbot: QtBot, tmp_path: Path) -> None:

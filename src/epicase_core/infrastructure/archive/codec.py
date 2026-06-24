@@ -1,4 +1,4 @@
-"""Кодеки ZIP-архивов обмена EduCase (.epicase / .epiresult).
+"""Кодеки ZIP-архивов обмена EpiCase (.epicase / .epiresult).
 
 Документная модель (ADR-009): архив — единственная персистентность. Никакого сетевого I/O,
 только локальная файловая система. JSON не показывается пользователю.
@@ -23,8 +23,8 @@ from loguru import logger
 from epicase_core.infrastructure.archive import (
     ASSETS_DIR,
     DATA_NAME,
-    EDUCASE_EXT,
-    EDURESULT_EXT,
+    EPICASE_EXT,
+    EPIRESULT_EXT,
     FORMAT_VERSION,
     MANIFEST_NAME,
 )
@@ -35,8 +35,8 @@ from epicase_core.infrastructure.archive.errors import (
 )
 from epicase_core.infrastructure.archive.manifest import Manifest, data_checksum
 
-KIND_EDUCASE = "educase"
-KIND_EDURESULT = "eduresult"
+KIND_EPICASE = "epicase"
+KIND_EPIRESULT = "epiresult"
 
 
 @dataclass(frozen=True)
@@ -115,7 +115,7 @@ def _read_archive(expected_kind: str, src: Path) -> ArchiveBundle:
     return ArchiveBundle(manifest=manifest, payload=payload_obj, assets=assets)
 
 
-def write_educase(
+def write_epicase(
     payload: Mapping[str, object],
     dst: Path,
     *,
@@ -123,15 +123,15 @@ def write_educase(
     meta: Mapping[str, object] | None = None,
 ) -> Path:
     """Упаковать кейс в .epicase (ZIP с manifest.json + data.json + ассеты)."""
-    return _write_archive(KIND_EDUCASE, EDUCASE_EXT, payload, dst, assets, meta)
+    return _write_archive(KIND_EPICASE, EPICASE_EXT, payload, dst, assets, meta)
 
 
-def read_educase(src: Path) -> ArchiveBundle:
+def read_epicase(src: Path) -> ArchiveBundle:
     """Прочитать и провалидировать .epicase."""
-    return _read_archive(KIND_EDUCASE, src)
+    return _read_archive(KIND_EPICASE, src)
 
 
-def write_eduresult(
+def write_epiresult(
     payload: Mapping[str, object],
     dst: Path,
     *,
@@ -139,18 +139,18 @@ def write_eduresult(
     meta: Mapping[str, object] | None = None,
 ) -> Path:
     """Упаковать результат прохождения в .epiresult."""
-    return _write_archive(KIND_EDURESULT, EDURESULT_EXT, payload, dst, assets, meta)
+    return _write_archive(KIND_EPIRESULT, EPIRESULT_EXT, payload, dst, assets, meta)
 
 
-def read_eduresult(src: Path) -> ArchiveBundle:
+def read_epiresult(src: Path) -> ArchiveBundle:
     """Прочитать и провалидировать .epiresult."""
-    return _read_archive(KIND_EDURESULT, src)
+    return _read_archive(KIND_EPIRESULT, src)
 
 
 __all__ = [
     "ArchiveBundle",
-    "read_educase",
-    "read_eduresult",
-    "write_educase",
-    "write_eduresult",
+    "read_epicase",
+    "read_epiresult",
+    "write_epicase",
+    "write_epiresult",
 ]

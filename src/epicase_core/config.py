@@ -7,12 +7,12 @@ from pathlib import Path
 
 
 def _data_dir() -> Path:
-    """Каталог данных приложения (Windows: %LOCALAPPDATA%/EduCase)."""
-    base = os.environ.get("EDUCASE_DATA_DIR")
+    """Каталог данных приложения (Windows: %LOCALAPPDATA%/EpiCase)."""
+    base = os.environ.get("EPICASE_DATA_DIR")
     if base:
         return Path(base)
     local = os.environ.get("LOCALAPPDATA") or str(Path.home())
-    return Path(local) / "EduCase"
+    return Path(local) / "EpiCase"
 
 
 @dataclass(frozen=True)

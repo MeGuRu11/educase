@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from epicase_core.domain.attempt import Attempt
-from epicase_core.infrastructure.archive.codec import read_eduresult, write_eduresult
+from epicase_core.infrastructure.archive.codec import read_epiresult, write_epiresult
 from epicase_core.infrastructure.archive.errors import ArchiveError
 
 
@@ -41,7 +41,7 @@ def record_attempt(
     }
     if meta is not None:
         merged_meta.update(meta)
-    return write_eduresult(attempt.to_dict(), dst, assets=assets, meta=merged_meta)
+    return write_epiresult(attempt.to_dict(), dst, assets=assets, meta=merged_meta)
 
 
 def load_result(src: Path) -> LoadedResult:
@@ -49,7 +49,7 @@ def load_result(src: Path) -> LoadedResult:
 
     Ошибки формата/версии/типа архива поднимаются как ``ArchiveError`` (из кодека).
     """
-    bundle = read_eduresult(src)
+    bundle = read_epiresult(src)
     return LoadedResult(attempt=Attempt.from_dict(bundle.payload), assets=bundle.assets)
 
 

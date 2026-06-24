@@ -1,11 +1,11 @@
 ---
-name: educase-archive-format
+name: epicase-archive-format
 description: >-
-  Формат файлов обмена EduCase: .epicase (кейс) и .epiresult (результат) — ZIP с внутренним
+  Формат файлов обмена EpiCase: .epicase (кейс) и .epiresult (результат) — ZIP с внутренним
   JSON и ассетами. ИСПОЛЬЗУЙ при работе с кодеками, импортом/экспортом, упаковкой ассетов.
 ---
 
-# Формат обмена EduCase
+# Формат обмена EpiCase
 
 ## Принципы
 - Контейнер — **ZIP**. Внутри — `manifest.json` + ассеты (фото, документы).
@@ -23,8 +23,8 @@ description: >-
 
 ## Код
 - `epicase_core/infrastructure/archive/__init__.py` — константы формата.
-- `epicase_core/infrastructure/archive/codec.py` — `write_educase` / `read_educase` /
-  `write_eduresult` (заготовки, реализует senior-developer).
+- `epicase_core/infrastructure/archive/codec.py` — `write_epicase` / `read_epicase` /
+  `write_epiresult` (заготовки, реализует senior-developer).
 
 ## TODO (сверить с DATA_MODEL.md / decisions.md)
 - [ ] Точная схема `manifest.json`: версия формата, id кейса, контрольная сумма, метаданные.

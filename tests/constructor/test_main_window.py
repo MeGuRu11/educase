@@ -21,7 +21,7 @@ def _select_type(field: FieldEditor, value: str) -> None:
 def test_constructor_window_title(qtbot: QtBot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    assert window.windowTitle() == "EduCase Constructor"
+    assert window.windowTitle() == "EpiCase Constructor"
 
 
 def test_save_then_load_round_trip(qtbot: QtBot, tmp_path: Path) -> None:

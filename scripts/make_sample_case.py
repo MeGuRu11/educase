@@ -1,4 +1,4 @@
-"""Генератор богатого синтетического кейса EduCase для визуальной приёмки Player.
+"""Генератор богатого синтетического кейса EpiCase для визуальной приёмки Player.
 
 Собирает доменный ``Case`` со ВСЕМИ шестью заполненными этапами (поиск, пациенты,
 развилка, документы с обманками, осмотр, выбор уровня СЭС, таймлайны) и пакует его в
@@ -9,7 +9,7 @@
     python scripts/make_sample_case.py
 
 Каталог вывода — ``_scratch`` в корне репозитория (``*.epicase`` уже в .gitignore);
-переопределяется переменной окружения ``EDUCASE_SCRATCH``.
+переопределяется переменной окружения ``EPICASE_SCRATCH``.
 """
 from __future__ import annotations
 
@@ -544,8 +544,8 @@ def build_sample_case() -> Case:
 
 
 def _output_path() -> Path:
-    """Путь вывода: ``EDUCASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
-    base = os.environ.get("EDUCASE_SCRATCH")
+    """Путь вывода: ``EPICASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
+    base = os.environ.get("EPICASE_SCRATCH")
     scratch = Path(base) if base else _REPO_ROOT / "_scratch"
     return scratch / "sample.epicase"
 

@@ -1,4 +1,4 @@
-# EduCase — Модель данных (DATA_MODEL)
+# EpiCase — Модель данных (DATA_MODEL)
 
 > ⚠️ **РЕКОНСТРУКЦИЯ ИЗ ПАМЯТИ — САМЫЙ НЕНАДЁЖНЫЙ ФАЙЛ.** Я помню *механику* этапов и
 > *названия* документов, но не помню точную схему оригинального DATA_MODEL.md (поля, типы,
@@ -52,13 +52,13 @@
   - **Point** — `x: float`, `y: float` (координаты холста).
   - Редактор (Constructor) и вьюер (Player, read-only) используют **один** тип `SchemeDocument`.
 - **Document** (механика «Вариант B», ADR-007):
-  - `template_kind` (см. educase-document-templates);
+  - `template_kind` (см. epicase-document-templates);
   - предъявляется в списке с `decoys` (обманками) — курсант выбирает правильный;
   - `fields: list[DocumentField]` с `expected_value` и правилом сравнения.
 - **DocumentField** — `name`, `type` (текст/число/выбор?), `expected_value`, `compare_rule?`.
 - **ObservationTimeline** (этап 6) — временная шкала наблюдения (?).
 
-### Документы (типы шаблонов) — детали в educase-document-templates
+### Документы (типы шаблонов) — детали в epicase-document-templates
 - Приложение 1 — ДМ4 / Внеочередное донесение (критерии вспышки).
 - Приложение 3 — Ежемесячный отчёт.
 - Приложение 22 — оценка СЭС: 4 уровня + числовые пороги.

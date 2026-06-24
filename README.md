@@ -1,4 +1,4 @@
-# EduCase
+# EpiCase
 
 Десктоп-тренажёр для подготовки военных эпидемиологов (ВМА им. Кирова). Windows 10/11,
 компьютерный класс. Две раздельные программы:
@@ -21,8 +21,8 @@ python -m venv .venv && . .venv/Scripts/activate    # Windows
 pip install -e ".[dev]"
 
 # Запуск
-educase-constructor      # или: python -m epicase_constructor
-educase-player           # или: python -m epicase_player
+epicase-constructor      # или: python -m epicase_constructor
+epicase-player           # или: python -m epicase_player
 
 # Quality gate
 ruff check src tests

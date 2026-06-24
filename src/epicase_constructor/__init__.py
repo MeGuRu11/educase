@@ -1,1 +1,1 @@
-"""EduCase Constructor — приложение преподавателя (PySide6)."""
+"""EpiCase Constructor — приложение преподавателя (PySide6)."""

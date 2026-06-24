@@ -31,7 +31,7 @@ Expected: каталог существует, существующие файл
 
 ```text
 Use case: stylized-concept
-Asset type: EduCase inspection scene background with clickable hotspots added later by the application
+Asset type: EpiCase inspection scene background with clickable hotspots added later by the application
 Style/medium: semi-realistic 3D architectural visualization, consistent institutional training-series render
 Lighting/mood: soft even overcast daylight, no hard shadows, calm instructional presentation
 Color palette: muted gray-green, beige, white tile, gray concrete, subdued low-saturation colors

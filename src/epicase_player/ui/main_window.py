@@ -25,7 +25,7 @@ from epicase_player.ui.start_screen import StartScreen
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("EduCase Player")
+        self.setWindowTitle("EpiCase Player")
         self.resize(1000, 700)
         self._navigator: CaseNavigator | None = None
         self._case: Case | None = None
@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
             self,
             "Открыть кейс",
             "",
-            "Кейсы EduCase (*.epicase)",
+            "Кейсы EpiCase (*.epicase)",
         )
         if path:
             self.load_case_from_path(Path(path))
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
             self,
             "Сохранить результат",
             "",
-            "Результаты EduCase (*.epiresult)",
+            "Результаты EpiCase (*.epiresult)",
         )
         if path:
             self.save_result_to_path(

@@ -1,8 +1,8 @@
-# EduCase Expanded Design Reference Implementation Plan
+# EpiCase Expanded Design Reference Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Расширить браузерный дизайн-референс EduCase до умеренно насыщенного интерактивного макета всех экранов Constructor и Player.
+**Goal:** Расширить браузерный дизайн-референс EpiCase до умеренно насыщенного интерактивного макета всех экранов Constructor и Player.
 
 **Architecture:** Один автономный HTML-файл в игнорируемом `_scratch` хранит дизайн-токены, демонстрационные данные, маршрутизацию и состояния интерфейса. Продуктовые PySide6-модули не меняются; макет показывает только реализуемые через Widgets конструкции.
 

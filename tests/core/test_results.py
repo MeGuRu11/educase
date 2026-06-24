@@ -7,7 +7,7 @@ import pytest
 
 from epicase_core.application.results import load_result, record_attempt
 from epicase_core.domain import Attempt, AttemptMeta, AttemptPatients, SearchLog
-from epicase_core.infrastructure.archive.codec import read_eduresult, write_educase
+from epicase_core.infrastructure.archive.codec import read_epiresult, write_epicase
 from epicase_core.infrastructure.archive.errors import ArchiveError
 
 
@@ -29,12 +29,12 @@ def test_record_then_load_round_trip(tmp_path: Path) -> None:
 
 def test_record_writes_case_id_into_meta(tmp_path: Path) -> None:
     dst = record_attempt(_attempt(), tmp_path / "res")
-    bundle = read_eduresult(dst)
+    bundle = read_epiresult(dst)
     assert bundle.manifest.meta["case_id"] == "case-7"
 
 
-def test_load_educase_raises_archive_error(tmp_path: Path) -> None:
-    # .epicase — другой kind архива; load_result ждёт eduresult и поднимает ArchiveError.
-    other = write_educase({"x": 1}, tmp_path / "case")
+def test_load_epicase_raises_archive_error(tmp_path: Path) -> None:
+    # .epicase — другой kind архива; load_result ждёт epiresult и поднимает ArchiveError.
+    other = write_epicase({"x": 1}, tmp_path / "case")
     with pytest.raises(ArchiveError):
         load_result(other)

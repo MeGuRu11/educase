@@ -37,7 +37,7 @@ class StartScreen(QWidget):
         col.setAlignment(Qt.AlignmentFlag.AlignCenter)
         col.setSpacing(12)
 
-        title = QLabel("EduCase — Конструктор")
+        title = QLabel("EpiCase — Конструктор")
         title.setObjectName("startTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         col.addWidget(title)

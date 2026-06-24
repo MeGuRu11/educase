@@ -16,7 +16,7 @@ pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz, a.scripts, a.binaries, a.datas, [],
-    name="EduCase-Player",
+    name="EpiCase-Player",
     console=False,
     upx=False,
 )

@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "educase"
+name = "epicase"
 version = "0.1.0"
-description = "EduCase — тренажёр для подготовки военных эпидемиологов (Constructor + Player)"
+description = "EpiCase — тренажёр для подготовки военных эпидемиологов (Constructor + Player)"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
@@ -25,8 +25,8 @@ dev = [
 
 # Две раздельные программы — два GUI-входа (gui-scripts: без консольного окна в Windows).
 [project.gui-scripts]
-educase-constructor = "epicase_constructor.__main__:main"
-educase-player = "epicase_player.__main__:main"
+epicase-constructor = "epicase_constructor.__main__:main"
+epicase-player = "epicase_player.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [

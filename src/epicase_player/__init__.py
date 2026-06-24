@@ -1,1 +1,1 @@
-"""EduCase Player — приложение курсанта (PySide6)."""
+"""EpiCase Player — приложение курсанта (PySide6)."""

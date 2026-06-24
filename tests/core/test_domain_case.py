@@ -39,7 +39,7 @@ from epicase_core.domain import (
     Timeline,
 )
 from epicase_core.domain.documents import FillMode
-from epicase_core.infrastructure.archive.codec import read_educase, write_educase
+from epicase_core.infrastructure.archive.codec import read_epicase, write_epicase
 
 
 def _rich_case() -> Case:
@@ -232,10 +232,10 @@ def test_case_meta_author_rank_round_trip() -> None:
     assert restored.meta.author_rank == "полковник медицинской службы"
 
 
-def test_case_via_educase_archive(tmp_path: Path) -> None:
+def test_case_via_epicase_archive(tmp_path: Path) -> None:
     case = _rich_case()
-    dst = write_educase(case.to_dict(), tmp_path / "case")
-    bundle = read_educase(dst)
+    dst = write_epicase(case.to_dict(), tmp_path / "case")
+    bundle = read_epicase(dst)
     assert Case.from_dict(bundle.payload) == case
 
 

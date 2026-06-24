@@ -19,7 +19,7 @@ pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz, a.scripts, a.binaries, a.datas, [],
-    name="EduCase-Constructor",
+    name="EpiCase-Constructor",
     console=False,       # GUI: без консольного окна
     upx=False,
 )

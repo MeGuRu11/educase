@@ -31,14 +31,14 @@
 ```json
 {
   "format_version": 1,
-  "kind": "educase",
+  "kind": "epicase",
   "created_at": "2026-06-08T12:00:00Z",
   "checksum": "sha256:<hex>",
   "meta": { "case_id": "...", "title": "..." }
 }
 ```
 - `checksum` — sha256 от **байтов** `data.json`.
-- `kind` — `"educase"` или `"eduresult"`.
+- `kind` — `"epicase"` или `"epiresult"`.
 - `meta` — произвольные метаданные (необязательные).
 
 ## Сигнатуры (`codec.py`)
@@ -54,17 +54,17 @@ class ArchiveBundle:
     payload: dict[str, object]
     assets: dict[str, bytes]
 
-def write_educase(payload: Mapping[str, object], dst: Path, *,
+def write_epicase(payload: Mapping[str, object], dst: Path, *,
                   assets: Mapping[str, bytes] | None = None,
                   meta: Mapping[str, object] | None = None) -> Path: ...
 
-def read_educase(src: Path) -> ArchiveBundle: ...
+def read_epicase(src: Path) -> ArchiveBundle: ...
 
-def write_eduresult(payload: Mapping[str, object], dst: Path, *,
+def write_epiresult(payload: Mapping[str, object], dst: Path, *,
                     assets: Mapping[str, bytes] | None = None,
                     meta: Mapping[str, object] | None = None) -> Path: ...
 
-def read_eduresult(src: Path) -> ArchiveBundle: ...
+def read_epiresult(src: Path) -> ArchiveBundle: ...
 ```
 Внутри — общие `_write_archive(kind, ext, ...)` и `_read_archive(expected_kind, src)`.
 `write_*` гарантирует правильное расширение `dst`.
@@ -73,7 +73,7 @@ def read_eduresult(src: Path) -> ArchiveBundle: ...
 - не ZIP / нет `manifest.json` / нет `data.json` → `CorruptedArchiveError`.
 - `format_version > FORMAT_VERSION` → `IncompatibleVersionError`.
 - sha256(`data.json`) ≠ `manifest.checksum` → `CorruptedArchiveError`.
-- `kind` не совпадает с ожидаемым (`read_educase` на `.epiresult`) → `ArchiveError`.
+- `kind` не совпадает с ожидаемым (`read_epicase` на `.epiresult`) → `ArchiveError`.
 
 ## Ограничения
 - Только stdlib: `zipfile`, `json`, `hashlib`, `datetime`, `pathlib`. Никакой сети, никаких новых
@@ -83,11 +83,11 @@ def read_eduresult(src: Path) -> ArchiveBundle: ...
 - JSON — внутренний формат, пользователю не показывается.
 
 ## Тесты (`tests/core/test_archive_codec.py`, на `tmp_path`)
-- round-trip `.epicase`: write → read, payload и assets совпадают, `manifest.kind == "educase"`.
+- round-trip `.epicase`: write → read, payload и assets совпадают, `manifest.kind == "epicase"`.
 - round-trip `.epiresult` аналогично.
 - подмена `data.json` в архиве → `CorruptedArchiveError` (проверка checksum).
 - `format_version = 99` → `IncompatibleVersionError`.
-- `read_educase` на `.epiresult` → `ArchiveError`.
+- `read_epicase` на `.epiresult` → `ArchiveError`.
 - битый/не-ZIP файл → `CorruptedArchiveError`.
 
 ## Критерии приёмки

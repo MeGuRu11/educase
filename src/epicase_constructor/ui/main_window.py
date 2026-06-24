@@ -23,7 +23,7 @@ _PAGE_EDITOR = 1
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("EduCase Constructor")
+        self.setWindowTitle("EpiCase Constructor")
         self.resize(1000, 700)
 
         self.editor = CaseEditor()
@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
             self,
             "Сохранить кейс",
             "",
-            "Кейсы EduCase (*.epicase)",
+            "Кейсы EpiCase (*.epicase)",
         )
         if path:
             self.save_case_to_path(Path(path))
@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
             self,
             "Открыть кейс",
             "",
-            "Кейсы EduCase (*.epicase)",
+            "Кейсы EpiCase (*.epicase)",
         )
         if path:
             self.load_case_from_path(Path(path))
@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
             self,
             "Открыть результат",
             "",
-            "Результаты EduCase (*.epiresult)",
+            "Результаты EpiCase (*.epiresult)",
         )
         if not result_path:
             return
@@ -134,7 +134,7 @@ class MainWindow(QMainWindow):
             self,
             "Выберите кейс для оценки",
             "",
-            "Кейсы EduCase (*.epicase)",
+            "Кейсы EpiCase (*.epicase)",
         )
         if not case_path:
             return
