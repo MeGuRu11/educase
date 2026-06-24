@@ -3,12 +3,12 @@
 # Запуск из корня репозитория.
 
 a = Analysis(
-    ["../src/educase_constructor/__main__.py"],
+    ["../src/epicase_constructor/__main__.py"],
     pathex=["src"],
     binaries=[],
     datas=[
-        ("../src/educase_core/theme/theme.qss", "educase_core/theme"),
-        ("../src/educase_constructor/resources/icons", "educase_constructor/resources/icons"),
+        ("../src/epicase_core/theme/theme.qss", "epicase_core/theme"),
+        ("../src/epicase_constructor/resources/icons", "epicase_constructor/resources/icons"),
     ],
     hiddenimports=[],
     hookspath=[],

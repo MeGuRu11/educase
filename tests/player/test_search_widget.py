@@ -4,8 +4,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.search import KeywordSearch, SearchEntry, SynonymSet
-from educase_player.ui.search_widget import SearchWidget
+from epicase_core.domain.search import KeywordSearch, SearchEntry, SynonymSet
+from epicase_player.ui.search_widget import SearchWidget
 
 
 def _make_search() -> KeywordSearch:

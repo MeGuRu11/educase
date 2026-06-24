@@ -4,7 +4,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QHeaderView
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.patient_editor import PatientEditor
+from epicase_constructor.ui.patient_editor import PatientEditor
 
 
 def test_fields_table_columns_stretch(qtbot: QtBot) -> None:

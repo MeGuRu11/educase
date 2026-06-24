@@ -25,7 +25,7 @@ Codex в этом проекте отвечает **только за скафф
 - Соблюдай границы слоёв: `domain` без PySide6/SQLAlchemy; UI не лезет в `infrastructure`
   напрямую.
 - Типы на всё (код должен проходить `mypy --strict`).
-- Никаких хардкод-путей — через `educase_core.config`.
+- Никаких хардкод-путей — через `epicase_core.config`.
 - Перед сдачей задачи прогони: `ruff check src tests` и `mypy src tests` — оба зелёные.
 - Коммиты — Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`).
 

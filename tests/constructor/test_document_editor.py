@@ -3,15 +3,15 @@ from __future__ import annotations
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.document_editor import (
+from epicase_constructor.ui.document_editor import (
     DocumentListEditor,
     DocumentOptionEditor,
     DocumentTaskEditor,
 )
-from educase_constructor.ui.field_editor import FieldEditor
-from educase_constructor.ui.template_editor import TemplateEditor
-from educase_core.application.case_builder import _build_field
-from educase_core.domain import ChoiceMatch, DateMatch, NumberMatch, TextMatch
+from epicase_constructor.ui.field_editor import FieldEditor
+from epicase_constructor.ui.template_editor import TemplateEditor
+from epicase_core.application.case_builder import _build_field
+from epicase_core.domain import ChoiceMatch, DateMatch, NumberMatch, TextMatch
 
 
 def _select_type(field: FieldEditor, value: str) -> None:

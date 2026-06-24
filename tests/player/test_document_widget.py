@@ -4,7 +4,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QComboBox, QLabel, QLineEdit, QPlainTextEdit
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.documents import (
+from epicase_core.domain.documents import (
     ChoiceMatch,
     DocumentField,
     DocumentOption,
@@ -14,10 +14,10 @@ from educase_core.domain.documents import (
     FillMode,
     TextMatch,
 )
-from educase_core.domain.search import SynonymSet
-from educase_player.ui.asset_image_widget import AssetImageWidget
-from educase_player.ui.document_widget import DocumentWidget
-from educase_player.ui.stage_views import _doc_resp
+from epicase_core.domain.search import SynonymSet
+from epicase_player.ui.asset_image_widget import AssetImageWidget
+from epicase_player.ui.document_widget import DocumentWidget
+from epicase_player.ui.stage_views import _doc_resp
 
 
 def _make_task() -> DocumentTask:

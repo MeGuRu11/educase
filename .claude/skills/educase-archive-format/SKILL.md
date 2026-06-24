@@ -22,8 +22,8 @@ description: >-
 - `.eduresult` — результат прохождения (курсант → преподаватель).
 
 ## Код
-- `educase_core/infrastructure/archive/__init__.py` — константы формата.
-- `educase_core/infrastructure/archive/codec.py` — `write_educase` / `read_educase` /
+- `epicase_core/infrastructure/archive/__init__.py` — константы формата.
+- `epicase_core/infrastructure/archive/codec.py` — `write_educase` / `read_educase` /
   `write_eduresult` (заготовки, реализует senior-developer).
 
 ## TODO (сверить с DATA_MODEL.md / decisions.md)

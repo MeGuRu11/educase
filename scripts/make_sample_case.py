@@ -21,10 +21,10 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from educase_core.application.cases import save_case  # noqa: E402
-from educase_core.domain.assets import AssetKind, AssetRef  # noqa: E402
-from educase_core.domain.case import Case, CaseMeta  # noqa: E402
-from educase_core.domain.documents import (  # noqa: E402
+from epicase_core.application.cases import save_case  # noqa: E402
+from epicase_core.domain.assets import AssetKind, AssetRef  # noqa: E402
+from epicase_core.domain.case import Case, CaseMeta  # noqa: E402
+from epicase_core.domain.documents import (  # noqa: E402
     ChoiceMatch,
     DateMatch,
     DocumentField,
@@ -35,19 +35,19 @@ from educase_core.domain.documents import (  # noqa: E402
     NumberMatch,
     TextMatch,
 )
-from educase_core.domain.scheme import (  # noqa: E402
+from epicase_core.domain.scheme import (  # noqa: E402
     Hotspot,
     HotspotShape,
     SchemeDocument,
     SchemeView,
 )
-from educase_core.domain.search import (  # noqa: E402
+from epicase_core.domain.search import (  # noqa: E402
     InspectionCheck,
     KeywordSearch,
     SearchEntry,
     SynonymSet,
 )
-from educase_core.domain.stages import (  # noqa: E402
+from epicase_core.domain.stages import (  # noqa: E402
     BranchOption,
     BranchPoint,
     PatientCard,

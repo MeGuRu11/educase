@@ -4,8 +4,8 @@ from __future__ import annotations
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.stages import BranchOption, BranchPoint
-from educase_player.ui.branch_widget import BranchWidget
+from epicase_core.domain.stages import BranchOption, BranchPoint
+from epicase_player.ui.branch_widget import BranchWidget
 
 
 def _make_branch() -> BranchPoint:

@@ -2,7 +2,7 @@
 вскрытие «Варианта B», устойчивость к дефолтному Attempt, round-trip отчёта."""
 from __future__ import annotations
 
-from educase_core.domain import (
+from epicase_core.domain import (
     Attempt,
     AttemptClinical,
     AttemptContacts,
@@ -34,7 +34,7 @@ from educase_core.domain import (
     TextMatch,
     grade_case,
 )
-from educase_core.domain.report import Finding
+from epicase_core.domain.report import Finding
 
 DIARRHEA = SynonymSet(canonical="диарея", synonyms=("понос",))
 

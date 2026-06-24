@@ -8,14 +8,14 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.infrastructure.archive import DATA_NAME, MANIFEST_NAME
-from educase_core.infrastructure.archive.codec import (
+from epicase_core.infrastructure.archive import DATA_NAME, MANIFEST_NAME
+from epicase_core.infrastructure.archive.codec import (
     read_educase,
     read_eduresult,
     write_educase,
     write_eduresult,
 )
-from educase_core.infrastructure.archive.errors import (
+from epicase_core.infrastructure.archive.errors import (
     ArchiveError,
     CorruptedArchiveError,
     IncompatibleVersionError,

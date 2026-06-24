@@ -21,8 +21,8 @@ python -m venv .venv && . .venv/Scripts/activate    # Windows
 pip install -e ".[dev]"
 
 # Запуск
-educase-constructor      # или: python -m educase_constructor
-educase-player           # или: python -m educase_player
+educase-constructor      # или: python -m epicase_constructor
+educase-player           # или: python -m epicase_player
 
 # Quality gate
 ruff check src tests
@@ -48,9 +48,9 @@ pyinstaller packaging/player.spec
 ## Структура
 
 ```
-src/educase_core/          общий слой (домен, application, infrastructure, кодеки архивов)
-src/educase_constructor/   GUI преподавателя
-src/educase_player/        GUI курсанта
+src/epicase_core/          общий слой (домен, application, infrastructure, кодеки архивов)
+src/epicase_constructor/   GUI преподавателя
+src/epicase_player/        GUI курсанта
 tests/                     pytest / pytest-qt
 packaging/                 .spec для PyInstaller
 docs/adr/                  архитектурные решения (ADR-001..008)

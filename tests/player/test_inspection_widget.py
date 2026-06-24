@@ -4,8 +4,8 @@ from __future__ import annotations
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.search import InspectionCheck, SynonymSet
-from educase_player.ui.inspection_widget import InspectionWidget
+from epicase_core.domain.search import InspectionCheck, SynonymSet
+from epicase_player.ui.inspection_widget import InspectionWidget
 
 
 def _make_inspection() -> InspectionCheck:

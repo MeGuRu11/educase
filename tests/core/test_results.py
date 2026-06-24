@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.application.results import load_result, record_attempt
-from educase_core.domain import Attempt, AttemptMeta, AttemptPatients, SearchLog
-from educase_core.infrastructure.archive.codec import read_eduresult, write_educase
-from educase_core.infrastructure.archive.errors import ArchiveError
+from epicase_core.application.results import load_result, record_attempt
+from epicase_core.domain import Attempt, AttemptMeta, AttemptPatients, SearchLog
+from epicase_core.infrastructure.archive.codec import read_eduresult, write_educase
+from epicase_core.infrastructure.archive.errors import ArchiveError
 
 
 def _attempt() -> Attempt:

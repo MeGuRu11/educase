@@ -4,9 +4,9 @@ from __future__ import annotations
 from PySide6.QtWidgets import QGroupBox, QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.report_view import ReportView
-from educase_core.domain.report import CaseReport, Finding, FindingKind, StageReport
-from educase_core.domain.stages import StageKind
+from epicase_constructor.ui.report_view import ReportView
+from epicase_core.domain.report import CaseReport, Finding, FindingKind, StageReport
+from epicase_core.domain.stages import StageKind
 
 _CLINICAL_TITLE = "Клинико-эпидемиологический диагноз"
 

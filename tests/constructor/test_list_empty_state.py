@@ -9,12 +9,12 @@ from __future__ import annotations
 import pytest
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.branch_editor import BranchEditor
-from educase_constructor.ui.case_editor import CaseEditor
-from educase_constructor.ui.document_editor import DocumentListEditor
-from educase_constructor.ui.inspection_editor import InspectionEditor
-from educase_constructor.ui.search_editor import SearchEditor
-from educase_constructor.ui.timeline_editor import TimelineListEditor
+from epicase_constructor.ui.branch_editor import BranchEditor
+from epicase_constructor.ui.case_editor import CaseEditor
+from epicase_constructor.ui.document_editor import DocumentListEditor
+from epicase_constructor.ui.inspection_editor import InspectionEditor
+from epicase_constructor.ui.search_editor import SearchEditor
+from epicase_constructor.ui.timeline_editor import TimelineListEditor
 
 # (класс редактора, метод добавления, метод удаления последнего)
 _LIST_EDITORS = [

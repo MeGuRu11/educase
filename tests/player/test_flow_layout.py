@@ -4,10 +4,10 @@ from __future__ import annotations
 from PySide6.QtWidgets import QLabel, QWidget
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.stages import PatientCard, StagePatients
-from educase_player.ui.flow_layout import FlowLayout
-from educase_player.ui.patient_card_widget import PatientCardWidget
-from educase_player.ui.stage_views import build_stage_view
+from epicase_core.domain.stages import PatientCard, StagePatients
+from epicase_player.ui.flow_layout import FlowLayout
+from epicase_player.ui.patient_card_widget import PatientCardWidget
+from epicase_player.ui.stage_views import build_stage_view
 
 
 def test_flow_layout_smoke(qtbot: QtBot) -> None:

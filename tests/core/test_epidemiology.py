@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from educase_core.domain import (
+from epicase_core.domain import (
     SesLevel,
     classify_ses,
     extensive_indicator,

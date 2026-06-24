@@ -7,8 +7,8 @@ from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QDialog
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
-from educase_player.ui.scheme_viewer import SchemeViewerWidget
+from epicase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
+from epicase_player.ui.scheme_viewer import SchemeViewerWidget
 
 
 def _scheme_with_child_and_reveal() -> SchemeDocument:

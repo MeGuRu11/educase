@@ -37,8 +37,8 @@ from PySide6.QtCore import (  # noqa: E402
 )
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from educase_core.application.cases import ArchiveError, load_case  # noqa: E402
-from educase_player.ui.case_navigator import CaseNavigator  # noqa: E402
+from epicase_core.application.cases import ArchiveError, load_case  # noqa: E402
+from epicase_player.ui.case_navigator import CaseNavigator  # noqa: E402
 
 _QT_MESSAGES: list[str] = []
 

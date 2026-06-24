@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.template_editor import TemplateEditor
-from educase_core.application.case_builder import TemplateDraft
+from epicase_constructor.ui.template_editor import TemplateEditor
+from epicase_core.application.case_builder import TemplateDraft
 
 
 def test_default_mode_is_free_text_and_container_hidden(qtbot: QtBot) -> None:

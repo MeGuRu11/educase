@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.application.assets import read_asset_sources
-from educase_core.application.case_builder import (
+from epicase_core.application.assets import read_asset_sources
+from epicase_core.application.case_builder import (
     AssetRef,
     CaseDraft,
     ClinicalDraft,

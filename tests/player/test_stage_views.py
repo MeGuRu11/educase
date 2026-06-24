@@ -6,10 +6,10 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QLabel, QWidget
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.documents import DocumentOption, DocumentTask
-from educase_core.domain.scheme import SchemeDocument, SchemeView
-from educase_core.domain.search import InspectionCheck, KeywordSearch, SearchEntry, SynonymSet
-from educase_core.domain.stages import (
+from epicase_core.domain.documents import DocumentOption, DocumentTask
+from epicase_core.domain.scheme import SchemeDocument, SchemeView
+from epicase_core.domain.search import InspectionCheck, KeywordSearch, SearchEntry, SynonymSet
+from epicase_core.domain.stages import (
     BranchOption,
     BranchPoint,
     PatientCard,
@@ -21,15 +21,15 @@ from educase_core.domain.stages import (
     StageSes,
     Timeline,
 )
-from educase_player.ui.asset_image_widget import AssetImageWidget
-from educase_player.ui.branch_widget import BranchWidget
-from educase_player.ui.document_widget import DocumentWidget
-from educase_player.ui.inspection_widget import InspectionWidget
-from educase_player.ui.patient_card_widget import PatientCardWidget
-from educase_player.ui.scheme_viewer import SchemeViewerWidget
-from educase_player.ui.search_widget import SearchWidget
-from educase_player.ui.stage_views import build_stage_view
-from educase_player.ui.timeline_widget import TimelineWidget
+from epicase_player.ui.asset_image_widget import AssetImageWidget
+from epicase_player.ui.branch_widget import BranchWidget
+from epicase_player.ui.document_widget import DocumentWidget
+from epicase_player.ui.inspection_widget import InspectionWidget
+from epicase_player.ui.patient_card_widget import PatientCardWidget
+from epicase_player.ui.scheme_viewer import SchemeViewerWidget
+from epicase_player.ui.search_widget import SearchWidget
+from epicase_player.ui.stage_views import build_stage_view
+from epicase_player.ui.timeline_widget import TimelineWidget
 
 
 def _find_search_widget(widget: QWidget) -> SearchWidget | None:

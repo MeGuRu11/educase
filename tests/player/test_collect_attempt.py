@@ -6,10 +6,10 @@ from pathlib import Path
 from PySide6.QtWidgets import QComboBox, QLineEdit
 from pytestqt.qtbot import QtBot
 
-from educase_core.application.results import load_result, record_attempt
-from educase_core.domain.attempt import AttemptMeta
-from educase_core.domain.case import Case, CaseMeta
-from educase_core.domain.documents import (
+from epicase_core.application.results import load_result, record_attempt
+from epicase_core.domain.attempt import AttemptMeta
+from epicase_core.domain.case import Case, CaseMeta
+from epicase_core.domain.documents import (
     ChoiceMatch,
     DocumentField,
     DocumentOption,
@@ -18,14 +18,14 @@ from educase_core.domain.documents import (
     FieldType,
     TextMatch,
 )
-from educase_core.domain.report import grade_case
-from educase_core.domain.search import (
+from epicase_core.domain.report import grade_case
+from epicase_core.domain.search import (
     InspectionCheck,
     KeywordSearch,
     SearchEntry,
     SynonymSet,
 )
-from educase_core.domain.stages import (
+from epicase_core.domain.stages import (
     BranchOption,
     BranchPoint,
     StageClinical,
@@ -33,12 +33,12 @@ from educase_core.domain.stages import (
     StageFinal,
     StageSes,
 )
-from educase_player.ui.branch_widget import BranchWidget
-from educase_player.ui.case_navigator import CaseNavigator
-from educase_player.ui.document_field_widget import DocumentFieldWidget
-from educase_player.ui.document_widget import DocumentWidget
-from educase_player.ui.inspection_widget import InspectionWidget
-from educase_player.ui.search_widget import SearchWidget
+from epicase_player.ui.branch_widget import BranchWidget
+from epicase_player.ui.case_navigator import CaseNavigator
+from epicase_player.ui.document_field_widget import DocumentFieldWidget
+from epicase_player.ui.document_widget import DocumentWidget
+from epicase_player.ui.inspection_widget import InspectionWidget
+from epicase_player.ui.search_widget import SearchWidget
 
 
 def _build_case() -> Case:

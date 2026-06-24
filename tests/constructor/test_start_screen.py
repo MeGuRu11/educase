@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from PySide6.QtWidgets import QPushButton
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.start_screen import StartScreen
+from epicase_constructor.ui.start_screen import StartScreen
 
 
 def test_start_screen_creates(qtbot: QtBot) -> None:

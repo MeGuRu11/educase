@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.application.cases import save_case
-from educase_core.application.grading import ArchiveError, report_for_result
-from educase_core.application.results import record_attempt
-from educase_core.domain import (
+from epicase_core.application.cases import save_case
+from epicase_core.application.grading import ArchiveError, report_for_result
+from epicase_core.application.results import record_attempt
+from epicase_core.domain import (
     Attempt,
     AttemptClinical,
     AttemptMeta,

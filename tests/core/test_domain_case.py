@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.domain import (
+from epicase_core.domain import (
     AssetKind,
     AssetRef,
     BranchOption,
@@ -38,8 +38,8 @@ from educase_core.domain import (
     TextMatch,
     Timeline,
 )
-from educase_core.domain.documents import FillMode
-from educase_core.infrastructure.archive.codec import read_educase, write_educase
+from epicase_core.domain.documents import FillMode
+from epicase_core.infrastructure.archive.codec import read_educase, write_educase
 
 
 def _rich_case() -> Case:

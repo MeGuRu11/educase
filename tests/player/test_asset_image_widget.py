@@ -6,7 +6,7 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_player.ui.asset_image_widget import AssetImageWidget
+from epicase_player.ui.asset_image_widget import AssetImageWidget
 
 
 def test_valid_png_renders_image(qtbot: QtBot, png_bytes: Callable[..., bytes]) -> None:

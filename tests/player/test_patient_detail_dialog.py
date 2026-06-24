@@ -4,8 +4,8 @@ from __future__ import annotations
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.stages import PatientCard
-from educase_player.ui.patient_detail_dialog import PatientDetailDialog
+from epicase_core.domain.stages import PatientCard
+from epicase_player.ui.patient_detail_dialog import PatientDetailDialog
 
 
 def _card(*fields: tuple[str, str]) -> PatientCard:

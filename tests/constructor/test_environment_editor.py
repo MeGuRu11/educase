@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.environment_editor import EnvironmentEditor
+from epicase_constructor.ui.environment_editor import EnvironmentEditor
 
 
 def test_add_and_remove_inspection_group(qtbot: QtBot) -> None:

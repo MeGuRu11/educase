@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from educase_core.application.assets import read_asset_sources
-from educase_core.application.case_builder import (
+from epicase_core.application.assets import read_asset_sources
+from epicase_core.application.case_builder import (
     AssetRef,
     BranchDraft,
     BranchOptionDraft,
@@ -28,11 +28,11 @@ from educase_core.application.case_builder import (
     TimelineDraft,
     build_case,
 )
-from educase_core.application.case_loader import case_to_draft
-from educase_core.application.cases import LoadedCase, load_case, save_case
-from educase_core.domain import Case, CaseMeta
-from educase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
-from educase_core.domain.stages import PatientCard, StageContacts, StagePatients
+from epicase_core.application.case_loader import case_to_draft
+from epicase_core.application.cases import LoadedCase, load_case, save_case
+from epicase_core.domain import Case, CaseMeta
+from epicase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
+from epicase_core.domain.stages import PatientCard, StageContacts, StagePatients
 
 
 def test_case_to_draft_round_trip(tmp_path: Path) -> None:

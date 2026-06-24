@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.application.case_builder import (
+from epicase_core.application.case_builder import (
     AssetRef,
     BranchDraft,
     BranchOptionDraft,
@@ -31,7 +31,7 @@ from educase_core.application.case_builder import (
     _field_is_blank,
     build_case,
 )
-from educase_core.domain import (
+from epicase_core.domain import (
     Case,
     ChoiceMatch,
     DateMatch,
@@ -46,7 +46,7 @@ from educase_core.domain import (
     StageSes,
     TextMatch,
 )
-from educase_core.domain.documents import FillMode
+from epicase_core.domain.documents import FillMode
 
 
 def test_build_case_with_meta_and_patients() -> None:
@@ -389,7 +389,7 @@ def test_build_case_document_fill_mode_and_reference_assets() -> None:
 
 def test_build_case_clinical_documents_round_trip_codec(tmp_path: Path) -> None:
     """round-trip через кодек .educase: ``clinical.documents`` сохраняются (save→load)."""
-    from educase_core.application.cases import load_case, save_case
+    from epicase_core.application.cases import load_case, save_case
 
     clinical = ClinicalDraft(documents=(_document_draft(),))
     case = build_case(CaseDraft(case_id="case-rt-doc", clinical=clinical))

@@ -21,7 +21,7 @@ description: >-
 Дедлайн 25 июня 2026. Принцип: скорость до работающего кода, без раздувания.
 
 ## Архитектура
-Общий `educase_core` (domain → application → infrastructure) + два GUI-приложения.
+Общий `epicase_core` (domain → application → infrastructure) + два GUI-приложения.
 Персистентность — только кодек архива `.educase`/`.eduresult` (ADR-009), БД/ORM нет.
 Запрещено: domain ← PySide6/внешние библиотеки; UI ← infrastructure напрямую; любой код ← сеть.
 
@@ -36,5 +36,5 @@ description: >-
 
 ## TODO (сверить с восстановленными файлами)
 - [ ] Вставить тексты ADR-001..008 (`docs/adr/`).
-- [ ] Сверить DATA_MODEL.md с моделями `educase_core`.
+- [ ] Сверить DATA_MODEL.md с моделями `epicase_core`.
 - [ ] Перенести нерешённые вопросы из questions_for_department.md.

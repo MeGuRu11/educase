@@ -4,11 +4,11 @@ import pytest
 from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 
-from educase_core.application.cases import save_case
-from educase_core.application.results import load_result
-from educase_core.domain.case import Case, CaseMeta
-from educase_player.ui.case_navigator import CaseNavigator
-from educase_player.ui.main_window import MainWindow
+from epicase_core.application.cases import save_case
+from epicase_core.application.results import load_result
+from epicase_core.domain.case import Case, CaseMeta
+from epicase_player.ui.case_navigator import CaseNavigator
+from epicase_player.ui.main_window import MainWindow
 
 
 def test_player_window_title(qtbot: QtBot) -> None:

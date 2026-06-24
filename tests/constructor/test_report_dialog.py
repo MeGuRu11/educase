@@ -1,8 +1,8 @@
 """Тесты диалога отчёта: шапка идентичности курсанта."""
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.report_dialog import ReportDialog
-from educase_core.domain.report import CaseReport
+from epicase_constructor.ui.report_dialog import ReportDialog
+from epicase_core.domain.report import CaseReport
 
 
 def test_identity_header_shows_rank_and_group(qtbot: QtBot) -> None:

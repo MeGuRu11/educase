@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.application.cases import load_case, save_case
-from educase_core.domain import Case, CaseMeta
-from educase_core.infrastructure.archive.codec import read_educase, write_eduresult
-from educase_core.infrastructure.archive.errors import ArchiveError
+from epicase_core.application.cases import load_case, save_case
+from epicase_core.domain import Case, CaseMeta
+from epicase_core.infrastructure.archive.codec import read_educase, write_eduresult
+from epicase_core.infrastructure.archive.errors import ArchiveError
 
 
 def _case() -> Case:

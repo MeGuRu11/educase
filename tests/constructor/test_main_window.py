@@ -4,13 +4,13 @@ from _pytest.monkeypatch import MonkeyPatch
 from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.field_editor import FieldEditor
-from educase_constructor.ui.main_window import MainWindow
-from educase_constructor.ui.report_dialog import ReportDialog
-from educase_core.application.case_builder import build_case
-from educase_core.application.cases import load_case, save_case
-from educase_core.application.results import record_attempt
-from educase_core.domain import Attempt, AttemptMeta, Case, CaseMeta
+from epicase_constructor.ui.field_editor import FieldEditor
+from epicase_constructor.ui.main_window import MainWindow
+from epicase_constructor.ui.report_dialog import ReportDialog
+from epicase_core.application.case_builder import build_case
+from epicase_core.application.cases import load_case, save_case
+from epicase_core.application.results import record_attempt
+from epicase_core.domain import Attempt, AttemptMeta, Case, CaseMeta
 
 
 def _select_type(field: FieldEditor, value: str) -> None:

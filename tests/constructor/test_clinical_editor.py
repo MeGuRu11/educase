@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.clinical_editor import ClinicalEditor
+from epicase_constructor.ui.clinical_editor import ClinicalEditor
 
 
 def test_add_and_remove_search_entry(qtbot: QtBot) -> None:

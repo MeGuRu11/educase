@@ -5,8 +5,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.stages import PatientCard
-from educase_player.ui.patient_card_widget import PatientCardWidget
+from epicase_core.domain.stages import PatientCard
+from epicase_player.ui.patient_card_widget import PatientCardWidget
 
 
 def test_fields_displayed(qtbot: QtBot) -> None:

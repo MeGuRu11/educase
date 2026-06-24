@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.contacts_editor import ContactsEditor
+from epicase_constructor.ui.contacts_editor import ContactsEditor
 
 
 def test_add_and_remove_inspection_group(qtbot: QtBot) -> None:

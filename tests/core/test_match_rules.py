@@ -4,7 +4,7 @@
 """
 from __future__ import annotations
 
-from educase_core.domain import (
+from epicase_core.domain import (
     ChoiceMatch,
     DateMatch,
     DocumentField,

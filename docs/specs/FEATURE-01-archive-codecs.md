@@ -6,7 +6,7 @@
 
 ## Что создать → где
 
-Каталог: `src/educase_core/infrastructure/archive/`
+Каталог: `src/epicase_core/infrastructure/archive/`
 
 | Файл | Содержимое |
 |---|---|

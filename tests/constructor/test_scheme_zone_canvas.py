@@ -13,8 +13,8 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import QGraphicsTextItem
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
-from educase_core.application.case_builder import AssetRef
+from epicase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
+from epicase_core.application.case_builder import AssetRef
 
 # Фон 40×30: меньше _MAX_WIDTH, без масштабирования; минимум зоны 2*_HANDLE = 16 px.
 _BG_W = 40

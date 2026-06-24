@@ -6,8 +6,8 @@ from pathlib import Path
 from PySide6.QtWidgets import QTableWidgetItem, QTabWidget
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.case_editor import CaseEditor
-from educase_constructor.ui.patient_editor import PatientEditor
+from epicase_constructor.ui.case_editor import CaseEditor
+from epicase_constructor.ui.patient_editor import PatientEditor
 
 
 def test_editor_has_six_titled_tabs(qtbot: QtBot) -> None:

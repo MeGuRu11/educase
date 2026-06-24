@@ -3,12 +3,12 @@ from pathlib import Path
 
 from pytestqt.qtbot import QtBot
 
-from educase_core.application.cases import load_case, save_case
-from educase_core.domain.case import Case, CaseMeta
-from educase_core.domain.scheme import SchemeDocument, SchemeView
-from educase_core.domain.stages import StageContacts
-from educase_player.ui.case_navigator import CaseNavigator
-from educase_player.ui.scheme_viewer import SchemeViewerWidget
+from epicase_core.application.cases import load_case, save_case
+from epicase_core.domain.case import Case, CaseMeta
+from epicase_core.domain.scheme import SchemeDocument, SchemeView
+from epicase_core.domain.stages import StageContacts
+from epicase_player.ui.case_navigator import CaseNavigator
+from epicase_player.ui.scheme_viewer import SchemeViewerWidget
 
 
 def test_initial_state(qtbot: QtBot) -> None:
