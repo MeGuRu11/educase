@@ -182,10 +182,11 @@ def _field_to_draft(f: DocumentField) -> FieldDraft:
 
 
 def _template_to_draft(t: DocumentTemplate) -> TemplateDraft:
-    """Обратить ``DocumentTemplate`` в ``TemplateDraft``: заголовок + поля (``_field_to_draft``)."""
+    """Обратить ``DocumentTemplate`` в ``TemplateDraft``: заголовок, поля и режим заполнения."""
     return TemplateDraft(
         title=t.title,
         fields=tuple(_field_to_draft(field) for field in t.fields),
+        fill_mode=t.fill_mode.value,
     )
 
 
@@ -206,10 +207,11 @@ def _option_to_draft(o: DocumentOption) -> DocumentOptionDraft:
 
 
 def _task_to_draft(t: DocumentTask) -> DocumentTaskDraft:
-    """Обратить ``DocumentTask`` в ``DocumentTaskDraft``: формулировка + варианты."""
+    """Обратить ``DocumentTask`` в ``DocumentTaskDraft``: формулировка, варианты, вложения."""
     return DocumentTaskDraft(
         prompt=t.prompt,
         options=tuple(_option_to_draft(o) for o in t.options),
+        reference_assets=tuple(t.reference_assets),
     )
 
 

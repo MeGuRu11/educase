@@ -42,6 +42,7 @@ from educase_core.domain import (
     TextMatch,
     Timeline,
 )
+from educase_core.domain.documents import FillMode
 
 
 @dataclass(frozen=True)
@@ -138,10 +139,11 @@ class FieldDraft:
 
 @dataclass(frozen=True)
 class TemplateDraft:
-    """Сырые значения шаблона документа: заголовок + поля."""
+    """Сырые значения шаблона документа: заголовок, поля и режим заполнения (ADR-014)."""
 
     title: str = ""
     fields: tuple[FieldDraft, ...] = ()
+    fill_mode: str = "fields"
 
 
 @dataclass(frozen=True)
@@ -155,10 +157,11 @@ class DocumentOptionDraft:
 
 @dataclass(frozen=True)
 class DocumentTaskDraft:
-    """Сырые значения задания выбрать документ: формулировка + варианты (с обманками)."""
+    """Сырые значения задания выбрать документ: формулировка, варианты, справочные вложения."""
 
     prompt: str = ""
     options: tuple[DocumentOptionDraft, ...] = ()
+    reference_assets: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -452,6 +455,7 @@ def _build_documents(
                             f for f in option.template.fields if not _field_is_blank(f)
                         )
                     ),
+                    fill_mode=FillMode(option.template.fill_mode or "fields"),
                 )
                 if option.is_correct
                 else None
@@ -471,6 +475,7 @@ def _build_documents(
                 id=f"doc-{len(tasks) + 1}",
                 prompt=task.prompt,
                 options=tuple(options),
+                reference_assets=tuple(task.reference_assets),
             )
         )
     return tuple(tasks)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from educase_core.domain import (
     AssetKind,
     AssetRef,
@@ -36,6 +38,7 @@ from educase_core.domain import (
     TextMatch,
     Timeline,
 )
+from educase_core.domain.documents import FillMode
 from educase_core.infrastructure.archive.codec import read_educase, write_educase
 
 
@@ -247,6 +250,49 @@ def test_stage_kinds_fixed() -> None:
         StageKind.SES,
         StageKind.FINAL,
     )
+
+
+def test_document_fill_mode_and_reference_assets_round_trip() -> None:
+    # ADR-014: режим свободного заполнения шаблона и справочные вложения задания
+    # переживают сериализацию (невакуумно — оба значения не дефолтные).
+    task = DocumentTask(
+        id="doc-free",
+        prompt="Заполните объяснительную свободным текстом",
+        options=(
+            DocumentOption(
+                id="opt-1",
+                title="Объяснительная",
+                is_correct=True,
+                template=DocumentTemplate(
+                    id="tpl-1",
+                    title="Объяснительная",
+                    fill_mode=FillMode.FREE_TEXT,
+                ),
+            ),
+            DocumentOption(id="opt-decoy", title="Рапорт"),
+        ),
+        reference_assets=("a1", "a2"),
+    )
+    restored = DocumentTask.from_dict(task.to_dict())
+    assert restored == task
+    assert restored.reference_assets == ("a1", "a2")
+    template = restored.options[0].template
+    assert template is not None
+    assert template.fill_mode is FillMode.FREE_TEXT
+
+
+def test_document_legacy_dict_defaults_back_compat() -> None:
+    # Старые архивы без новых ключей читаются: fill_mode → FIELDS, reference_assets → ().
+    template = DocumentTemplate.from_dict({"id": "tpl-old", "title": "Старый"})
+    assert template.fill_mode is FillMode.FIELDS
+    task = DocumentTask.from_dict({"id": "doc-old", "prompt": "Старое задание"})
+    assert task.reference_assets == ()
+
+
+def test_document_template_unknown_fill_mode_raises() -> None:
+    # Неизвестный режим заполнения (например, из будущего формата) — fail-fast ValueError.
+    with pytest.raises(ValueError):
+        DocumentTemplate.from_dict({"id": "tpl", "fill_mode": "bulk_import"})
 
 
 def test_strict_keyword_search_no_fuzzy() -> None:

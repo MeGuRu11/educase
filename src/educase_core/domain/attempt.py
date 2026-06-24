@@ -60,17 +60,22 @@ class BranchResponse:
 
 @dataclass(frozen=True)
 class DocumentResponse:
-    """Ответ по заданию документа: выбранная опция + сырые пары «поле → ответ»."""
+    """Ответ по заданию документа: выбранная опция + пары «поле → ответ» + свободный текст.
+
+    ``free_text`` — ответ в режиме свободного заполнения (ADR-014); в полевом режиме пуст.
+    """
 
     task_id: str
     chosen_option_id: str = ""
     field_answers: tuple[tuple[str, str], ...] = ()
+    free_text: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return {
             "task_id": self.task_id,
             "chosen_option_id": self.chosen_option_id,
             "field_answers": [list(pair) for pair in self.field_answers],
+            "free_text": self.free_text,
         }
 
     @classmethod
@@ -79,6 +84,7 @@ class DocumentResponse:
             task_id=req_str(data, "task_id"),
             chosen_option_id=opt_str(data, "chosen_option_id"),
             field_answers=pair_tuple(data, "field_answers"),
+            free_text=opt_str(data, "free_text"),
         )
 
 

@@ -46,6 +46,7 @@ from educase_core.domain import (
     StageSes,
     TextMatch,
 )
+from educase_core.domain.documents import FillMode
 
 
 def test_build_case_with_meta_and_patients() -> None:
@@ -361,6 +362,29 @@ def test_build_case_clinical_drops_blank_option_and_task() -> None:
     assert len(documents[0].options) == 1
     assert documents[0].options[0].id == "opt-1"
     assert documents[0].options[0].title == "Годная опция"
+
+
+def test_build_case_document_fill_mode_and_reference_assets() -> None:
+    """ADR-014: ``fill_mode`` шаблона и ``reference_assets`` задания доходят до домена."""
+    task = DocumentTaskDraft(
+        prompt="Заполните свободным текстом",
+        reference_assets=("ref-1", "ref-2"),
+        options=(
+            DocumentOptionDraft(
+                title="Объяснительная",
+                is_correct=True,
+                template=TemplateDraft(title="Объяснительная", fill_mode="free_text"),
+            ),
+        ),
+    )
+    clinical = ClinicalDraft(documents=(task,))
+    case = build_case(CaseDraft(case_id="case-fm", clinical=clinical))
+
+    doc = case.clinical.documents[0]
+    assert doc.reference_assets == ("ref-1", "ref-2")
+    template = doc.options[0].template
+    assert template is not None
+    assert template.fill_mode is FillMode.FREE_TEXT
 
 
 def test_build_case_clinical_documents_round_trip_codec(tmp_path: Path) -> None:

@@ -118,6 +118,23 @@ def test_attempt_meta_identity_fields_round_trip() -> None:
     assert restored.meta.study_group == "121"
 
 
+def test_document_response_free_text_round_trip() -> None:
+    # ADR-014: ответ в режиме свободного заполнения переживает сериализацию.
+    response = DocumentResponse(
+        task_id="doc-free",
+        free_text="Свободный текст ответа курсанта",
+    )
+    restored = DocumentResponse.from_dict(response.to_dict())
+    assert restored == response
+    assert restored.free_text == "Свободный текст ответа курсанта"
+
+
+def test_document_response_legacy_dict_free_text_defaults() -> None:
+    # Старый ответ без ключа free_text читается с дефолтом "" (обратная совместимость).
+    restored = DocumentResponse.from_dict({"task_id": "doc-old"})
+    assert restored.free_text == ""
+
+
 def test_attempt_optional_none_round_trip() -> None:
     # branch / inspection / level_choice = None должны пережить сериализацию как null.
     attempt = Attempt(

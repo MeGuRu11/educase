@@ -232,6 +232,40 @@ def test_clinical_round_trip(tmp_path: Path) -> None:
     assert decoy.template == TemplateDraft()
 
 
+def test_document_fill_mode_and_reference_assets_round_trip(tmp_path: Path) -> None:
+    """ADR-014: fill_mode и reference_assets переживают build_case → .educase → case_to_draft."""
+    task = DocumentTaskDraft(
+        prompt="Заполните объяснительную свободным текстом",
+        reference_assets=("ref-1", "ref-2"),
+        options=(
+            DocumentOptionDraft(
+                title="Объяснительная",
+                is_correct=True,
+                template=TemplateDraft(title="Объяснительная", fill_mode="free_text"),
+            ),
+            DocumentOptionDraft(title="Обманка", is_correct=False),
+        ),
+    )
+    draft = CaseDraft(
+        case_id="case-fm", title="Док", clinical=ClinicalDraft(documents=(task,))
+    )
+
+    case = build_case(draft)
+    assets = read_asset_sources(draft)
+    dst = tmp_path / "c.educase"
+    save_case(case, dst, assets=assets)
+    reloaded = case_to_draft(load_case(dst))
+
+    # Доменный инвариант симметрии: повторная сборка даёт тот же этап.
+    assert build_case(reloaded).clinical == build_case(draft).clinical
+
+    clinical = reloaded.clinical
+    assert clinical is not None
+    reloaded_task = clinical.documents[0]
+    assert reloaded_task.reference_assets == ("ref-1", "ref-2")
+    assert reloaded_task.options[0].template.fill_mode == "free_text"
+
+
 def _contacts_draft() -> ContactsDraft:
     """Непустой ``ContactsDraft``: схема с фоном и 2 зонами (одна с вложенным видом), осмотр.
 

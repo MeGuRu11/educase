@@ -34,6 +34,13 @@ class FieldType(StrEnum):
     CHOICE = "choice"
 
 
+class FillMode(StrEnum):
+    """Режим заполнения документа курсантом (ADR-014)."""
+
+    FREE_TEXT = "free_text"
+    FIELDS = "fields"
+
+
 # --- Правила сверки полей (дискриминатор — ClassVar TYPE, ключ "type" в to_dict) ---
 
 
@@ -193,17 +200,19 @@ class DocumentField:
 
 @dataclass(frozen=True)
 class DocumentTemplate:
-    """Шаблон документа: заголовок + поля для заполнения."""
+    """Шаблон документа: заголовок, поля и режим заполнения курсантом (ADR-014)."""
 
     id: str
     title: str = ""
     fields: tuple[DocumentField, ...] = ()
+    fill_mode: FillMode = FillMode.FIELDS
 
     def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
             "title": self.title,
             "fields": [f.to_dict() for f in self.fields],
+            "fill_mode": self.fill_mode.value,
         }
 
     @classmethod
@@ -214,6 +223,7 @@ class DocumentTemplate:
             fields=tuple(
                 DocumentField.from_dict(as_map(item)) for item in seq(data, "fields")
             ),
+            fill_mode=FillMode(opt_str(data, "fill_mode") or "fields"),
         )
 
 
@@ -252,17 +262,22 @@ class DocumentOption:
 
 @dataclass(frozen=True)
 class DocumentTask:
-    """Задание выбрать правильный документ из списка (с обманками)."""
+    """Задание выбрать правильный документ из списка (с обманками) + справочные вложения.
+
+    ``reference_assets`` — id справочных ассетов, прикреплённых к заданию (ADR-014).
+    """
 
     id: str
     prompt: str = ""
     options: tuple[DocumentOption, ...] = ()
+    reference_assets: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
             "prompt": self.prompt,
             "options": [opt.to_dict() for opt in self.options],
+            "reference_assets": list(self.reference_assets),
         }
 
     @classmethod
@@ -273,4 +288,5 @@ class DocumentTask:
             options=tuple(
                 DocumentOption.from_dict(as_map(item)) for item in seq(data, "options")
             ),
+            reference_assets=str_tuple(data, "reference_assets"),
         )
