@@ -1,7 +1,7 @@
 """Тесты DocumentWidget: выбор документа из списка с обманками и заполнение полей."""
 from __future__ import annotations
 
-from PySide6.QtWidgets import QComboBox, QLabel, QLineEdit
+from PySide6.QtWidgets import QComboBox, QLabel, QLineEdit, QPlainTextEdit
 from pytestqt.qtbot import QtBot
 
 from educase_core.domain.documents import (
@@ -11,10 +11,13 @@ from educase_core.domain.documents import (
     DocumentTask,
     DocumentTemplate,
     FieldType,
+    FillMode,
     TextMatch,
 )
 from educase_core.domain.search import SynonymSet
+from educase_player.ui.asset_image_widget import AssetImageWidget
 from educase_player.ui.document_widget import DocumentWidget
+from educase_player.ui.stage_views import _doc_resp
 
 
 def _make_task() -> DocumentTask:
@@ -217,3 +220,82 @@ def test_selection_after_invalid_clears_property(qtbot: QtBot) -> None:
 
     w.options_combo.setCurrentIndex(0)  # любой выбор → invalid сбрасывается
     assert w.options_combo.property("invalid") is False
+
+
+# --- ADR-014: FREE_TEXT и reference_assets ---
+
+
+def _make_free_text_task() -> DocumentTask:
+    """DocumentTask с верным документом FREE_TEXT и обманкой (template=None)."""
+    correct_opt = DocumentOption(
+        id="opt_free",
+        title="Объяснительная",
+        is_correct=True,
+        template=DocumentTemplate(
+            id="tpl_free",
+            title="Объяснительная",
+            fill_mode=FillMode.FREE_TEXT,
+        ),
+    )
+    decoy_opt = DocumentOption(
+        id="opt_decoy2",
+        title="Рапорт",
+        is_correct=False,
+        template=None,
+    )
+    return DocumentTask(
+        id="task_free",
+        prompt="Заполните объяснительную",
+        options=(correct_opt, decoy_opt),
+    )
+
+
+def test_free_text_mode_shows_plain_text_edit(qtbot: QtBot) -> None:
+    """FREE_TEXT-режим → QPlainTextEdit в форме, поля пусты; ввод → free_text()."""
+    w = DocumentWidget(_make_free_text_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    assert w.current_field_widgets() == []
+    te_list: list[QPlainTextEdit] = w.form_area.findChildren(QPlainTextEdit)
+    assert len(te_list) == 1
+    te_list[0].setPlainText("Объяснительная записка")
+    assert w.free_text() == "Объяснительная записка"
+
+
+def test_reference_assets_widgets_present(qtbot: QtBot) -> None:
+    """Задание с reference_assets → >=2 AssetImageWidget; без вложений → 0."""
+    task_with_refs = DocumentTask(
+        id="task_refs",
+        prompt="",
+        options=(),
+        reference_assets=("a1", "a2"),
+    )
+    w_with = DocumentWidget(task_with_refs)
+    qtbot.addWidget(w_with)
+    assert len(w_with.findChildren(AssetImageWidget)) >= 2
+
+    task_no_refs = DocumentTask(id="task_norefs", prompt="", options=())
+    w_without = DocumentWidget(task_no_refs)
+    qtbot.addWidget(w_without)
+    assert len(w_without.findChildren(AssetImageWidget)) == 0
+
+
+def test_doc_resp_free_text_and_field_mode(qtbot: QtBot) -> None:
+    """_doc_resp: FREE_TEXT-режим → free_text == введённый текст, field_answers пуст;
+    FIELDS-режим → free_text == ''."""
+    free_task = _make_free_text_task()
+    free_widget = DocumentWidget(free_task)
+    qtbot.addWidget(free_widget)
+    free_widget.options_combo.setCurrentIndex(0)
+    te_list: list[QPlainTextEdit] = free_widget.form_area.findChildren(QPlainTextEdit)
+    te_list[0].setPlainText("Мой текст")
+    resp = _doc_resp(free_task, free_widget)
+    assert resp.free_text == "Мой текст"
+    assert resp.field_answers == ()
+
+    fields_task = _make_task()
+    fields_widget = DocumentWidget(fields_task)
+    qtbot.addWidget(fields_widget)
+    fields_widget.options_combo.setCurrentIndex(0)
+    resp2 = _doc_resp(fields_task, fields_widget)
+    assert resp2.free_text == ""

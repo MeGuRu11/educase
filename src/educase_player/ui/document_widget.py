@@ -1,18 +1,21 @@
 """Виджет задания выбора документа с обманками и заполнением полей (ADR-007/ADR-008)."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QPlainTextEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from educase_core.domain.documents import DocumentOption, DocumentTask
+from educase_core.domain.documents import DocumentOption, DocumentTask, FillMode
+from educase_player.ui.asset_image_widget import AssetImageWidget
 from educase_player.ui.document_field_widget import DocumentFieldWidget
 
 
@@ -33,17 +36,31 @@ class DocumentWidget(QWidget):
     Вердикт курсанту не показывается — только в финальном отчёте (ADR-005).
     """
 
-    def __init__(self, task: DocumentTask, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        task: DocumentTask,
+        assets: Mapping[str, bytes] | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self._task = task
+        self._assets: Mapping[str, bytes] = assets if assets is not None else {}
         self._result: DocumentResult | None = None
         self._field_widgets: list[DocumentFieldWidget] = []
+        self._free_text_edit: QPlainTextEdit | None = None
 
         layout = QVBoxLayout(self)
 
         prompt_label = QLabel(task.prompt)
         prompt_label.setWordWrap(True)
         layout.addWidget(prompt_label)
+
+        if task.reference_assets:
+            ref_header = QLabel("Справочные документы")
+            ref_header.setObjectName("mutedHint")
+            layout.addWidget(ref_header)
+            for asset_id in task.reference_assets:
+                layout.addWidget(AssetImageWidget(asset_id, self._assets, caption="Справка"))
 
         self.options_combo = QComboBox()
         self.options_combo.setPlaceholderText("— выберите документ —")
@@ -86,6 +103,10 @@ class DocumentWidget(QWidget):
         """Текущие виджеты полей (пусто, если обманка или документ не выбран)."""
         return list(self._field_widgets)
 
+    def free_text(self) -> str:
+        """Текст в режиме свободного заполнения; "" если режим полевой/не выбран."""
+        return self._free_text_edit.toPlainText() if self._free_text_edit is not None else ""
+
     def _rebuild_form(self) -> None:
         """Перестроить form_area при смене выбора в combo; снять подсветку ошибки."""
         self.options_combo.setProperty("invalid", False)
@@ -98,6 +119,7 @@ class DocumentWidget(QWidget):
                 if wid is not None:
                     wid.deleteLater()
         self._field_widgets.clear()
+        self._free_text_edit = None
 
         option = self.selected_option()
         if option is None:
@@ -109,10 +131,16 @@ class DocumentWidget(QWidget):
             self._form_layout.addWidget(no_fields)
             return
 
-        for field in option.template.fields:
-            fw = DocumentFieldWidget(field, self.form_area)
-            self._form_layout.addWidget(fw)
-            self._field_widgets.append(fw)
+        if option.template.fill_mode == FillMode.FREE_TEXT:
+            te = QPlainTextEdit()
+            te.setPlaceholderText("Введите текст документа")
+            self._free_text_edit = te
+            self._form_layout.addWidget(te)
+        else:
+            for field in option.template.fields:
+                fw = DocumentFieldWidget(field, self.form_area)
+                self._form_layout.addWidget(fw)
+                self._field_widgets.append(fw)
 
     def on_submit(self) -> None:
         """Сохранить результат; мягкая подсказка если не выбрано (ADR-005/ADR-008)."""

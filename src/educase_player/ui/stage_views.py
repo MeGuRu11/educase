@@ -198,7 +198,7 @@ class ClinicalStageView(StageView):
             self._layout.addWidget(branch_widget)
             has_content = True
         for task in stage.documents:
-            doc_widget = DocumentWidget(task)
+            doc_widget = DocumentWidget(task, self._assets)
             self._docs.append((task, doc_widget))
             self._layout.addWidget(doc_widget)
             has_content = True
@@ -261,7 +261,7 @@ class EnvironmentStageView(StageView):
             )
             has_content = True
         for task in stage.documents:
-            doc_widget = DocumentWidget(task)
+            doc_widget = DocumentWidget(task, self._assets)
             self._docs.append((task, doc_widget))
             self._layout.addWidget(doc_widget)
             has_content = True
@@ -303,7 +303,7 @@ class SesStageView(StageView):
             self._layout.addWidget(level_widget)
             has_content = True
         for task in stage.documents:
-            doc_widget = DocumentWidget(task)
+            doc_widget = DocumentWidget(task, self._assets)
             self._docs.append((task, doc_widget))
             self._layout.addWidget(doc_widget)
             has_content = True
@@ -336,7 +336,7 @@ class FinalStageView(StageView):
             self._layout.addWidget(self._search)
             has_content = True
         for task in stage.documents:
-            doc_widget = DocumentWidget(task)
+            doc_widget = DocumentWidget(task, self._assets)
             self._docs.append((task, doc_widget))
             self._layout.addWidget(doc_widget)
             has_content = True
@@ -381,6 +381,7 @@ def _doc_resp(task: DocumentTask, widget: DocumentWidget) -> DocumentResponse:
         field_answers=tuple(
             (fw.field.id, fw.answer()) for fw in widget.current_field_widgets()
         ),
+        free_text=widget.free_text(),
     )
 
 
