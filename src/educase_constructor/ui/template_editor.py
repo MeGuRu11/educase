@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -31,6 +32,11 @@ class TemplateEditor(QWidget):
         self.title_edit = QLineEdit(self)
         self.title_edit.setPlaceholderText("Название документа")
 
+        self.mode_combo = QComboBox(self)
+        self.mode_combo.setObjectName("fillModeSelect")
+        self.mode_combo.addItem("Свободный ввод", "free_text")
+        self.mode_combo.addItem("Поля", "fields")
+
         self.field_editors: list[FieldEditor] = []
         self._field_cards: list[QGroupBox] = []
 
@@ -48,13 +54,27 @@ class TemplateEditor(QWidget):
 
         self._fields_layout = QVBoxLayout()
 
+        self._fields_container = QWidget(self)
+        container_layout = QVBoxLayout(self._fields_container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.addLayout(field_buttons)
+        container_layout.addLayout(self._fields_layout)
+
         title_form = QFormLayout()
         title_form.addRow("Заголовок шаблона", self.title_edit)
+        title_form.addRow("Режим заполнения", self.mode_combo)
 
         layout = QVBoxLayout(self)
         layout.addLayout(title_form)
-        layout.addLayout(field_buttons)
-        layout.addLayout(self._fields_layout)
+        layout.addWidget(self._fields_container)
+
+        self.mode_combo.currentIndexChanged.connect(self._sync_fields_visibility)
+        self.mode_combo.setCurrentIndex(0)  # default: free_text
+        self._sync_fields_visibility()
+
+    def _sync_fields_visibility(self) -> None:
+        """Показать/скрыть редактор полей в зависимости от выбранного режима."""
+        self._fields_container.setVisible(self.mode_combo.currentData() == "fields")
 
     def add_field(self) -> None:
         """Добавить редактор нового поля в конец списка."""
@@ -78,16 +98,22 @@ class TemplateEditor(QWidget):
 
         Текущие поля удаляются и пересобираются из ``draft.fields`` (симметрично ``to_draft``).
         """
+        idx = self.mode_combo.findData(draft.fill_mode)
+        if idx == -1:
+            idx = self.mode_combo.findData("fields")
+        self.mode_combo.setCurrentIndex(idx)
         self.title_edit.setText(draft.title)
         while self.field_editors:
             self.remove_last_field()
         for field in draft.fields:
             self.add_field()
             self.field_editors[-1].load(field)
+        self._sync_fields_visibility()
 
     def to_draft(self) -> TemplateDraft:
         """Собрать ``TemplateDraft`` из заголовка и всех редакторов полей."""
         return TemplateDraft(
             title=self.title_edit.text(),
             fields=tuple(editor.to_draft() for editor in self.field_editors),
+            fill_mode=self.mode_combo.currentData(),
         )
