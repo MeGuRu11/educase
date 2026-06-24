@@ -52,18 +52,18 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self._save_action)
 
     def open_case_dialog(self) -> None:
-        """Показать диалог выбора файла .educase и загрузить кейс."""
+        """Показать диалог выбора файла .epicase и загрузить кейс."""
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть кейс",
             "",
-            "Кейсы EduCase (*.educase)",
+            "Кейсы EduCase (*.epicase)",
         )
         if path:
             self.load_case_from_path(Path(path))
 
     def load_case_from_path(self, path: Path) -> bool:
-        """Загрузить кейс из .educase и смонтировать навигатор.
+        """Загрузить кейс из .epicase и смонтировать навигатор.
 
         Тестируемый шов: вызывается без диалога выбора файла.
         Загрузка синхронная — архив маленький, локальный; QThread нужен только
@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
         return True
 
     def save_result_dialog(self) -> None:
-        """Спросить данные курсанта и путь, затем записать .eduresult."""
+        """Спросить данные курсанта и путь, затем записать .epiresult."""
         if self._case is None or self._navigator is None:
             return
         dialog = IdentityDialog(self)
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
             self,
             "Сохранить результат",
             "",
-            "Результаты EduCase (*.eduresult)",
+            "Результаты EduCase (*.epiresult)",
         )
         if path:
             self.save_result_to_path(
@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         rank: str = "",
         study_group: str = "",
     ) -> bool:
-        """Собрать прохождение и записать .eduresult.
+        """Собрать прохождение и записать .epiresult.
 
         ``trainee_label`` — ФИО курсанта, ``rank`` — звание, ``study_group`` —
         учебная группа. Тестируемый шов: вызывается без диалогов. ``False``, если

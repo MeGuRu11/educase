@@ -1,5 +1,5 @@
 """Тесты доменной модели Case/Stage (FEATURE-02): round-trip to_dict/from_dict,
-интеграция с кодеком .educase, фиксированный порядок этапов, строгий поиск."""
+интеграция с кодеком .epicase, фиксированный порядок этапов, строгий поиск."""
 from __future__ import annotations
 
 from pathlib import Path

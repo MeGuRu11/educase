@@ -1,6 +1,6 @@
 """Скриншот-прогон шести этапов Player на синтетическом кейсе (offscreen-режим).
 
-Загружает ``_scratch/sample.educase``, строит ``CaseNavigator`` и для каждого из шести
+Загружает ``_scratch/sample.epicase``, строит ``CaseNavigator`` и для каждого из шести
 этапов переключает стек реальной кнопкой «Далее» (проверка свободной навигации, ADR-008),
 снимает ``QWidget.grab()`` и пишет ``_scratch/stage_{N}_{kind}.png``. Любое исключение на
 этапе ловится, попадает в отчёт, прогон продолжается. Предупреждения Qt перехватываются
@@ -58,7 +58,7 @@ def main() -> int:
     """Снять скриншоты всех этапов; вернуть 0, если каждый отрисовался."""
     qInstallMessageHandler(_qt_handler)
     scratch = _scratch_dir()
-    case_path = scratch / "sample.educase"
+    case_path = scratch / "sample.epicase"
 
     report: list[str] = []
     rendered: list[str] = []

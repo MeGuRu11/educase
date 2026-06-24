@@ -66,12 +66,12 @@ def test_non_blocking_navigation(qtbot: QtBot) -> None:
 def test_scheme_image_round_trips_to_navigator(
     qtbot: QtBot, tmp_path: Path, png_bytes: Callable[..., bytes]
 ) -> None:
-    """Сквозная цепочка: .educase со схемой-картинкой → CaseNavigator рисует фон схемы."""
+    """Сквозная цепочка: .epicase со схемой-картинкой → CaseNavigator рисует фон схемы."""
     case = Case(
         meta=CaseMeta("c1", "Тест"),
         contacts=StageContacts(scheme=SchemeDocument(root=SchemeView(background="scheme-1"))),
     )
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     save_case(case, dst, assets={"scheme-1": png_bytes()})
 
     loaded = load_case(dst)

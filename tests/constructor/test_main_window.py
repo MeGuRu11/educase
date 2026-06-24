@@ -25,7 +25,7 @@ def test_constructor_window_title(qtbot: QtBot) -> None:
 
 
 def test_save_then_load_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
-    """Сквозной цикл Constructor → .educase → back: мета и пациенты совпадают."""
+    """Сквозной цикл Constructor → .epicase → back: мета и пациенты совпадают."""
     window = MainWindow()
     qtbot.addWidget(window)
 
@@ -34,7 +34,7 @@ def test_save_then_load_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
     window.editor.patient_editors[0].title_edit.setText("Пациент 1")
     expected_id = window.editor._case_id  # автогенерированный служебный id кейса
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
     assert dst.exists()
 
@@ -106,7 +106,7 @@ def test_save_then_load_full_six_stages(qtbot: QtBot, tmp_path: Path) -> None:
 
     expected = build_case(editor.to_draft())
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
     loaded = load_case(dst)
 
@@ -123,7 +123,7 @@ def test_save_then_load_full_six_stages(qtbot: QtBot, tmp_path: Path) -> None:
 
 
 def test_save_packs_scheme_asset_bytes(qtbot: QtBot, tmp_path: Path) -> None:
-    """Сквозная цепочка ассета: выбор файла → стабильный id в Case → реальные байты в .educase."""
+    """Сквозная цепочка ассета: выбор файла → стабильный id в Case → реальные байты в .epicase."""
     contacts_scheme = tmp_path / "scheme_contacts.png"
     contacts_scheme.write_bytes(b"\x89PNG-contacts")
     env_scheme = tmp_path / "scheme_env.jpg"
@@ -141,7 +141,7 @@ def test_save_packs_scheme_asset_bytes(qtbot: QtBot, tmp_path: Path) -> None:
     env_ref = editor.environment_editor.scheme_picker.value()
     assert contacts_ref is not None and env_ref is not None
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
 
     loaded = load_case(dst)
@@ -189,7 +189,7 @@ def test_save_packs_multi_location_asset_bytes(qtbot: QtBot, tmp_path: Path) -> 
     photo_ref = editor.environment_editor.photos_picker.value()[0]
     reveal_ref = entry.reveal_assets_picker.value()[0]
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
 
     loaded = load_case(dst)
@@ -222,7 +222,7 @@ def test_save_invalid_template_number_warns_and_skips(
     _select_type(level, "number")
     level.number_value_edit.setText("abc")
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is False
     assert not dst.exists()
 
@@ -230,7 +230,7 @@ def test_save_invalid_template_number_warns_and_skips(
 def test_report_dialog_for_valid_pair_returns_dialog(
     qtbot: QtBot, tmp_path: Path
 ) -> None:
-    """Шов отчёта на валидной паре .eduresult/.educase → ``ReportDialog`` (не None)."""
+    """Шов отчёта на валидной паре .epiresult/.epicase → ``ReportDialog`` (не None)."""
     case_path = save_case(Case(meta=CaseMeta(id="case-x")), tmp_path / "case")
     result_path = record_attempt(
         Attempt(meta=AttemptMeta(case_id="case-x", trainee_label="Петров")),
@@ -249,7 +249,7 @@ def test_report_dialog_for_valid_pair_returns_dialog(
 def test_report_dialog_for_broken_archive_returns_none(
     qtbot: QtBot, tmp_path: Path
 ) -> None:
-    """Шов отчёта на чужом типе архива (.educase как результат) → ``None`` (не падение)."""
+    """Шов отчёта на чужом типе архива (.epicase как результат) → ``None`` (не падение)."""
     case_path = save_case(Case(meta=CaseMeta(id="case-x")), tmp_path / "case")
 
     window = MainWindow()

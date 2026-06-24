@@ -1,11 +1,11 @@
-"""Кодеки ZIP-архивов обмена EduCase (.educase / .eduresult).
+"""Кодеки ZIP-архивов обмена EduCase (.epicase / .epiresult).
 
 Документная модель (ADR-009): архив — единственная персистентность. Никакого сетевого I/O,
 только локальная файловая система. JSON не показывается пользователю.
 
 Раскладка архива::
 
-    <имя>.educase|.eduresult  (ZIP)
+    <имя>.epicase|.epiresult  (ZIP)
     ├── manifest.json   — конверт (метаданные + контрольная сумма data.json)
     ├── data.json       — payload (внутреннее представление)
     └── assets/         — бинарные ассеты (фото, документы)
@@ -122,12 +122,12 @@ def write_educase(
     assets: Mapping[str, bytes] | None = None,
     meta: Mapping[str, object] | None = None,
 ) -> Path:
-    """Упаковать кейс в .educase (ZIP с manifest.json + data.json + ассеты)."""
+    """Упаковать кейс в .epicase (ZIP с manifest.json + data.json + ассеты)."""
     return _write_archive(KIND_EDUCASE, EDUCASE_EXT, payload, dst, assets, meta)
 
 
 def read_educase(src: Path) -> ArchiveBundle:
-    """Прочитать и провалидировать .educase."""
+    """Прочитать и провалидировать .epicase."""
     return _read_archive(KIND_EDUCASE, src)
 
 
@@ -138,12 +138,12 @@ def write_eduresult(
     assets: Mapping[str, bytes] | None = None,
     meta: Mapping[str, object] | None = None,
 ) -> Path:
-    """Упаковать результат прохождения в .eduresult."""
+    """Упаковать результат прохождения в .epiresult."""
     return _write_archive(KIND_EDURESULT, EDURESULT_EXT, payload, dst, assets, meta)
 
 
 def read_eduresult(src: Path) -> ArchiveBundle:
-    """Прочитать и провалидировать .eduresult."""
+    """Прочитать и провалидировать .epiresult."""
     return _read_archive(KIND_EDURESULT, src)
 
 

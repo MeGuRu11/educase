@@ -1,7 +1,7 @@
 """Тесты шва сведения результата с кейсом ``report_for_result`` (Qt-free, слой приложения).
 
 Проверяем: верные ответы дают ``correct=True`` findings; ``case_id_matches`` отражает
-соответствие кейсов; чужой тип архива (.educase по пути результата) → ``ArchiveError``.
+соответствие кейсов; чужой тип архива (.epicase по пути результата) → ``ArchiveError``.
 """
 from __future__ import annotations
 
@@ -145,7 +145,7 @@ def test_report_for_result_case_id_mismatch(tmp_path: Path) -> None:
 
 
 def test_report_for_result_wrong_archive_type_raises(tmp_path: Path) -> None:
-    """`.educase`, поданный как путь результата, → ``ArchiveError`` (несовпадение типа архива)."""
+    """`.epicase`, поданный как путь результата, → ``ArchiveError`` (несовпадение типа архива)."""
     case_path = save_case(_case(), tmp_path / "case")
     with pytest.raises(ArchiveError):
         report_for_result(case_path, case_path)

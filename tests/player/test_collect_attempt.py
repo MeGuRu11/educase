@@ -1,4 +1,4 @@
-"""Тесты сбора Attempt из видов этапов и записи .eduresult (сквозной цикл)."""
+"""Тесты сбора Attempt из видов этапов и записи .epiresult (сквозной цикл)."""
 from __future__ import annotations
 
 from pathlib import Path

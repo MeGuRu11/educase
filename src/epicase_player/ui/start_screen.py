@@ -52,7 +52,7 @@ class StartScreen(QWidget):
 
         col.addSpacing(8)
 
-        hint = QLabel("Откройте файл .educase, полученный от преподавателя")
+        hint = QLabel("Откройте файл .epicase, полученный от преподавателя")
         hint.setObjectName("startHint")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hint.setWordWrap(True)

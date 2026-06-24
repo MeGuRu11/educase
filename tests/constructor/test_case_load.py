@@ -260,11 +260,11 @@ def test_start_screen_open_button_emits_signal(qtbot: QtBot) -> None:
 
 
 def test_load_case_from_path_fills_editor(qtbot: QtBot, tmp_path: Path) -> None:
-    """``load_case_from_path`` на реально сохранённом .educase → True и редактор заполнен."""
+    """``load_case_from_path`` на реально сохранённом .epicase → True и редактор заполнен."""
     draft = _draft_with_patient()
     case = build_case(draft)
     assets = read_asset_sources(draft)
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     save_case(case, dst, assets=assets)
 
     window = MainWindow()
@@ -286,7 +286,7 @@ def test_load_case_from_path_broken_returns_false(
     monkeypatch.setattr(
         QMessageBox, "warning", lambda *args, **kwargs: QMessageBox.StandardButton.Ok
     )
-    bad = tmp_path / "broken.educase"
+    bad = tmp_path / "broken.epicase"
     bad.write_bytes(b"not a zip")
 
     window = MainWindow()

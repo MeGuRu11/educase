@@ -1,4 +1,4 @@
-"""Тесты сервиса Case↔.educase (FEATURE-03, слой приложения)."""
+"""Тесты сервиса Case↔.epicase (FEATURE-03, слой приложения)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -38,7 +38,7 @@ def test_caller_meta_overrides_default(tmp_path: Path) -> None:
 
 
 def test_load_eduresult_raises_archive_error(tmp_path: Path) -> None:
-    # .eduresult — другой kind архива; load_case ждёт educase и поднимает ArchiveError.
+    # .epiresult — другой kind архива; load_case ждёт educase и поднимает ArchiveError.
     other = write_eduresult({"x": 1}, tmp_path / "res")
     with pytest.raises(ArchiveError):
         load_case(other)

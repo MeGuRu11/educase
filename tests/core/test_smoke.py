@@ -10,5 +10,5 @@ def test_core_version_present() -> None:
 
 
 def test_archive_extensions() -> None:
-    assert EDUCASE_EXT == ".educase"
-    assert EDURESULT_EXT == ".eduresult"
+    assert EDUCASE_EXT == ".epicase"
+    assert EDURESULT_EXT == ".epiresult"

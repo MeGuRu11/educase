@@ -388,7 +388,7 @@ def test_build_case_document_fill_mode_and_reference_assets() -> None:
 
 
 def test_build_case_clinical_documents_round_trip_codec(tmp_path: Path) -> None:
-    """round-trip через кодек .educase: ``clinical.documents`` сохраняются (save→load)."""
+    """round-trip через кодек .epicase: ``clinical.documents`` сохраняются (save→load)."""
     from epicase_core.application.cases import load_case, save_case
 
     clinical = ClinicalDraft(documents=(_document_draft(),))

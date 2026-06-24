@@ -20,7 +20,7 @@ def test_player_window_title(qtbot: QtBot) -> None:
 def test_load_case_from_path_success(qtbot: QtBot, tmp_path: Path) -> None:
     """load_case_from_path монтирует CaseNavigator с 6 страницами при успешной загрузке."""
     case = Case(meta=CaseMeta("c1", "Тест"))
-    dst = tmp_path / "test.educase"
+    dst = tmp_path / "test.epicase"
     save_case(case, dst)
 
     window = MainWindow()
@@ -40,7 +40,7 @@ def test_load_case_from_path_corrupt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """load_case_from_path возвращает False при битом файле, без исключения."""
-    corrupt = tmp_path / "bad.educase"
+    corrupt = tmp_path / "bad.epicase"
     corrupt.write_bytes(b"not a zip file")
 
     monkeypatch.setattr(QMessageBox, "warning", lambda *args, **kwargs: 0)
@@ -55,7 +55,7 @@ def test_load_case_from_path_corrupt(
 def test_save_action_disabled_until_case_loaded(qtbot: QtBot, tmp_path: Path) -> None:
     """Пункт «Сохранить результат…» выключен до загрузки кейса и включается после."""
     case = Case(meta=CaseMeta("c1", "Тест"))
-    dst = tmp_path / "test.educase"
+    dst = tmp_path / "test.epicase"
     save_case(case, dst)
 
     window = MainWindow()
@@ -71,20 +71,20 @@ def test_save_result_without_case_returns_false(qtbot: QtBot, tmp_path: Path) ->
     window = MainWindow()
     qtbot.addWidget(window)
 
-    assert window.save_result_to_path(tmp_path / "res.eduresult") is False
+    assert window.save_result_to_path(tmp_path / "res.epiresult") is False
 
 
 def test_load_then_save_result_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
     """Шов: load_case_from_path → save_result_to_path → файл читается load_result."""
     case = Case(meta=CaseMeta("c1", "Тест"))
-    src = tmp_path / "test.educase"
+    src = tmp_path / "test.epicase"
     save_case(case, src)
 
     window = MainWindow()
     qtbot.addWidget(window)
     assert window.load_case_from_path(src) is True
 
-    out = tmp_path / "result.eduresult"
+    out = tmp_path / "result.epiresult"
     assert window.save_result_to_path(out, "Курсант Иванов") is True
 
     loaded = load_result(out)
@@ -93,16 +93,16 @@ def test_load_then_save_result_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
 
 
 def test_save_result_round_trip_identity_fields(qtbot: QtBot, tmp_path: Path) -> None:
-    """Шов: ФИО/звание/группа проходят через save_result_to_path в .eduresult."""
+    """Шов: ФИО/звание/группа проходят через save_result_to_path в .epiresult."""
     case = Case(meta=CaseMeta("c1", "Тест"))
-    src = tmp_path / "test.educase"
+    src = tmp_path / "test.epicase"
     save_case(case, src)
 
     window = MainWindow()
     qtbot.addWidget(window)
     assert window.load_case_from_path(src) is True
 
-    out = tmp_path / "result.eduresult"
+    out = tmp_path / "result.epiresult"
     assert (
         window.save_result_to_path(out, "Иванов И.И.", rank="лейтенант", study_group="121")
         is True

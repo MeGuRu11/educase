@@ -1,4 +1,4 @@
-"""Тесты сервиса Attempt↔.eduresult (слой приложения)."""
+"""Тесты сервиса Attempt↔.epiresult (слой приложения)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -34,7 +34,7 @@ def test_record_writes_case_id_into_meta(tmp_path: Path) -> None:
 
 
 def test_load_educase_raises_archive_error(tmp_path: Path) -> None:
-    # .educase — другой kind архива; load_result ждёт eduresult и поднимает ArchiveError.
+    # .epicase — другой kind архива; load_result ждёт eduresult и поднимает ArchiveError.
     other = write_educase({"x": 1}, tmp_path / "case")
     with pytest.raises(ArchiveError):
         load_result(other)

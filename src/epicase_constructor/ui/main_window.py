@@ -1,4 +1,4 @@
-"""Главное окно Constructor: стартовый экран → редактор кейса + сохранение в .educase."""
+"""Главное окно Constructor: стартовый экран → редактор кейса + сохранение в .epicase."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -62,18 +62,18 @@ class MainWindow(QMainWindow):
         file_menu.addAction(open_result_action)
 
     def save_case_dialog(self) -> None:
-        """Показать диалог сохранения и записать кейс в выбранный .educase."""
+        """Показать диалог сохранения и записать кейс в выбранный .epicase."""
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Сохранить кейс",
             "",
-            "Кейсы EduCase (*.educase)",
+            "Кейсы EduCase (*.epicase)",
         )
         if path:
             self.save_case_to_path(Path(path))
 
     def save_case_to_path(self, path: Path) -> bool:
-        """Собрать кейс из редактора и записать в .educase.
+        """Собрать кейс из редактора и записать в .epicase.
 
         Тестируемый шов: вызывается без диалога выбора файла. При некорректном значении поля
         документа (``build_case`` → ``ValueError``) или недоступном файле-ассете
@@ -92,18 +92,18 @@ class MainWindow(QMainWindow):
         return True
 
     def open_case_dialog(self) -> None:
-        """Показать диалог открытия и загрузить выбранный .educase в редактор."""
+        """Показать диалог открытия и загрузить выбранный .epicase в редактор."""
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть кейс",
             "",
-            "Кейсы EduCase (*.educase)",
+            "Кейсы EduCase (*.epicase)",
         )
         if path:
             self.load_case_from_path(Path(path))
 
     def load_case_from_path(self, path: Path) -> bool:
-        """Загрузить .educase и заполнить редактор (этот срез: мета + пациенты).
+        """Загрузить .epicase и заполнить редактор (этот срез: мета + пациенты).
 
         Тестируемый шов: вызывается без диалога выбора файла (как ``save_case_to_path``). При
         ошибке формата/типа/версии архива (``load_case`` → ``ArchiveError``) — предупреждение и
@@ -121,12 +121,12 @@ class MainWindow(QMainWindow):
         return True
 
     def open_result_dialog(self) -> None:
-        """Открыть .eduresult + эталонный .educase и показать нейтральный отчёт сверки."""
+        """Открыть .epiresult + эталонный .epicase и показать нейтральный отчёт сверки."""
         result_path, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть результат",
             "",
-            "Результаты EduCase (*.eduresult)",
+            "Результаты EduCase (*.epiresult)",
         )
         if not result_path:
             return
@@ -134,7 +134,7 @@ class MainWindow(QMainWindow):
             self,
             "Выберите кейс для оценки",
             "",
-            "Кейсы EduCase (*.educase)",
+            "Кейсы EduCase (*.epicase)",
         )
         if not case_path:
             return

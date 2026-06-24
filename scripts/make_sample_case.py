@@ -2,13 +2,13 @@
 
 Собирает доменный ``Case`` со ВСЕМИ шестью заполненными этапами (поиск, пациенты,
 развилка, документы с обманками, осмотр, выбор уровня СЭС, таймлайны) и пакует его в
-``_scratch/sample.educase`` через слой приложения (``save_case``).
+``_scratch/sample.epicase`` через слой приложения (``save_case``).
 
 Запуск из .venv::
 
     python scripts/make_sample_case.py
 
-Каталог вывода — ``_scratch`` в корне репозитория (``*.educase`` уже в .gitignore);
+Каталог вывода — ``_scratch`` в корне репозитория (``*.epicase`` уже в .gitignore);
 переопределяется переменной окружения ``EDUCASE_SCRATCH``.
 """
 from __future__ import annotations
@@ -547,7 +547,7 @@ def _output_path() -> Path:
     """Путь вывода: ``EDUCASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
     base = os.environ.get("EDUCASE_SCRATCH")
     scratch = Path(base) if base else _REPO_ROOT / "_scratch"
-    return scratch / "sample.educase"
+    return scratch / "sample.epicase"
 
 
 def _describe(case: Case) -> str:
@@ -590,7 +590,7 @@ def _describe(case: Case) -> str:
 
 
 def main() -> int:
-    """Собрать кейс, упаковать в .educase, напечатать путь и состав."""
+    """Собрать кейс, упаковать в .epicase, напечатать путь и состав."""
     case = build_sample_case()
     dst = _output_path()
     written = save_case(case, dst)

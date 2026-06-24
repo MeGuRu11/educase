@@ -1,4 +1,4 @@
-# FEATURE-01 — Кодеки `.educase` / `.eduresult`
+# FEATURE-01 — Кодеки `.epicase` / `.epiresult`
 
 Спецификация для роли **senior-developer (Opus)**. Первая фича: фундамент обмена. Кафедра не
 нужна — это инженерное решение. Документная модель (ADR-009): архив — единственная
@@ -18,7 +18,7 @@
 ## Раскладка ZIP
 
 ```
-<имя>.educase  (ZIP)
+<имя>.epicase  (ZIP)
 ├── manifest.json     # конверт (метаданные + контрольная сумма data.json)
 ├── data.json         # полезная нагрузка (payload). НЕ показывается пользователю
 └── assets/           # бинарные ассеты (фото, документы), плоско по именам
@@ -73,7 +73,7 @@ def read_eduresult(src: Path) -> ArchiveBundle: ...
 - не ZIP / нет `manifest.json` / нет `data.json` → `CorruptedArchiveError`.
 - `format_version > FORMAT_VERSION` → `IncompatibleVersionError`.
 - sha256(`data.json`) ≠ `manifest.checksum` → `CorruptedArchiveError`.
-- `kind` не совпадает с ожидаемым (`read_educase` на `.eduresult`) → `ArchiveError`.
+- `kind` не совпадает с ожидаемым (`read_educase` на `.epiresult`) → `ArchiveError`.
 
 ## Ограничения
 - Только stdlib: `zipfile`, `json`, `hashlib`, `datetime`, `pathlib`. Никакой сети, никаких новых
@@ -83,13 +83,13 @@ def read_eduresult(src: Path) -> ArchiveBundle: ...
 - JSON — внутренний формат, пользователю не показывается.
 
 ## Тесты (`tests/core/test_archive_codec.py`, на `tmp_path`)
-- round-trip `.educase`: write → read, payload и assets совпадают, `manifest.kind == "educase"`.
-- round-trip `.eduresult` аналогично.
+- round-trip `.epicase`: write → read, payload и assets совпадают, `manifest.kind == "educase"`.
+- round-trip `.epiresult` аналогично.
 - подмена `data.json` в архиве → `CorruptedArchiveError` (проверка checksum).
 - `format_version = 99` → `IncompatibleVersionError`.
-- `read_educase` на `.eduresult` → `ArchiveError`.
+- `read_educase` на `.epiresult` → `ArchiveError`.
 - битый/не-ZIP файл → `CorruptedArchiveError`.
 
 ## Критерии приёмки
 - `ruff check src tests` · `mypy src tests` · `pytest -q` · `compileall` — всё зелёное.
-- Коммит: `feat(archive): кодеки .educase/.eduresult с manifest и валидацией`.
+- Коммит: `feat(archive): кодеки .epicase/.epiresult с manifest и валидацией`.
