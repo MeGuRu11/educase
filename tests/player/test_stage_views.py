@@ -21,7 +21,6 @@ from epicase_core.domain.stages import (
     StageFinal,
     StagePatients,
     StageSes,
-    Timeline,
 )
 from epicase_player.ui.asset_image_widget import AssetImageWidget
 from epicase_player.ui.branch_widget import BranchWidget
@@ -31,7 +30,6 @@ from epicase_player.ui.patient_card_widget import PatientCardWidget
 from epicase_player.ui.scheme_viewer import SchemeViewerWidget
 from epicase_player.ui.search_widget import SearchWidget
 from epicase_player.ui.stage_views import _doc_resp, build_stage_view
-from epicase_player.ui.timeline_widget import TimelineWidget
 
 
 def _find_search_widget(widget: QWidget) -> SearchWidget | None:
@@ -151,15 +149,18 @@ def test_stage_clinical_without_branch_no_branch_widget(qtbot: QtBot) -> None:
     assert len(widgets) == 0
 
 
-def test_stage_final_with_timelines_contains_timeline_widget(qtbot: QtBot) -> None:
-    """StageFinal с timelines → TimelineWidget для каждого."""
+def test_stage_final_does_not_render_timeline_widget(qtbot: QtBot) -> None:
+    """StageFinal с timelines НЕ рендерит TimelineWidget курсанту (эталон скрыт)."""
+    from epicase_core.domain.stages import Timeline
+    from epicase_player.ui.timeline_widget import TimelineWidget
+
     tl = Timeline(id="tl1", title="Сроки", events=(("01.01.2024", "Начало"),))
     stage = StageFinal(timelines=(tl,))
     view = build_stage_view(stage)
     qtbot.addWidget(view)
 
     widgets: list[TimelineWidget] = view.findChildren(TimelineWidget)
-    assert len(widgets) == 1
+    assert len(widgets) == 0
 
 
 def test_stage_contacts_with_inspection_contains_inspection_widget(qtbot: QtBot) -> None:

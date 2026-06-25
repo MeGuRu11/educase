@@ -57,7 +57,6 @@ from epicase_player.ui.patient_card_widget import PatientCardWidget
 from epicase_player.ui.patient_detail_dialog import PatientDetailDialog
 from epicase_player.ui.scheme_viewer import SchemeViewerWidget
 from epicase_player.ui.search_widget import SearchWidget
-from epicase_player.ui.timeline_widget import TimelineWidget
 
 
 class StageView(QWidget):
@@ -340,7 +339,7 @@ class SesStageView(StageView):
 
 
 class FinalStageView(StageView):
-    """Этап 6 «Окончательный диагноз»: поиск, документы, read-only таймлайны."""
+    """Этап 6 «Окончательный диагноз»: поиск и документы курсанта."""
 
     def __init__(
         self,
@@ -361,9 +360,6 @@ class FinalStageView(StageView):
             doc_widget = DocumentWidget(task, self._assets)
             self._docs.append((task, doc_widget))
             self._layout.addWidget(doc_widget)
-            has_content = True
-        for tl in stage.timelines:
-            self._layout.addWidget(TimelineWidget(tl))
             has_content = True
         self._finish(has_content)
 
