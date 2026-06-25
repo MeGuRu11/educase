@@ -387,6 +387,29 @@ def test_build_case_document_fill_mode_and_reference_assets() -> None:
     assert template.fill_mode is FillMode.FREE_TEXT
 
 
+def test_build_case_document_attachment_mode_and_allow_multiple() -> None:
+    """ADR-015: режим ``attachment`` и флаг ``allow_multiple`` шаблона доходят до домена."""
+    task = DocumentTaskDraft(
+        prompt="Прикрепите заполненную форму",
+        options=(
+            DocumentOptionDraft(
+                title="Форма 23",
+                is_correct=True,
+                template=TemplateDraft(
+                    title="Форма 23", fill_mode="attachment", allow_multiple=True
+                ),
+            ),
+        ),
+    )
+    clinical = ClinicalDraft(documents=(task,))
+    case = build_case(CaseDraft(case_id="case-att", clinical=clinical))
+
+    template = case.clinical.documents[0].options[0].template
+    assert template is not None
+    assert template.fill_mode is FillMode.ATTACHMENT
+    assert template.allow_multiple is True
+
+
 def test_build_case_clinical_documents_round_trip_codec(tmp_path: Path) -> None:
     """round-trip через кодек .epicase: ``clinical.documents`` сохраняются (save→load)."""
     from epicase_core.application.cases import load_case, save_case

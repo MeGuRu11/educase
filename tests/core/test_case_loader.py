@@ -266,6 +266,41 @@ def test_document_fill_mode_and_reference_assets_round_trip(tmp_path: Path) -> N
     assert reloaded_task.options[0].template.fill_mode == "free_text"
 
 
+def test_document_attachment_mode_and_allow_multiple_round_trip(tmp_path: Path) -> None:
+    """ADR-015: attachment и allow_multiple переживают build_case → .epicase → case_to_draft."""
+    task = DocumentTaskDraft(
+        prompt="Прикрепите заполненную форму",
+        options=(
+            DocumentOptionDraft(
+                title="Форма 23",
+                is_correct=True,
+                template=TemplateDraft(
+                    title="Форма 23", fill_mode="attachment", allow_multiple=True
+                ),
+            ),
+            DocumentOptionDraft(title="Обманка", is_correct=False),
+        ),
+    )
+    draft = CaseDraft(
+        case_id="case-att", title="Док", clinical=ClinicalDraft(documents=(task,))
+    )
+
+    case = build_case(draft)
+    assets = read_asset_sources(draft)
+    dst = tmp_path / "c.epicase"
+    save_case(case, dst, assets=assets)
+    reloaded = case_to_draft(load_case(dst))
+
+    # Доменный инвариант симметрии: повторная сборка даёт тот же этап.
+    assert build_case(reloaded).clinical == build_case(draft).clinical
+
+    clinical = reloaded.clinical
+    assert clinical is not None
+    reloaded_template = clinical.documents[0].options[0].template
+    assert reloaded_template.fill_mode == "attachment"
+    assert reloaded_template.allow_multiple is True
+
+
 def _contacts_draft() -> ContactsDraft:
     """Непустой ``ContactsDraft``: схема с фоном и 2 зонами (одна с вложенным видом), осмотр.
 

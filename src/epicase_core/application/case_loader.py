@@ -187,6 +187,7 @@ def _template_to_draft(t: DocumentTemplate) -> TemplateDraft:
         title=t.title,
         fields=tuple(_field_to_draft(field) for field in t.fields),
         fill_mode=t.fill_mode.value,
+        allow_multiple=t.allow_multiple,
     )
 
 

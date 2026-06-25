@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QGroupBox,
@@ -34,8 +35,11 @@ class TemplateEditor(QWidget):
 
         self.mode_combo = QComboBox(self)
         self.mode_combo.setObjectName("fillModeSelect")
-        self.mode_combo.addItem("Свободный ввод", "free_text")
+        self.mode_combo.addItem("Прикрепить файл", "attachment")
         self.mode_combo.addItem("Поля", "fields")
+
+        self.multiple_checkbox = QCheckBox("Можно прикрепить несколько файлов", self)
+        self.multiple_checkbox.setObjectName("allowMultipleToggle")
 
         self.field_editors: list[FieldEditor] = []
         self._field_cards: list[QGroupBox] = []
@@ -63,18 +67,21 @@ class TemplateEditor(QWidget):
         title_form = QFormLayout()
         title_form.addRow("Заголовок шаблона", self.title_edit)
         title_form.addRow("Режим заполнения", self.mode_combo)
+        title_form.addRow("", self.multiple_checkbox)
 
         layout = QVBoxLayout(self)
         layout.addLayout(title_form)
         layout.addWidget(self._fields_container)
 
-        self.mode_combo.currentIndexChanged.connect(self._sync_fields_visibility)
-        self.mode_combo.setCurrentIndex(0)  # default: free_text
-        self._sync_fields_visibility()
+        self.mode_combo.currentIndexChanged.connect(self._sync_mode_visibility)
+        self.mode_combo.setCurrentIndex(self.mode_combo.findData("attachment"))  # default
+        self._sync_mode_visibility()
 
-    def _sync_fields_visibility(self) -> None:
-        """Показать/скрыть редактор полей в зависимости от выбранного режима."""
-        self._fields_container.setVisible(self.mode_combo.currentData() == "fields")
+    def _sync_mode_visibility(self) -> None:
+        """Показать/скрыть редактор полей и чекбокс «несколько файлов» под выбранный режим."""
+        mode = self.mode_combo.currentData()
+        self._fields_container.setVisible(mode == "fields")
+        self.multiple_checkbox.setVisible(mode == "attachment")
 
     def add_field(self) -> None:
         """Добавить редактор нового поля в конец списка."""
@@ -102,18 +109,20 @@ class TemplateEditor(QWidget):
         if idx == -1:
             idx = self.mode_combo.findData("fields")
         self.mode_combo.setCurrentIndex(idx)
+        self.multiple_checkbox.setChecked(draft.allow_multiple)
         self.title_edit.setText(draft.title)
         while self.field_editors:
             self.remove_last_field()
         for field in draft.fields:
             self.add_field()
             self.field_editors[-1].load(field)
-        self._sync_fields_visibility()
+        self._sync_mode_visibility()
 
     def to_draft(self) -> TemplateDraft:
-        """Собрать ``TemplateDraft`` из заголовка и всех редакторов полей."""
+        """Собрать ``TemplateDraft`` из заголовка, режима и всех редакторов полей."""
         return TemplateDraft(
             title=self.title_edit.text(),
             fields=tuple(editor.to_draft() for editor in self.field_editors),
             fill_mode=self.mode_combo.currentData(),
+            allow_multiple=self.multiple_checkbox.isChecked(),
         )

@@ -139,11 +139,15 @@ class FieldDraft:
 
 @dataclass(frozen=True)
 class TemplateDraft:
-    """Сырые значения шаблона документа: заголовок, поля и режим заполнения (ADR-014)."""
+    """Сырые значения шаблона документа: заголовок, поля, режим заполнения, флаг вложений.
+
+    ``allow_multiple`` — флаг «несколько файлов» для режима ATTACHMENT (ADR-015).
+    """
 
     title: str = ""
     fields: tuple[FieldDraft, ...] = ()
     fill_mode: str = "fields"
+    allow_multiple: bool = False
 
 
 @dataclass(frozen=True)
@@ -456,6 +460,7 @@ def _build_documents(
                         )
                     ),
                     fill_mode=FillMode(option.template.fill_mode or "fields"),
+                    allow_multiple=option.template.allow_multiple,
                 )
                 if option.is_correct
                 else None

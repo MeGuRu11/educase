@@ -35,10 +35,11 @@ class FieldType(StrEnum):
 
 
 class FillMode(StrEnum):
-    """Режим заполнения документа курсантом (ADR-014)."""
+    """Режим заполнения документа курсантом (ADR-014; ATTACHMENT — ADR-015)."""
 
     FREE_TEXT = "free_text"
     FIELDS = "fields"
+    ATTACHMENT = "attachment"
 
 
 # --- Правила сверки полей (дискриминатор — ClassVar TYPE, ключ "type" в to_dict) ---
@@ -200,12 +201,18 @@ class DocumentField:
 
 @dataclass(frozen=True)
 class DocumentTemplate:
-    """Шаблон документа: заголовок, поля и режим заполнения курсантом (ADR-014)."""
+    """Шаблон документа: заголовок, поля, режим заполнения и флаг нескольких вложений.
+
+    ``fill_mode`` — режим заполнения курсантом (ADR-014; ATTACHMENT — ADR-015).
+    ``allow_multiple`` — в режиме ATTACHMENT разрешает прикрепить несколько файлов (ADR-015);
+    для прочих режимов значения не имеет.
+    """
 
     id: str
     title: str = ""
     fields: tuple[DocumentField, ...] = ()
     fill_mode: FillMode = FillMode.FIELDS
+    allow_multiple: bool = False
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -213,6 +220,7 @@ class DocumentTemplate:
             "title": self.title,
             "fields": [f.to_dict() for f in self.fields],
             "fill_mode": self.fill_mode.value,
+            "allow_multiple": self.allow_multiple,
         }
 
     @classmethod
@@ -224,6 +232,7 @@ class DocumentTemplate:
                 DocumentField.from_dict(as_map(item)) for item in seq(data, "fields")
             ),
             fill_mode=FillMode(opt_str(data, "fill_mode") or "fields"),
+            allow_multiple=opt_bool(data, "allow_multiple"),
         )
 
 

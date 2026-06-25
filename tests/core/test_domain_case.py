@@ -281,10 +281,34 @@ def test_document_fill_mode_and_reference_assets_round_trip() -> None:
     assert template.fill_mode is FillMode.FREE_TEXT
 
 
+def test_document_template_attachment_mode_and_allow_multiple_round_trip() -> None:
+    # ADR-015: режим ATTACHMENT и флаг allow_multiple (True/False) переживают сериализацию.
+    for allow in (True, False):
+        template = DocumentTemplate(
+            id="tpl-att",
+            title="Форма 23",
+            fill_mode=FillMode.ATTACHMENT,
+            allow_multiple=allow,
+        )
+        restored = DocumentTemplate.from_dict(template.to_dict())
+        assert restored == template
+        assert restored.fill_mode is FillMode.ATTACHMENT
+        assert restored.allow_multiple is allow
+
+
+def test_document_template_attachment_serializes_as_string() -> None:
+    # FillMode.ATTACHMENT существует и сериализуется как "attachment".
+    assert FillMode.ATTACHMENT.value == "attachment"
+    data = DocumentTemplate(id="tpl", fill_mode=FillMode.ATTACHMENT).to_dict()
+    assert data["fill_mode"] == "attachment"
+
+
 def test_document_legacy_dict_defaults_back_compat() -> None:
-    # Старые архивы без новых ключей читаются: fill_mode → FIELDS, reference_assets → ().
+    # Старые архивы без новых ключей читаются: fill_mode → FIELDS, reference_assets → (),
+    # allow_multiple → False.
     template = DocumentTemplate.from_dict({"id": "tpl-old", "title": "Старый"})
     assert template.fill_mode is FillMode.FIELDS
+    assert template.allow_multiple is False
     task = DocumentTask.from_dict({"id": "doc-old", "prompt": "Старое задание"})
     assert task.reference_assets == ()
 
