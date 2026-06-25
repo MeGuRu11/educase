@@ -60,15 +60,20 @@ class BranchResponse:
 
 @dataclass(frozen=True)
 class DocumentResponse:
-    """Ответ по заданию документа: выбранная опция + пары «поле → ответ» + свободный текст.
+    """Ответ по заданию документа: выбранная опция + пары «поле → ответ» + вложения.
 
-    ``free_text`` — ответ в режиме свободного заполнения (ADR-014); в полевом режиме пуст.
+    ``free_text`` — ответ в режиме свободного заполнения (ADR-014); в полевом режиме пуст
+    (убирается отдельным срезом позже).
+    ``attachments`` — пары ``(asset_id, имя_файла)`` для режима ATTACHMENT (ADR-015): ссылки
+    на вложения курсанта, а не байты. ``asset_id`` — ключ в assets-карте архива результата,
+    ``имя_файла`` — отображаемое имя для отчёта; сами байты лежат в assets архива результата.
     """
 
     task_id: str
     chosen_option_id: str = ""
     field_answers: tuple[tuple[str, str], ...] = ()
     free_text: str = ""
+    attachments: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -76,6 +81,7 @@ class DocumentResponse:
             "chosen_option_id": self.chosen_option_id,
             "field_answers": [list(pair) for pair in self.field_answers],
             "free_text": self.free_text,
+            "attachments": [list(pair) for pair in self.attachments],
         }
 
     @classmethod
@@ -85,6 +91,7 @@ class DocumentResponse:
             chosen_option_id=opt_str(data, "chosen_option_id"),
             field_answers=pair_tuple(data, "field_answers"),
             free_text=opt_str(data, "free_text"),
+            attachments=pair_tuple(data, "attachments"),
         )
 
 

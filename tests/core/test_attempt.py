@@ -135,6 +135,23 @@ def test_document_response_legacy_dict_free_text_defaults() -> None:
     assert restored.free_text == ""
 
 
+def test_document_response_attachments_round_trip() -> None:
+    # ADR-015: пары (asset_id, имя_файла) режима ATTACHMENT переживают сериализацию.
+    response = DocumentResponse(
+        task_id="doc-att",
+        attachments=(("att-1", "Форма23.pdf"), ("att-2", "Акт.pdf")),
+    )
+    restored = DocumentResponse.from_dict(response.to_dict())
+    assert restored == response
+    assert restored.attachments == (("att-1", "Форма23.pdf"), ("att-2", "Акт.pdf"))
+
+
+def test_document_response_legacy_dict_attachments_defaults() -> None:
+    # Старый ответ без ключа attachments читается с дефолтом () (обратная совместимость).
+    restored = DocumentResponse.from_dict({"task_id": "doc-old"})
+    assert restored.attachments == ()
+
+
 def test_attempt_optional_none_round_trip() -> None:
     # branch / inspection / level_choice = None должны пережить сериализацию как null.
     attempt = Attempt(
