@@ -128,6 +128,10 @@ class StageView(QWidget):
             self._layout.addWidget(empty)
         self._layout.addStretch()
 
+    def collect_assets(self) -> dict[str, bytes]:
+        """Байты вложений ATTACHMENT-документов этапа; пусто по умолчанию."""
+        return {}
+
     def to_response(self) -> AttemptStage:
         """Собрать слот ответа этапа из накопленных виджетов (сырые данные, ADR-008)."""
         raise NotImplementedError
@@ -204,6 +208,12 @@ class ClinicalStageView(StageView):
             has_content = True
         self._finish(has_content)
 
+    def collect_assets(self) -> dict[str, bytes]:
+        out: dict[str, bytes] = {}
+        for _task, widget in self._docs:
+            out.update(widget.attachment_bytes())
+        return out
+
     def to_response(self) -> AttemptClinical:
         return AttemptClinical(
             search=_search_log(self._search),
@@ -271,6 +281,12 @@ class EnvironmentStageView(StageView):
             has_content = True
         self._finish(has_content)
 
+    def collect_assets(self) -> dict[str, bytes]:
+        out: dict[str, bytes] = {}
+        for _task, widget in self._docs:
+            out.update(widget.attachment_bytes())
+        return out
+
     def to_response(self) -> AttemptEnvironment:
         return AttemptEnvironment(
             documents=tuple(_doc_resp(task, widget) for task, widget in self._docs),
@@ -309,6 +325,12 @@ class SesStageView(StageView):
             has_content = True
         self._finish(has_content)
 
+    def collect_assets(self) -> dict[str, bytes]:
+        out: dict[str, bytes] = {}
+        for _task, widget in self._docs:
+            out.update(widget.attachment_bytes())
+        return out
+
     def to_response(self) -> AttemptSes:
         return AttemptSes(
             search=_search_log(self._search),
@@ -344,6 +366,12 @@ class FinalStageView(StageView):
             self._layout.addWidget(TimelineWidget(tl))
             has_content = True
         self._finish(has_content)
+
+    def collect_assets(self) -> dict[str, bytes]:
+        out: dict[str, bytes] = {}
+        for _task, widget in self._docs:
+            out.update(widget.attachment_bytes())
+        return out
 
     def to_response(self) -> AttemptFinal:
         return AttemptFinal(
@@ -382,6 +410,7 @@ def _doc_resp(task: DocumentTask, widget: DocumentWidget) -> DocumentResponse:
             (fw.field.id, fw.answer()) for fw in widget.current_field_widgets()
         ),
         free_text=widget.free_text(),
+        attachments=widget.attachments(),
     )
 
 

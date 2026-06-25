@@ -63,6 +63,14 @@ def test_non_blocking_navigation(qtbot: QtBot) -> None:
     assert nav.current_index == 5
 
 
+def test_collect_assets_returns_empty_by_default(qtbot: QtBot) -> None:
+    """collect_assets() пуст для кейса без прикреплённых файлов (ADR-015)."""
+    case = Case(meta=CaseMeta("c1", "Тест"))
+    nav = CaseNavigator(case)
+    qtbot.addWidget(nav)
+    assert nav.collect_assets() == {}
+
+
 def test_scheme_image_round_trips_to_navigator(
     qtbot: QtBot, tmp_path: Path, png_bytes: Callable[..., bytes]
 ) -> None:

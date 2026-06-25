@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
         )
         attempt = self._navigator.collect_attempt(meta)
         try:
-            record_attempt(attempt, path)
+            record_attempt(attempt, path, assets=self._navigator.collect_assets())
         except (ArchiveError, OSError) as exc:
             QMessageBox.warning(self, "Ошибка сохранения", str(exc))
             return False

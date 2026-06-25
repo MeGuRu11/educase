@@ -1,13 +1,16 @@
 from pathlib import Path
 
 import pytest
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 from pytestqt.qtbot import QtBot
 
 from epicase_core.application.cases import save_case
 from epicase_core.application.results import load_result
 from epicase_core.domain.case import Case, CaseMeta
+from epicase_core.domain.documents import DocumentOption, DocumentTask, DocumentTemplate, FillMode
+from epicase_core.domain.stages import StageClinical
 from epicase_player.ui.case_navigator import CaseNavigator
+from epicase_player.ui.document_widget import DocumentWidget
 from epicase_player.ui.main_window import MainWindow
 
 
@@ -112,3 +115,44 @@ def test_save_result_round_trip_identity_fields(qtbot: QtBot, tmp_path: Path) ->
     assert loaded.attempt.meta.trainee_label == "Иванов И.И."
     assert loaded.attempt.meta.rank == "лейтенант"
     assert loaded.attempt.meta.study_group == "121"
+
+
+def test_save_result_assets_round_trip(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Вложение ATTACHMENT курсанта доезжает save_result_to_path → load_result (ADR-015)."""
+    att_file = tmp_path / "attach.txt"
+    att_file.write_bytes(b"attachment content")
+
+    att_opt = DocumentOption(
+        id="opt_att",
+        title="Акт",
+        is_correct=True,
+        template=DocumentTemplate(id="tpl_att", title="Акт", fill_mode=FillMode.ATTACHMENT),
+    )
+    task = DocumentTask(id="t_att", prompt="Прикрепите акт.", options=(att_opt,))
+    case = Case(meta=CaseMeta("c_att", "АТТ"), clinical=StageClinical(documents=(task,)))
+    src = tmp_path / "att.epicase"
+    save_case(case, src)
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    assert window.load_case_from_path(src) is True
+
+    navigator = window._navigator
+    assert navigator is not None
+    doc_widgets: list[DocumentWidget] = navigator.findChildren(DocumentWidget)
+    assert len(doc_widgets) == 1
+    dw = doc_widgets[0]
+    dw.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(att_file), ""))
+    dw._pick_files(allow_multiple=False)
+
+    out = tmp_path / "result.epiresult"
+    assert window.save_result_to_path(out, "Курсант") is True
+
+    loaded = load_result(out)
+    assert loaded.attempt.meta.case_id == "c_att"
+    assert len(loaded.assets) == 1
+    assert list(loaded.assets.values()) == [b"attachment content"]

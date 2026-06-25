@@ -121,6 +121,13 @@ class CaseNavigator(QWidget):
             final=final or AttemptFinal(),
         )
 
+    def collect_assets(self) -> dict[str, bytes]:
+        """Байты вложений со всех этапов кейса (ADR-015)."""
+        out: dict[str, bytes] = {}
+        for view in self._views:
+            out.update(view.collect_assets())
+        return out
+
     def _refresh(self) -> None:
         idx = self.stack.currentIndex()
         count = self.stack.count()

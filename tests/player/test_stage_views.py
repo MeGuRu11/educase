@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
-from PySide6.QtWidgets import QLabel, QWidget
+import pytest
+from PySide6.QtWidgets import QFileDialog, QLabel, QWidget
 from pytestqt.qtbot import QtBot
 
-from epicase_core.domain.documents import DocumentOption, DocumentTask
+from epicase_core.domain.documents import DocumentOption, DocumentTask, DocumentTemplate, FillMode
 from epicase_core.domain.scheme import SchemeDocument, SchemeView
 from epicase_core.domain.search import InspectionCheck, KeywordSearch, SearchEntry, SynonymSet
 from epicase_core.domain.stages import (
@@ -28,7 +30,7 @@ from epicase_player.ui.inspection_widget import InspectionWidget
 from epicase_player.ui.patient_card_widget import PatientCardWidget
 from epicase_player.ui.scheme_viewer import SchemeViewerWidget
 from epicase_player.ui.search_widget import SearchWidget
-from epicase_player.ui.stage_views import build_stage_view
+from epicase_player.ui.stage_views import _doc_resp, build_stage_view
 from epicase_player.ui.timeline_widget import TimelineWidget
 
 
@@ -282,3 +284,73 @@ def test_environment_photos_dangling_refs_show_placeholders(qtbot: QtBot) -> Non
     images: list[AssetImageWidget] = view.findChildren(AssetImageWidget)
     assert len(images) == 2
     assert all(img.has_image() is False for img in images)
+
+
+# --- ADR-015: ATTACHMENT и collect_assets ---
+
+
+def _make_attachment_option() -> DocumentOption:
+    return DocumentOption(
+        id="opt_att",
+        title="Акт",
+        is_correct=True,
+        template=DocumentTemplate(
+            id="tpl_att",
+            title="Акт",
+            fill_mode=FillMode.ATTACHMENT,
+            allow_multiple=True,
+        ),
+    )
+
+
+def test_doc_resp_includes_attachments(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """_doc_resp кладёт attachments в DocumentResponse."""
+    f = tmp_path / "file.txt"
+    f.write_bytes(b"x")
+    task = DocumentTask(id="t1", prompt="", options=(_make_attachment_option(),))
+    widget = DocumentWidget(task)
+    qtbot.addWidget(widget)
+    widget.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    widget._pick_files(allow_multiple=True)
+
+    resp = _doc_resp(task, widget)
+    assert len(resp.attachments) == 1
+    asset_id, name = resp.attachments[0]
+    assert name == "file.txt"
+    assert asset_id in widget.attachment_bytes()
+
+
+def test_collect_assets_clinical_with_attachment(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ClinicalStageView.collect_assets() возвращает байты ATTACHMENT-вложений."""
+    f = tmp_path / "act.pdf"
+    f.write_bytes(b"pdf data")
+    task = DocumentTask(id="t1", prompt="", options=(_make_attachment_option(),))
+    stage = StageClinical(documents=(task,))
+    view = build_stage_view(stage)
+    qtbot.addWidget(view)
+
+    doc_widgets: list[DocumentWidget] = view.findChildren(DocumentWidget)
+    assert len(doc_widgets) == 1
+    dw = doc_widgets[0]
+    dw.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    dw._pick_files(allow_multiple=True)
+
+    assets = view.collect_assets()
+    assert len(assets) == 1
+    assert list(assets.values()) == [b"pdf data"]
+
+
+def test_collect_assets_empty_without_attachments(qtbot: QtBot) -> None:
+    """collect_assets() пуст, если нет ATTACHMENT-вложений."""
+    stage = StageClinical()
+    view = build_stage_view(stage)
+    qtbot.addWidget(view)
+    assert view.collect_assets() == {}

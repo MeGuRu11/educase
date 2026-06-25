@@ -1,7 +1,18 @@
 """Тесты DocumentWidget: выбор документа из списка с обманками и заполнение полей."""
 from __future__ import annotations
 
-from PySide6.QtWidgets import QComboBox, QLabel, QLineEdit, QPlainTextEdit
+from pathlib import Path
+
+import pytest
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QPlainTextEdit,
+    QPushButton,
+)
 from pytestqt.qtbot import QtBot
 
 from epicase_core.domain.documents import (
@@ -299,3 +310,182 @@ def test_doc_resp_free_text_and_field_mode(qtbot: QtBot) -> None:
     fields_widget.options_combo.setCurrentIndex(0)
     resp2 = _doc_resp(fields_task, fields_widget)
     assert resp2.free_text == ""
+
+
+# --- ADR-015: ATTACHMENT mode ---
+
+
+def _make_attachment_task(allow_multiple: bool = True) -> DocumentTask:
+    """DocumentTask с одной ATTACHMENT-опцией."""
+    opt = DocumentOption(
+        id="opt_att",
+        title="Акт расследования",
+        is_correct=True,
+        template=DocumentTemplate(
+            id="tpl_att",
+            title="Акт",
+            fill_mode=FillMode.ATTACHMENT,
+            allow_multiple=allow_multiple,
+        ),
+    )
+    return DocumentTask(id="task_att", prompt="Прикрепите акт.", options=(opt,))
+
+
+def test_attachment_mode_shows_button_multiple(qtbot: QtBot) -> None:
+    """ATTACHMENT allow_multiple=True → кнопка «Прикрепить файлы»."""
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    buttons: list[QPushButton] = [
+        b for b in w.form_area.findChildren(QPushButton) if b.objectName() == "attachButton"
+    ]
+    assert buttons and buttons[0].text() == "Прикрепить файлы"
+
+
+def test_attachment_mode_shows_button_single(qtbot: QtBot) -> None:
+    """ATTACHMENT allow_multiple=False → кнопка «Прикрепить файл»."""
+    w = DocumentWidget(_make_attachment_task(allow_multiple=False))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    buttons: list[QPushButton] = [
+        b for b in w.form_area.findChildren(QPushButton) if b.objectName() == "attachButton"
+    ]
+    assert buttons and buttons[0].text() == "Прикрепить файл"
+
+
+def test_attachment_getters_empty_before_pick(qtbot: QtBot) -> None:
+    """До прикрепления файлов оба геттера возвращают пустые значения."""
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    assert w.attachments() == ()
+    assert w.attachment_bytes() == {}
+
+
+def test_attachment_multiple_appends_files(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """allow_multiple=True: повторный вызов добавляет файлы, не заменяет."""
+    f1 = tmp_path / "doc1.txt"
+    f1.write_bytes(b"content1")
+    f2 = tmp_path / "doc2.txt"
+    f2.write_bytes(b"content2")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f1)], ""))
+    w._pick_files(allow_multiple=True)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f2)], ""))
+    w._pick_files(allow_multiple=True)
+
+    atts = w.attachments()
+    assert len(atts) == 2
+    assert {name for _, name in atts} == {"doc1.txt", "doc2.txt"}
+    assert set(w.attachment_bytes().values()) == {b"content1", b"content2"}
+
+
+def test_attachment_single_replaces_on_repeat(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """allow_multiple=False: повторное прикрепление заменяет предыдущее вложение."""
+    f1 = tmp_path / "first.pdf"
+    f1.write_bytes(b"first")
+    f2 = tmp_path / "second.pdf"
+    f2.write_bytes(b"second")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=False))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(f1), ""))
+    w._pick_files(allow_multiple=False)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(f2), ""))
+    w._pick_files(allow_multiple=False)
+
+    atts = w.attachments()
+    assert len(atts) == 1
+    assert atts[0][1] == "second.pdf"
+    assert list(w.attachment_bytes().values()) == [b"second"]
+
+
+def test_attachment_clear_empties_getters(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """_clear_attachments() обнуляет оба геттера."""
+    f = tmp_path / "doc.txt"
+    f.write_bytes(b"data")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    w._pick_files(allow_multiple=True)
+    assert len(w.attachments()) == 1
+
+    w._clear_attachments()
+    assert w.attachments() == ()
+    assert w.attachment_bytes() == {}
+
+
+def test_attachment_asset_ids_unique_and_match_bytes(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Каждое вложение получает уникальный asset_id; ключи attachment_bytes() совпадают."""
+    f1 = tmp_path / "a.txt"
+    f1.write_bytes(b"aaa")
+    f2 = tmp_path / "b.txt"
+    f2.write_bytes(b"bbb")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(
+        QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f1), str(f2)], "")
+    )
+    w._pick_files(allow_multiple=True)
+
+    atts = w.attachments()
+    ab = w.attachment_bytes()
+    ids = [aid for aid, _ in atts]
+    assert len(ids) == len(set(ids))
+    assert set(ids) == set(ab.keys())
+
+
+def test_attachment_list_widget_updated_on_pick(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """После pick QListWidget отображает имена прикреплённых файлов."""
+    f = tmp_path / "report.docx"
+    f.write_bytes(b"doc")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    w._pick_files(allow_multiple=True)
+
+    lists: list[QListWidget] = w.form_area.findChildren(QListWidget)
+    assert lists and lists[0].count() == 1
+    assert lists[0].item(0).text() == "report.docx"
+
+
+def test_attachment_getters_empty_in_other_modes(qtbot: QtBot) -> None:
+    """FREE_TEXT и FIELDS-режимы не возвращают вложений."""
+    w_free = DocumentWidget(_make_free_text_task())
+    qtbot.addWidget(w_free)
+    w_free.options_combo.setCurrentIndex(0)
+    assert w_free.attachments() == ()
+    assert w_free.attachment_bytes() == {}
+
+    w_fields = DocumentWidget(_make_task())
+    qtbot.addWidget(w_fields)
+    w_fields.options_combo.setCurrentIndex(0)
+    assert w_fields.attachments() == ()
+    assert w_fields.attachment_bytes() == {}
