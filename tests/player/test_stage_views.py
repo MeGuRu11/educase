@@ -163,6 +163,47 @@ def test_stage_final_does_not_render_timeline_widget(qtbot: QtBot) -> None:
     assert len(widgets) == 0
 
 
+def test_stage_final_renders_editable_timeline_per_timeline(qtbot: QtBot) -> None:
+    """StageFinal с N таймлайнами → N EditableTimelineWidget (курсант заполняет сам)."""
+    from epicase_core.domain.stages import Timeline
+    from epicase_player.ui.editable_timeline_widget import EditableTimelineWidget
+
+    t1 = Timeline(id="tl1", title="Сроки 1", events=(("01.01.2024", "A"),))
+    t2 = Timeline(id="tl2", title="Сроки 2")
+    stage = StageFinal(timelines=(t1, t2))
+    view = build_stage_view(stage)
+    qtbot.addWidget(view)
+
+    widgets: list[EditableTimelineWidget] = view.findChildren(EditableTimelineWidget)
+    assert len(widgets) == 2
+
+
+def test_stage_final_to_response_collects_timeline_entries(qtbot: QtBot) -> None:
+    """FinalStageView.to_response() собирает введённые курсантом записи в timelines."""
+    from PySide6.QtWidgets import QTableWidgetItem
+
+    from epicase_core.domain.stages import Timeline
+    from epicase_player.ui.editable_timeline_widget import EditableTimelineWidget
+    from epicase_player.ui.stage_views import FinalStageView
+
+    tl = Timeline(id="tl1", title="Сроки", events=(("01.01.2024", "эталон"),))
+    stage = StageFinal(timelines=(tl,))
+    view = FinalStageView(stage)
+    qtbot.addWidget(view)
+
+    widgets: list[EditableTimelineWidget] = view.findChildren(EditableTimelineWidget)
+    assert len(widgets) == 1
+    table = widgets[0]._table
+    table.setItem(0, 0, QTableWidgetItem("02.01.2024"))
+    table.setItem(0, 1, QTableWidgetItem("Госпитализация"))
+
+    response = view.to_response()
+    assert len(response.timelines) == 1
+    tr = response.timelines[0]
+    assert tr.timeline_id == "tl1"
+    assert ("02.01.2024", "Госпитализация") in tr.entries
+
+
 def test_stage_contacts_with_inspection_contains_inspection_widget(qtbot: QtBot) -> None:
     """StageContacts с inspection → InspectionWidget присутствует."""
     inspection = InspectionCheck(expected=(SynonymSet(canonical="вода"),))

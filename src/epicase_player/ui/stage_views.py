@@ -34,6 +34,7 @@ from epicase_core.domain.attempt import (
     DocumentResponse,
     InspectionResponse,
     SearchLog,
+    TimelineResponse,
 )
 from epicase_core.domain.documents import DocumentField, DocumentTask
 from epicase_core.domain.stages import (
@@ -51,6 +52,7 @@ from epicase_player.ui.asset_image_widget import AssetImageWidget
 from epicase_player.ui.branch_widget import BranchWidget
 from epicase_player.ui.document_field_widget import DocumentFieldWidget
 from epicase_player.ui.document_widget import DocumentWidget
+from epicase_player.ui.editable_timeline_widget import EditableTimelineWidget
 from epicase_player.ui.flow_layout import FlowLayout
 from epicase_player.ui.inspection_widget import InspectionWidget
 from epicase_player.ui.patient_card_widget import PatientCardWidget
@@ -339,7 +341,11 @@ class SesStageView(StageView):
 
 
 class FinalStageView(StageView):
-    """Этап 6 «Окончательный диагноз»: поиск и документы курсанта."""
+    """Этап 6 «Окончательный диагноз»: поиск, документы и таймлайны, заполняемые курсантом.
+
+    Таймлайны курсант заполняет сам (``EditableTimelineWidget``); эталонные события из
+    конфига (``Timeline.events``) ему не показываются — сверка живёт в будущем отчёте.
+    """
 
     def __init__(
         self,
@@ -350,6 +356,7 @@ class FinalStageView(StageView):
         super().__init__(stage, assets, parent)
         self._search: SearchWidget | None = None
         self._docs: list[tuple[DocumentTask, DocumentWidget]] = []
+        self._timelines: list[EditableTimelineWidget] = []
 
         has_content = False
         if stage.search is not None and stage.search.entries:
@@ -360,6 +367,11 @@ class FinalStageView(StageView):
             doc_widget = DocumentWidget(task, self._assets)
             self._docs.append((task, doc_widget))
             self._layout.addWidget(doc_widget)
+            has_content = True
+        for tl in stage.timelines:
+            w = EditableTimelineWidget(tl)
+            self._timelines.append(w)
+            self._layout.addWidget(w)
             has_content = True
         self._finish(has_content)
 
@@ -373,6 +385,10 @@ class FinalStageView(StageView):
         return AttemptFinal(
             search=_search_log(self._search),
             documents=tuple(_doc_resp(task, widget) for task, widget in self._docs),
+            timelines=tuple(
+                TimelineResponse(timeline_id=w.timeline_id, entries=w.entries())
+                for w in self._timelines
+            ),
         )
 
 
