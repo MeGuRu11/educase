@@ -324,3 +324,47 @@ QWidget#patientCard:hover {
     background: #F2F6F7;
     border-radius: 8px;
 }
+
+/* --- Экран завершения / подтверждение сохранения --- */
+QFrame#completionCard {
+    background: #FFFFFF;
+    border: 1px solid #D4DAE0;
+    border-radius: 14px;
+    padding: 32px;
+}
+QLabel#completionTitle,
+QLabel#completionDoneTitle {
+    color: #1F2A33;
+    font-size: 22px;
+    font-weight: bold;
+}
+QLabel#completionSubtitle,
+QLabel#completionSavedLabel {
+    color: #66727E;
+    font-size: 14px;
+}
+QLabel#completionPathLabel {
+    background: #F6F8FA;
+    border: 1px solid #E1E6EA;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #1F2A33;
+}
+QPushButton#primaryButton,
+QPushButton#completionSaveButton {
+    background: #0F766E;
+    color: #FFFFFF;
+    border: 1px solid #0F766E;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-weight: bold;
+}
+QPushButton#primaryButton:hover,
+QPushButton#completionSaveButton:hover {
+    background: #0C5F58;
+    border-color: #0C5F58;
+}
+QPushButton#primaryButton:pressed,
+QPushButton#completionSaveButton:pressed {
+    background: #0A4F49;
+}

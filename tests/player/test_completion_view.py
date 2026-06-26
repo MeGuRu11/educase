@@ -1,17 +1,19 @@
 """Тесты CompletionView: начальная фаза, сигналы, переключение в saved."""
 from __future__ import annotations
 
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QFrame, QPushButton
 from pytestqt.qtbot import QtBot
 
 from epicase_player.ui.completion_view import CompletionView
 
 
 def test_initial_phase_is_ready(qtbot: QtBot) -> None:
-    """На старте показывается фаза 'ready'."""
+    """На старте показывается фаза 'ready' с карточкой QFrame#completionCard."""
     view = CompletionView()
     qtbot.addWidget(view)
     assert view._stack.currentIndex() == CompletionView._READY
+    cards = view.findChildren(QFrame, "completionCard")
+    assert len(cards) >= 1
 
 
 def test_save_requested_on_save_button(qtbot: QtBot) -> None:
