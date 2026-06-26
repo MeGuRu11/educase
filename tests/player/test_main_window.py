@@ -34,7 +34,7 @@ def test_load_case_from_path_success(qtbot: QtBot, tmp_path: Path) -> None:
     assert result is True
     central = window.centralWidget()
     assert isinstance(central, CaseNavigator)
-    assert central.stack.count() == 6
+    assert central.stack.count() == 7  # 6 этапов + 1 страница завершения
 
 
 def test_load_case_from_path_corrupt(
@@ -156,3 +156,25 @@ def test_save_result_assets_round_trip(
     assert loaded.attempt.meta.case_id == "c_att"
     assert len(loaded.assets) == 1
     assert list(loaded.assets.values()) == [b"attachment content"]
+
+
+def test_complete_save_writes_file_and_switches_to_completion(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """complete_save записывает .epiresult и переводит навигатор на страницу завершения."""
+    case = Case(meta=CaseMeta("c1", "Тест"))
+    src = tmp_path / "test.epicase"
+    save_case(case, src)
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    assert window.load_case_from_path(src) is True
+
+    out = tmp_path / "result.epiresult"
+    ok = window.complete_save(out)
+    assert ok is True
+
+    nav = window._navigator
+    assert nav is not None
+    assert nav.stack.currentIndex() == nav._stage_count
+    assert nav._position_label.text() == "Завершение"

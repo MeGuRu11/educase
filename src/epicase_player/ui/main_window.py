@@ -83,6 +83,8 @@ class MainWindow(QMainWindow):
             )
             return False
         navigator = CaseNavigator(loaded.case, loaded.assets, self)
+        navigator.save_requested.connect(self.save_result_dialog)
+        navigator.new_case_requested.connect(self.open_case_dialog)
         self.setCentralWidget(navigator)
         self._navigator = navigator
         self._case = loaded.case
@@ -103,12 +105,28 @@ class MainWindow(QMainWindow):
             "Результаты EpiCase (*.epiresult)",
         )
         if path:
-            self.save_result_to_path(
+            self.complete_save(
                 Path(path),
                 dialog.full_name(),
                 dialog.rank(),
                 dialog.study_group(),
             )
+
+    def complete_save(
+        self,
+        path: Path,
+        trainee_label: str = "",
+        rank: str = "",
+        study_group: str = "",
+    ) -> bool:
+        """Сохранить результат и перевести навигатор в фазу завершения.
+
+        Тестируемый шов: вызывается без диалогов.
+        """
+        ok = self.save_result_to_path(path, trainee_label, rank, study_group)
+        if ok and self._navigator is not None:
+            self._navigator.mark_saved(str(path))
+        return ok
 
     def save_result_to_path(
         self,
