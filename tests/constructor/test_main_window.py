@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
-from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
+from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
 from epicase_constructor.ui.case_saved_view import CaseSavedView
@@ -337,3 +338,79 @@ def test_home_requested_returns_to_start(qtbot: QtBot) -> None:
     window._saved_view.home_requested.emit()
 
     assert window._stack.currentIndex() == _PAGE_START
+
+
+# --- Тесты подтверждения перед потерей несохранённого кейса ---
+
+
+def test_close_event_editor_no_ignores(qtbot: QtBot, monkeypatch: MonkeyPatch) -> None:
+    """closeEvent на странице редактора при ответе No → событие проигнорировано."""
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *a, **kw: QMessageBox.StandardButton.No
+    )
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+
+    event = QCloseEvent()
+    window.closeEvent(event)
+    assert not event.isAccepted()
+
+
+def test_close_event_editor_yes_accepts(qtbot: QtBot, monkeypatch: MonkeyPatch) -> None:
+    """closeEvent на странице редактора при ответе Yes → событие принято."""
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *a, **kw: QMessageBox.StandardButton.Yes
+    )
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+
+    event = QCloseEvent()
+    window.closeEvent(event)
+    assert event.isAccepted()
+
+
+def test_close_event_start_no_question(qtbot: QtBot, monkeypatch: MonkeyPatch) -> None:
+    """closeEvent на стартовой странице принимается без вопроса."""
+    called: list[bool] = []
+
+    def _question(*a: object, **kw: object) -> QMessageBox.StandardButton:
+        called.append(True)
+        return QMessageBox.StandardButton.No
+
+    monkeypatch.setattr(QMessageBox, "question", _question)
+    window = MainWindow()
+    qtbot.addWidget(window)
+    # _PAGE_START по умолчанию
+
+    event = QCloseEvent()
+    window.closeEvent(event)
+    assert event.isAccepted()
+    assert not called
+
+
+def test_open_case_dialog_editor_no_skips_load(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    """open_case_dialog на странице редактора при ответе No не открывает файл."""
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *a, **kw: QMessageBox.StandardButton.No
+    )
+    monkeypatch.setattr(
+        QFileDialog, "getOpenFileName", lambda *a, **kw: ("dummy.epicase", "")
+    )
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+
+    load_called: list[Path] = []
+
+    def _load(p: Path) -> bool:
+        load_called.append(p)
+        return True
+
+    monkeypatch.setattr(window, "load_case_from_path", _load)
+
+    window.open_case_dialog()
+    assert load_called == []

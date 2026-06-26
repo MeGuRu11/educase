@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget
 
 from epicase_constructor.ui.case_editor import CaseEditor
@@ -47,6 +47,24 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentIndex(_PAGE_START)
         self.setCentralWidget(self._stack)
         self._build_menu()
+
+    def _confirm_discard(self, question: str) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Несохранённые изменения",
+            question,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self._stack.currentIndex() == _PAGE_EDITOR and not self._confirm_discard(
+            "Выйти из Конструктора? Несохранённые изменения кейса будут потеряны."
+        ):
+            event.ignore()
+            return
+        event.accept()
 
     def _open_editor(self) -> None:
         self._stack.setCurrentIndex(_PAGE_EDITOR)
@@ -111,6 +129,10 @@ class MainWindow(QMainWindow):
 
     def open_case_dialog(self) -> None:
         """Показать диалог открытия и загрузить выбранный .epicase в редактор."""
+        if self._stack.currentIndex() == _PAGE_EDITOR and not self._confirm_discard(
+            "Открыть другой кейс? Несохранённые изменения текущего будут потеряны."
+        ):
+            return
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть кейс",
