@@ -122,6 +122,13 @@ class ZoneItem(QGraphicsRectItem):
         self._on_change = on_change
         self._active_handle: _Handle | None = None
         self._press_scene_rect = QRectF()
+        self._index: int = 0
+
+    def set_index(self, index: int) -> None:
+        """Задать порядковый номер бейджа (1-based). 0 — скрыть бейдж."""
+        if index != self._index:
+            self._index = index
+            self.update()
 
     # --- геометрия ручек -----------------------------------------------------
 
@@ -189,6 +196,22 @@ class ZoneItem(QGraphicsRectItem):
             painter.setBrush(QBrush(_ZONE_PEN))
             for center in self._handle_centers().values():
                 painter.drawRect(self._handle_rect(center))
+        if self._index > 0:
+            painter.save()
+            r = self.rect()
+            side = min(22.0, r.width() * 0.6, r.height() * 0.6)
+            if side >= 12.0:
+                badge = QRectF(r.left() + 3.0, r.top() + 3.0, side, side)
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(_ZONE_PEN))
+                painter.drawRoundedRect(badge, 5.0, 5.0)
+                painter.setPen(QPen(QColor("#FFFFFF")))
+                font = painter.font()
+                font.setBold(True)
+                font.setPointSizeF(max(8.0, side * 0.5))
+                painter.setFont(font)
+                painter.drawText(badge, Qt.AlignmentFlag.AlignCenter, str(self._index))
+            painter.restore()
 
     # --- курсоры -------------------------------------------------------------
 
@@ -415,6 +438,7 @@ class SchemeZoneCanvas(QGraphicsView):
             QRectF(nx * self._px_w, ny * self._px_h, nw * self._px_w, nh * self._px_h)
         )
         self._zones.append(item)
+        self._renumber()
         if self._on_zones_changed is not None:
             self._on_zones_changed()
         return item
@@ -425,6 +449,7 @@ class SchemeZoneCanvas(QGraphicsView):
             return
         zone = self._zones.pop()
         self._scene.removeItem(zone)
+        self._renumber()
         if self._on_zones_changed is not None:
             self._on_zones_changed()
 
@@ -433,8 +458,14 @@ class SchemeZoneCanvas(QGraphicsView):
         for zone in [z for z in self._zones if z.isSelected()]:
             self._scene.removeItem(zone)
             self._zones.remove(zone)
+        self._renumber()
         if self._on_zones_changed is not None:
             self._on_zones_changed()
+
+    def _renumber(self) -> None:
+        """Пронумеровать зоны по порядку в списке (1-based)."""
+        for i, zone in enumerate(self._zones, start=1):
+            zone.set_index(i)
 
     def clear_zones(self) -> None:
         """Удалить все зоны со сцены и из списка (внутренний сброс, без уведомления)."""
@@ -484,6 +515,7 @@ class SchemeZoneCanvas(QGraphicsView):
             scene_rect = zone.mapRectToScene(zone.rect())
             if scene_rect.width() >= _MIN_SIZE and scene_rect.height() >= _MIN_SIZE:
                 self._zones.append(zone)
+                self._renumber()
                 if self._on_zones_changed is not None:
                     self._on_zones_changed()
             else:
