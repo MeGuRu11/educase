@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -23,6 +24,7 @@ from epicase_core.domain.attempt import (
     AttemptSes,
 )
 from epicase_core.domain.case import Case
+from epicase_player.ui.completion_view import CompletionView
 from epicase_player.ui.stage_views import (
     ClinicalStageView,
     ContactsStageView,
@@ -42,6 +44,9 @@ class CaseNavigator(QWidget):
     вперёд/назад по всем шести этапам независимо от введённых данных.
     """
 
+    save_requested: Signal = Signal()
+    new_case_requested: Signal = Signal()
+
     def __init__(
         self,
         case: Case,
@@ -52,6 +57,7 @@ class CaseNavigator(QWidget):
 
         self._assets: Mapping[str, bytes] = assets if assets is not None else {}
         stages = case.ordered()
+        self._stage_count = len(stages)
 
         layout = QVBoxLayout(self)
 
@@ -64,6 +70,12 @@ class CaseNavigator(QWidget):
         self._views: tuple[StageView, ...] = views
         for view in views:
             self.stack.addWidget(view)
+
+        self._completion = CompletionView()
+        self.stack.addWidget(self._completion)
+        self._completion.save_requested.connect(self.save_requested)
+        self._completion.new_case_requested.connect(self.new_case_requested)
+
         layout.addWidget(self.stack, 1)
 
         nav_layout = QHBoxLayout()
@@ -83,6 +95,12 @@ class CaseNavigator(QWidget):
     def current_index(self) -> int:
         """Текущий индекс активного этапа (0-based)."""
         return self.stack.currentIndex()
+
+    def mark_saved(self, path: str) -> None:
+        """Переключить на страницу завершения с путём к сохранённому файлу."""
+        self._completion.set_saved(path)
+        self.stack.setCurrentIndex(self.stack.count() - 1)
+        self._refresh()
 
     def collect_attempt(self, meta: AttemptMeta) -> Attempt:
         """Собрать прохождение из накопленных видов этапов (сырые ответы, ADR-008).
@@ -131,9 +149,16 @@ class CaseNavigator(QWidget):
     def _refresh(self) -> None:
         idx = self.stack.currentIndex()
         count = self.stack.count()
-        self._position_label.setText(f"Этап {idx + 1} из {count}")
+        if idx < self._stage_count:
+            self._position_label.setText(f"Этап {idx + 1} из {self._stage_count}")
+        else:
+            self._position_label.setText("Завершение")
         self.btn_prev.setEnabled(idx > 0)
         self.btn_next.setEnabled(idx < count - 1)
+        if idx == self._stage_count - 1:
+            self.btn_next.setText("Завершить")
+        else:
+            self.btn_next.setText("Далее")
 
     def _go_prev(self) -> None:
         idx = self.stack.currentIndex()
