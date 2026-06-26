@@ -24,6 +24,8 @@ class GradedResult:
 
     ``case_id`` — id выбранного эталонного кейса; ``attempt_case_id`` — id кейса, к которому
     относится результат; их несовпадение — повод предупредить преподавателя, не ошибка.
+    ``assets`` — ассеты архива результата (имя → байты), включая вложения курсанта: отчёту
+    нужны байты, чтобы их можно было открыть или сохранить.
     """
 
     report: CaseReport
@@ -32,6 +34,7 @@ class GradedResult:
     trainee_label: str
     rank: str
     study_group: str
+    assets: dict[str, bytes]
 
     @property
     def case_id_matches(self) -> bool:
@@ -45,7 +48,8 @@ def report_for_result(result_path: Path, case_path: Path) -> GradedResult:
     Загружает прохождение и кейс готовыми сервисами и гоняет ``grade_case``. Ошибки формата
     или типа архива (``ArchiveError`` из ``load_*``) пробрасываются наверх.
     """
-    attempt = load_result(result_path).attempt
+    loaded = load_result(result_path)
+    attempt = loaded.attempt
     case = load_case(case_path).case
     return GradedResult(
         report=grade_case(case, attempt),
@@ -54,6 +58,7 @@ def report_for_result(result_path: Path, case_path: Path) -> GradedResult:
         trainee_label=attempt.meta.trainee_label,
         rank=attempt.meta.rank,
         study_group=attempt.meta.study_group,
+        assets=loaded.assets,
     )
 
 

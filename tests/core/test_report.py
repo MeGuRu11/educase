@@ -8,6 +8,7 @@ from epicase_core.domain import (
     AttemptContacts,
     AttemptFinal,
     AttemptMeta,
+    AttemptPatients,
     AttemptSes,
     BranchOption,
     BranchPoint,
@@ -26,6 +27,7 @@ from epicase_core.domain import (
     FindingKind,
     InspectionCheck,
     InspectionResponse,
+    SearchLog,
     StageClinical,
     StageContacts,
     StageFinal,
@@ -333,3 +335,95 @@ def test_case_report_round_trip() -> None:
     )
     report = grade_case(case, attempt)
     assert CaseReport.from_dict(report.to_dict()) == report
+
+
+# --- Нейтральный контекст: запросы, вывод осмотра, вложения (без вердикта) ---
+
+
+def test_search_queries_become_notes() -> None:
+    """Поисковые запросы курсанта попадают в notes этапа одной приглушённой строкой."""
+    case = Case(CaseMeta("case-1"))
+    attempt = Attempt(
+        AttemptMeta("case-1"),
+        patients=AttemptPatients(search=SearchLog(queries=("диарея", "рвота"))),
+    )
+    patients = _stage(grade_case(case, attempt), StageKind.PATIENTS)
+    assert patients.notes == (("Поисковые запросы", "диарея, рвота"),)
+
+
+def test_empty_search_yields_no_notes() -> None:
+    """Без поисковых запросов notes пуст (не показываем пустую строку)."""
+    case = Case(CaseMeta("case-1"))
+    patients = _stage(grade_case(case, Attempt(AttemptMeta("case-1"))), StageKind.PATIENTS)
+    assert patients.notes == ()
+
+
+def test_inspection_text_becomes_note() -> None:
+    """Свободный вывод осмотра курсанта попадает в notes этапа."""
+    case = Case(
+        CaseMeta("case-3"),
+        contacts=StageContacts(
+            inspection=InspectionCheck(expected=(SynonymSet(canonical="скученность"),)),
+        ),
+    )
+    attempt = Attempt(
+        AttemptMeta("case-3"),
+        contacts=AttemptContacts(inspection=InspectionResponse(text="Выявлена скученность")),
+    )
+    contacts = _stage(grade_case(case, attempt), StageKind.CONTACTS)
+    assert contacts.notes == (("Вывод осмотра", "Выявлена скученность"),)
+
+
+def test_document_attachments_collected_into_stage_report() -> None:
+    """Вложения курсанта по документам этапа собираются в StageReport.attachments."""
+    case = Case(CaseMeta("case-1"), clinical=_clinical_stage())
+    attempt = Attempt(
+        AttemptMeta("case-1"),
+        clinical=AttemptClinical(
+            documents=(
+                DocumentResponse(
+                    task_id="dm4",
+                    chosen_option_id="opt-dm4",
+                    attachments=(("att-1", "донесение.pdf"),),
+                ),
+            ),
+        ),
+    )
+    clinical = _stage(grade_case(case, attempt), StageKind.CLINICAL)
+    assert clinical.attachments == (("att-1", "донесение.pdf"),)
+
+
+def test_unanswered_clinical_details_are_readable() -> None:
+    """Неотвеченные элементы дают читаемый detail, а не пустую строку."""
+    case = Case(CaseMeta("case-1"), clinical=_clinical_stage())
+    clinical = _stage(grade_case(case, Attempt(AttemptMeta("case-1"))), StageKind.CLINICAL)
+    assert _finding(clinical, FindingKind.BRANCH).detail == "— не выбрано —"
+    assert _finding(clinical, FindingKind.DOCUMENT_CHOICE).detail == "— не выбрано —"
+    assert _finding(clinical, FindingKind.DOCUMENT_FIELD).detail == "— не отвечено —"
+
+
+def test_unanswered_ses_level_detail_is_readable() -> None:
+    """Невыбранный уровень СЭС показывается как «— не выбрано —»."""
+    ses = _stage(grade_case(_ses_case(), Attempt(AttemptMeta("case-4"))), StageKind.SES)
+    assert _finding(ses, FindingKind.LEVEL_CHOICE).detail == "— не выбрано —"
+
+
+def test_stage_report_round_trip_preserves_notes_and_attachments() -> None:
+    """to_dict/from_dict сохраняет notes и attachments этапа."""
+    stage = StageReport(
+        StageKind.CLINICAL,
+        notes=(("Поисковые запросы", "диарея"),),
+        attachments=(("att-1", "донесение.pdf"),),
+    )
+    restored = StageReport.from_dict(stage.to_dict())
+    assert restored.notes == (("Поисковые запросы", "диарея"),)
+    assert restored.attachments == (("att-1", "донесение.pdf"),)
+    assert restored == stage
+
+
+def test_stage_report_reads_legacy_without_notes_and_attachments() -> None:
+    """Старая сериализация без ключей «notes»/«attachments» читается (default ())."""
+    legacy = {"kind": StageKind.PATIENTS.value, "findings": []}
+    restored = StageReport.from_dict(legacy)
+    assert restored.notes == ()
+    assert restored.attachments == ()

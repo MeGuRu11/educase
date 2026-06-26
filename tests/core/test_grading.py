@@ -149,3 +149,15 @@ def test_report_for_result_wrong_archive_type_raises(tmp_path: Path) -> None:
     case_path = save_case(_case(), tmp_path / "case")
     with pytest.raises(ArchiveError):
         report_for_result(case_path, case_path)
+
+
+def test_report_for_result_carries_result_assets(tmp_path: Path) -> None:
+    """Ассеты архива результата (вложения курсанта) доносятся в ``GradedResult.assets``."""
+    case_path = save_case(_case(), tmp_path / "case")
+    result_path = record_attempt(
+        _attempt(), tmp_path / "result", assets={"att-1": b"PDF-BYTES"}
+    )
+
+    graded = report_for_result(result_path, case_path)
+
+    assert graded.assets["att-1"] == b"PDF-BYTES"

@@ -36,6 +36,7 @@ from epicase_core.domain.attempt import (
     ChoiceResponse,
     DocumentResponse,
     InspectionResponse,
+    SearchLog,
     TimelineResponse,
 )
 from epicase_core.domain.case import Case
@@ -52,6 +53,10 @@ from epicase_core.domain.stages import (
     StageSes,
     Timeline,
 )
+
+# Нейтральные плейсхолдеры для читаемого detail (вердикта НЕ несут — лишь факт отсутствия ответа).
+_NOT_CHOSEN = "— не выбрано —"
+_NOT_ANSWERED = "— не отвечено —"
 
 
 class FindingKind(StrEnum):
@@ -136,17 +141,27 @@ class TimelineComparison:
 @dataclass(frozen=True)
 class StageReport:
     """Сверка одного этапа: его ``kind``, список найденных элементов и (для этапа 6)
-    нейтральное сопоставление таймлайнов курсанта с эталоном кейса."""
+    нейтральное сопоставление таймлайнов курсанта с эталоном кейса.
+
+    ``notes`` — нейтральные пары «подпись → значение» БЕЗ вердикта (поисковые запросы,
+    свободный вывод осмотра): показывают, что курсант делал, не оценивая это. ``attachments``
+    — пары ``(asset_id, имя_файла)`` прикреплённых курсантом документов; байты лежат в
+    assets архива результата, здесь только ссылки. Эталон по-прежнему живёт в кейсе.
+    """
 
     kind: StageKind
     findings: tuple[Finding, ...] = ()
     timelines: tuple[TimelineComparison, ...] = ()
+    notes: tuple[tuple[str, str], ...] = ()
+    attachments: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
             "kind": self.kind.value,
             "findings": [f.to_dict() for f in self.findings],
             "timelines": [t.to_dict() for t in self.timelines],
+            "notes": [list(pair) for pair in self.notes],
+            "attachments": [list(pair) for pair in self.attachments],
         }
 
     @classmethod
@@ -160,6 +175,8 @@ class StageReport:
                 TimelineComparison.from_dict(as_map(item))
                 for item in seq(data, "timelines")
             ),
+            notes=pair_tuple(data, "notes"),
+            attachments=pair_tuple(data, "attachments"),
         )
 
 
@@ -209,42 +226,49 @@ def grade_case(case: Case, attempt: Attempt) -> CaseReport:
 
 
 def _grade_patients(stage: StagePatients, att: AttemptPatients) -> StageReport:
-    """Этап 1 «Пациенты»: оценивать нечего (поиск опционален, ADR-006)."""
-    return StageReport(StageKind.PATIENTS, ())
+    """Этап 1 «Пациенты»: оценивать нечего (поиск опционален, ADR-006), но запросы — в notes."""
+    return StageReport(StageKind.PATIENTS, notes=_search_notes(att.search))
 
 
 def _grade_clinical(stage: StageClinical, att: AttemptClinical) -> StageReport:
-    """Этап 2 «Клинический диагноз»: ветвление «Вариант B» + документы."""
+    """Этап 2 «Клинический диагноз»: ветвление + документы; поиск/вложения — контекст."""
     return StageReport(
         StageKind.CLINICAL,
-        _grade_branch(stage.branch, att.branch)
+        findings=_grade_branch(stage.branch, att.branch)
         + _grade_documents(stage.documents, att.documents),
+        notes=_search_notes(att.search),
+        attachments=_collect_attachments(att.documents),
     )
 
 
 def _grade_contacts(stage: StageContacts, att: AttemptContacts) -> StageReport:
-    """Этап 3 «Контактные лица»: покрытие осмотра."""
+    """Этап 3 «Контактные лица»: покрытие осмотра; свободный вывод осмотра — контекст."""
     return StageReport(
         StageKind.CONTACTS,
-        _grade_inspection(stage.inspection, att.inspection),
+        findings=_grade_inspection(stage.inspection, att.inspection),
+        notes=_inspection_note(att.inspection),
     )
 
 
 def _grade_environment(stage: StageEnvironment, att: AttemptEnvironment) -> StageReport:
-    """Этап 4 «Объекты внешней среды»: документы + покрытие осмотра."""
+    """Этап 4 «Объекты внешней среды»: документы + покрытие осмотра; вывод/вложения — контекст."""
     return StageReport(
         StageKind.ENVIRONMENT,
-        _grade_documents(stage.documents, att.documents)
+        findings=_grade_documents(stage.documents, att.documents)
         + _grade_inspection(stage.inspection, att.inspection),
+        notes=_inspection_note(att.inspection),
+        attachments=_collect_attachments(att.documents),
     )
 
 
 def _grade_ses(stage: StageSes, att: AttemptSes) -> StageReport:
-    """Этап 5 «Оценка СЭС»: выбор уровня + документы."""
+    """Этап 5 «Оценка СЭС»: выбор уровня + документы; поиск/вложения — контекст."""
     return StageReport(
         StageKind.SES,
-        _grade_level(stage.level_choice, att.level_choice)
+        findings=_grade_level(stage.level_choice, att.level_choice)
         + _grade_documents(stage.documents, att.documents),
+        notes=_search_notes(att.search),
+        attachments=_collect_attachments(att.documents),
     )
 
 
@@ -252,13 +276,41 @@ def _grade_final(stage: StageFinal, att: AttemptFinal) -> StageReport:
     """Этап 6 «Окончательный диагноз»: документы (сверка) + таймлайны (нейтральное сопоставление).
 
     Документы грейдятся как прежде; редактируемые таймлайны не сверяются (ADR-008) — отчёт
-    лишь показывает ввод курсанта рядом с эталоном кейса (``_compare_timelines``).
+    лишь показывает ввод курсанта рядом с эталоном кейса (``_compare_timelines``). Поисковые
+    запросы и вложения курсанта добавляются нейтральным контекстом.
     """
     return StageReport(
         StageKind.FINAL,
         findings=_grade_documents(stage.documents, att.documents),
         timelines=_compare_timelines(stage.timelines, att.timelines),
+        notes=_search_notes(att.search),
+        attachments=_collect_attachments(att.documents),
     )
+
+
+# --- Нейтральный контекст этапа (без вердикта): запросы, вывод осмотра, вложения ---
+
+
+def _search_notes(search: SearchLog) -> tuple[tuple[str, str], ...]:
+    """Поисковые запросы курсанта как нейтральная заметка (пусто, если запросов не было)."""
+    if not search.queries:
+        return ()
+    return (("Поисковые запросы", ", ".join(search.queries)),)
+
+
+def _inspection_note(resp: InspectionResponse | None) -> tuple[tuple[str, str], ...]:
+    """Свободный вывод осмотра курсанта как заметка (пусто, если текста не было)."""
+    text = resp.text if resp is not None else ""
+    if not text.strip():
+        return ()
+    return (("Вывод осмотра", text),)
+
+
+def _collect_attachments(
+    resps: tuple[DocumentResponse, ...],
+) -> tuple[tuple[str, str], ...]:
+    """Ссылки на вложения курсанта ``(asset_id, имя_файла)`` по всем документам этапа."""
+    return tuple(attachment for resp in resps for attachment in resp.attachments)
 
 
 def _compare_timelines(
@@ -306,7 +358,7 @@ def _grade_branch(
             element_id=branch.id,
             correct=chosen is not None and chosen.is_correct,
             label=branch.prompt,
-            detail=chosen.label if chosen is not None else "",
+            detail=chosen.label if chosen is not None else _NOT_CHOSEN,
         ),
     )
 
@@ -331,7 +383,7 @@ def _grade_documents(
                 element_id=task.id,
                 correct=chosen is not None and chosen.is_correct,
                 label=task.prompt,
-                detail=chosen.title if chosen is not None else "",
+                detail=chosen.title if chosen is not None else _NOT_CHOSEN,
             )
         )
         findings.extend(_grade_document_fields(task, resp))
@@ -360,7 +412,11 @@ def _grade_document_fields(
             element_id=doc_field.id,
             correct=doc_field.check(answers.get(doc_field.id, "")),
             label=doc_field.label,
-            detail=answers.get(doc_field.id, ""),
+            detail=(
+                answers[doc_field.id]
+                if answers.get(doc_field.id, "").strip()
+                else _NOT_ANSWERED
+            ),
         )
         for doc_field in template.fields
     )
@@ -406,6 +462,6 @@ def _grade_level(
             element_id=field.id,
             correct=field.check(ans),
             label=field.label,
-            detail=ans,
+            detail=ans if ans.strip() else _NOT_CHOSEN,
         ),
     )
