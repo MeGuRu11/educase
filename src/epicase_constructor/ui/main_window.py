@@ -172,7 +172,12 @@ class MainWindow(QMainWindow):
             if answer != QMessageBox.StandardButton.Yes:
                 return
         ReportDialog(
-            graded.report, graded.trainee_label, graded.rank, graded.study_group, self
+            graded.report,
+            graded.trainee_label,
+            graded.rank,
+            graded.study_group,
+            graded.assets,
+            self,
         ).exec()
 
     def report_dialog_for(
@@ -187,5 +192,10 @@ class MainWindow(QMainWindow):
         except ArchiveError:
             return None
         return ReportDialog(
-            graded.report, graded.trainee_label, graded.rank, graded.study_group, self
+            graded.report,
+            graded.trainee_label,
+            graded.rank,
+            graded.study_group,
+            graded.assets,
+            self,
         )

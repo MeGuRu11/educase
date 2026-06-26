@@ -11,7 +11,14 @@ from epicase_constructor.ui.report_dialog import ReportDialog
 from epicase_core.application.case_builder import build_case
 from epicase_core.application.cases import load_case, save_case
 from epicase_core.application.results import record_attempt
-from epicase_core.domain import Attempt, AttemptMeta, Case, CaseMeta
+from epicase_core.domain import (
+    Attempt,
+    AttemptClinical,
+    AttemptMeta,
+    Case,
+    CaseMeta,
+    DocumentResponse,
+)
 
 
 def _select_type(field: FieldEditor, value: str) -> None:
@@ -257,6 +264,34 @@ def test_report_dialog_for_broken_archive_returns_none(
     qtbot.addWidget(window)
 
     assert window.report_dialog_for(case_path, case_path) is None
+
+
+def test_report_dialog_for_carries_attachments_and_assets(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """Вложения курсанта и байты архива доносятся через ``report_dialog_for`` в диалог."""
+    case_path = save_case(Case(meta=CaseMeta(id="case-att")), tmp_path / "case")
+    attempt = Attempt(
+        meta=AttemptMeta(case_id="case-att", trainee_label="Петров"),
+        clinical=AttemptClinical(
+            documents=(
+                DocumentResponse(
+                    task_id="d1", attachments=(("att-1", "донесение.pdf"),)
+                ),
+            ),
+        ),
+    )
+    result_path = record_attempt(
+        attempt, tmp_path / "result", assets={"att-1": b"PDF-BYTES"}
+    )
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    dialog = window.report_dialog_for(result_path, case_path)
+    assert dialog is not None
+    qtbot.addWidget(dialog)
+    assert dialog._assets.get("att-1") == b"PDF-BYTES"
 
 
 # --- Тесты экрана сохранения ---

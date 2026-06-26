@@ -5,6 +5,9 @@
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QLabel,
@@ -19,7 +22,11 @@ from epicase_core.domain.report import CaseReport
 
 
 class ReportDialog(QDialog):
-    """Диалог результата прохождения: ``ReportView`` в прокрутке + кнопка «Закрыть»."""
+    """Диалог результата прохождения: ``ReportView`` в прокрутке + кнопка «Закрыть».
+
+    Открывается развёрнутым на весь экран (детальный отчёт длинный); ``assets`` — байты
+    архива результата, нужные ``ReportView`` для открытия/сохранения вложений курсанта.
+    """
 
     def __init__(
         self,
@@ -27,11 +34,15 @@ class ReportDialog(QDialog):
         trainee_label: str = "",
         rank: str = "",
         study_group: str = "",
+        assets: Mapping[str, bytes] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(f"Результат — {trainee_label or '(без подписи)'}")
-        self.resize(800, 600)
+        self._assets: Mapping[str, bytes] = assets or {}
+        # Restored-размер для возврата из maximized; стартуем развёрнутыми на весь экран.
+        self.resize(1200, 800)
+        self.setWindowState(Qt.WindowState.WindowMaximized)
 
         identity_parts = [trainee_label or "(без подписи)"]
         if rank:
@@ -42,7 +53,7 @@ class ReportDialog(QDialog):
         self.identity_label.setObjectName("schemeRevealTitle")
         self.identity_label.setWordWrap(True)
 
-        self.report_view = ReportView(report, self)
+        self.report_view = ReportView(report, self._assets, self)
 
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)

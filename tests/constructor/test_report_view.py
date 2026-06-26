@@ -1,7 +1,11 @@
-"""Тесты ReportView: секции по этапам, строки findings, плейсхолдер для пустого этапа."""
+"""Тесты ReportView: секции по этапам, строки findings, плейсхолдер для пустого этапа,
+нейтральные заметки и блок вложений курсанта (открыть/сохранить)."""
 from __future__ import annotations
 
-from PySide6.QtWidgets import QGroupBox, QLabel
+from pathlib import Path
+
+import pytest
+from PySide6.QtWidgets import QGroupBox, QLabel, QPushButton
 from pytestqt.qtbot import QtBot
 
 from epicase_constructor.ui.report_view import ReportView
@@ -161,3 +165,86 @@ def test_report_view_final_timeline_without_cadet_shows_not_filled(qtbot: QtBot)
     texts = [lbl.text() for lbl in _box(view, _FINAL_TITLE).findChildren(QLabel)]
     assert "не заполнено" in texts
     assert any("выписка" in t for t in texts)
+
+
+# --- Нейтральные заметки и вложения курсанта ---
+
+
+def _attachment_report() -> CaseReport:
+    """Отчёт, где клинический этап несёт одно вложение курсанта."""
+    return CaseReport(
+        case_id="case-att",
+        stages=(
+            StageReport(
+                StageKind.CLINICAL,
+                attachments=(("att-1", "донесение.pdf"),),
+            ),
+        ),
+    )
+
+
+def test_report_view_renders_notes(qtbot: QtBot) -> None:
+    """Заметки этапа показываются приглушённой строкой «подпись: значение»."""
+    report = CaseReport(
+        case_id="case-notes",
+        stages=(
+            StageReport(
+                StageKind.PATIENTS,
+                notes=(("Поисковые запросы", "диарея, рвота"),),
+            ),
+        ),
+    )
+    view = ReportView(report)
+    qtbot.addWidget(view)
+
+    texts = [lbl.text() for lbl in view.findChildren(QLabel)]
+    assert any("Поисковые запросы: диарея, рвота" in t for t in texts)
+
+
+def test_report_view_renders_attachment_buttons(qtbot: QtBot) -> None:
+    """Вложение с присутствующими байтами: имя + активные кнопки «Открыть»/«Сохранить как…»."""
+    view = ReportView(_attachment_report(), {"att-1": b"PDF"})
+    qtbot.addWidget(view)
+
+    texts = [lbl.text() for lbl in view.findChildren(QLabel)]
+    assert any("донесение.pdf" in t for t in texts)
+    buttons = view.findChildren(QPushButton)
+    labels = {b.text() for b in buttons}
+    assert "Открыть" in labels
+    assert "Сохранить как…" in labels
+    assert all(b.isEnabled() for b in buttons)
+
+
+def test_report_view_missing_asset_disables_buttons(qtbot: QtBot) -> None:
+    """Вложения нет в архиве → кнопки задизейблены, подпись помечена «(файл отсутствует…)»."""
+    view = ReportView(_attachment_report(), {})  # байтов нет
+    qtbot.addWidget(view)
+
+    buttons = view.findChildren(QPushButton)
+    assert buttons
+    assert all(not b.isEnabled() for b in buttons)
+    texts = [lbl.text() for lbl in view.findChildren(QLabel)]
+    assert any("файл отсутствует в архиве" in t for t in texts)
+
+
+def test_report_view_save_attachment_writes_file(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Кнопка «Сохранить как…» пишет байты вложения в выбранный файл."""
+    payload = b"PDF-BYTES-123"
+    view = ReportView(_attachment_report(), {"att-1": payload})
+    qtbot.addWidget(view)
+
+    destination = tmp_path / "saved.pdf"
+    monkeypatch.setattr(
+        "epicase_constructor.ui.report_view.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: (str(destination), ""),
+    )
+    save_button = next(
+        b
+        for b in view.findChildren(QPushButton)
+        if b.objectName() == "attachmentSaveButton"
+    )
+    save_button.click()
+
+    assert destination.read_bytes() == payload
