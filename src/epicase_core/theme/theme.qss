@@ -383,3 +383,48 @@ QPushButton#primaryButton:pressed,
 QPushButton#completionSaveButton:pressed {
     background: #0A4F49;
 }
+
+/* --- Диалог подтверждения деструктивного действия --- */
+QFrame#confirmCard {
+    background: #FFFFFF;
+    border: 1px solid #D4DAE0;
+    border-radius: 14px;
+    padding: 32px;
+}
+QLabel#confirmTitle {
+    color: #1F2A33;
+    font-size: 18px;
+    font-weight: bold;
+}
+QLabel#confirmText {
+    color: #66727E;
+    font-size: 14px;
+}
+QPushButton#confirmDiscardButton {
+    background: #C0392B;
+    color: #FFFFFF;
+    border: 1px solid #C0392B;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-weight: bold;
+}
+QPushButton#confirmDiscardButton:hover {
+    background: #A93226;
+    border-color: #A93226;
+}
+QPushButton#confirmDiscardButton:pressed {
+    background: #922B21;
+}
+QPushButton#confirmCancelButton {
+    background: #FFFFFF;
+    color: #0F766E;
+    border: 2px solid #0F766E;
+    border-radius: 8px;
+    padding: 8px 18px;
+}
+QPushButton#confirmCancelButton:hover {
+    background: #E6F2F1;
+}
+QPushButton#confirmCancelButton:pressed {
+    background: #D0EAE8;
+}

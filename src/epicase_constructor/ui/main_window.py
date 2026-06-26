@@ -4,10 +4,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtGui import QAction, QCloseEvent
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget
+from PySide6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox, QStackedWidget
 
 from epicase_constructor.ui.case_editor import CaseEditor
 from epicase_constructor.ui.case_saved_view import CaseSavedView
+from epicase_constructor.ui.confirm_dialog import ConfirmDialog
 from epicase_constructor.ui.icons import load_icon
 from epicase_constructor.ui.report_dialog import ReportDialog
 from epicase_constructor.ui.start_screen import StartScreen
@@ -48,19 +49,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._stack)
         self._build_menu()
 
-    def _confirm_discard(self, question: str) -> bool:
-        answer = QMessageBox.question(
-            self,
-            "Несохранённые изменения",
-            question,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+    def _confirm_discard(self, message: str, confirm_label: str) -> bool:
+        dlg = ConfirmDialog(
+            title="Несохранённые изменения",
+            message=message,
+            confirm_label=confirm_label,
+            parent=self,
         )
-        return answer == QMessageBox.StandardButton.Yes
+        return dlg.exec() == QDialog.DialogCode.Accepted
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._stack.currentIndex() == _PAGE_EDITOR and not self._confirm_discard(
-            "Выйти из Конструктора? Несохранённые изменения кейса будут потеряны."
+            "Выйти из Конструктора? Несохранённые изменения кейса будут потеряны.",
+            "Выйти без сохранения",
         ):
             event.ignore()
             return
@@ -130,7 +131,8 @@ class MainWindow(QMainWindow):
     def open_case_dialog(self) -> None:
         """Показать диалог открытия и загрузить выбранный .epicase в редактор."""
         if self._stack.currentIndex() == _PAGE_EDITOR and not self._confirm_discard(
-            "Открыть другой кейс? Несохранённые изменения текущего будут потеряны."
+            "Открыть другой кейс? Несохранённые изменения текущего будут потеряны.",
+            "Открыть другой кейс",
         ):
             return
         path, _ = QFileDialog.getOpenFileName(
