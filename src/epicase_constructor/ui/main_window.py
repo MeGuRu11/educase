@@ -7,6 +7,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget
 
 from epicase_constructor.ui.case_editor import CaseEditor
+from epicase_constructor.ui.case_saved_view import CaseSavedView
 from epicase_constructor.ui.icons import load_icon
 from epicase_constructor.ui.report_dialog import ReportDialog
 from epicase_constructor.ui.start_screen import StartScreen
@@ -18,6 +19,7 @@ from epicase_core.application.grading import ArchiveError, report_for_result
 
 _PAGE_START = 0
 _PAGE_EDITOR = 1
+_PAGE_SAVED = 2
 
 
 class MainWindow(QMainWindow):
@@ -32,8 +34,16 @@ class MainWindow(QMainWindow):
         start.create_requested.connect(self._open_editor)
         start.open_requested.connect(self.open_case_dialog)
         start.check_result_requested.connect(self.open_result_dialog)
-        self._stack.addWidget(start)       # page 0
+        self._stack.addWidget(start)        # page 0
         self._stack.addWidget(self.editor)  # page 1
+        self._saved_view = CaseSavedView()
+        self._saved_view.continue_requested.connect(
+            lambda: self._stack.setCurrentIndex(_PAGE_EDITOR)
+        )
+        self._saved_view.home_requested.connect(
+            lambda: self._stack.setCurrentIndex(_PAGE_START)
+        )
+        self._stack.addWidget(self._saved_view)  # page 2
         self._stack.setCurrentIndex(_PAGE_START)
         self.setCentralWidget(self._stack)
         self._build_menu()
@@ -61,6 +71,14 @@ class MainWindow(QMainWindow):
         open_result_action.triggered.connect(self.open_result_dialog)
         file_menu.addAction(open_result_action)
 
+    def _show_case_saved(self, path: str) -> None:
+        """Переключить стек на экран подтверждения сохранения.
+
+        Тестируемый шов: вызывается без файловых диалогов.
+        """
+        self._saved_view.set_path(path)
+        self._stack.setCurrentIndex(_PAGE_SAVED)
+
     def save_case_dialog(self) -> None:
         """Показать диалог сохранения и записать кейс в выбранный .epicase."""
         path, _ = QFileDialog.getSaveFileName(
@@ -69,8 +87,8 @@ class MainWindow(QMainWindow):
             "",
             "Кейсы EpiCase (*.epicase)",
         )
-        if path:
-            self.save_case_to_path(Path(path))
+        if path and self.save_case_to_path(Path(path)):
+            self._show_case_saved(path)
 
     def save_case_to_path(self, path: Path) -> bool:
         """Собрать кейс из редактора и записать в .epicase.

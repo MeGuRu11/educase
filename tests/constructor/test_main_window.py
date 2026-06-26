@@ -4,8 +4,9 @@ from _pytest.monkeypatch import MonkeyPatch
 from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
+from epicase_constructor.ui.case_saved_view import CaseSavedView
 from epicase_constructor.ui.field_editor import FieldEditor
-from epicase_constructor.ui.main_window import MainWindow
+from epicase_constructor.ui.main_window import _PAGE_EDITOR, _PAGE_SAVED, _PAGE_START, MainWindow
 from epicase_constructor.ui.report_dialog import ReportDialog
 from epicase_core.application.case_builder import build_case
 from epicase_core.application.cases import load_case, save_case
@@ -256,3 +257,48 @@ def test_report_dialog_for_broken_archive_returns_none(
     qtbot.addWidget(window)
 
     assert window.report_dialog_for(case_path, case_path) is None
+
+
+# --- Тесты экрана сохранения ---
+
+
+def test_show_case_saved_switches_stack(qtbot: QtBot) -> None:
+    """После load в редактор + _show_case_saved стек переключается на страницу saved."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    # Сначала переходим на редактор (имитируем открытый кейс)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+    assert window._stack.currentIndex() == _PAGE_EDITOR
+
+    window._show_case_saved("C:/cases/my.epicase")
+
+    assert window._stack.currentIndex() == _PAGE_SAVED
+    assert isinstance(window._stack.currentWidget(), CaseSavedView)
+    assert window._saved_view._path_label.text() == "C:/cases/my.epicase"
+
+
+def test_continue_requested_returns_to_editor(qtbot: QtBot) -> None:
+    """continue_requested от CaseSavedView возвращает стек на страницу редактора."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    window._show_case_saved("/path/case.epicase")
+    assert window._stack.currentIndex() == _PAGE_SAVED
+
+    window._saved_view.continue_requested.emit()
+
+    assert window._stack.currentIndex() == _PAGE_EDITOR
+
+
+def test_home_requested_returns_to_start(qtbot: QtBot) -> None:
+    """home_requested от CaseSavedView возвращает стек на стартовый экран."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    window._show_case_saved("/path/case.epicase")
+    assert window._stack.currentIndex() == _PAGE_SAVED
+
+    window._saved_view.home_requested.emit()
+
+    assert window._stack.currentIndex() == _PAGE_START
