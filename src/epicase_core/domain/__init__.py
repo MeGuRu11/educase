@@ -18,6 +18,7 @@ from epicase_core.domain.attempt import (
     DocumentResponse,
     InspectionResponse,
     SearchLog,
+    TimelineResponse,
 )
 from epicase_core.domain.case import Case, CaseMeta
 from epicase_core.domain.documents import (
@@ -127,6 +128,7 @@ __all__ = [
     "SynonymSet",
     "TextMatch",
     "Timeline",
+    "TimelineResponse",
     "classify_ses",
     "extensive_indicator",
     "grade_case",

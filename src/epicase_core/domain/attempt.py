@@ -123,6 +123,31 @@ class ChoiceResponse:
         return cls(answer=opt_str(data, "answer"))
 
 
+@dataclass(frozen=True)
+class TimelineResponse:
+    """Заполненный курсантом таймлайн: id таймлайна + пары «дата → событие» (сырые данные).
+
+    Эталонные события (``Timeline.events``) живут в конфиге Case и курсанту не показываются;
+    здесь — только то, что ввёл курсант, без сверки (ADR-005/008).
+    """
+
+    timeline_id: str = ""
+    entries: tuple[tuple[str, str], ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "timeline_id": self.timeline_id,
+            "entries": [list(pair) for pair in self.entries],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> TimelineResponse:
+        return cls(
+            timeline_id=opt_str(data, "timeline_id"),
+            entries=pair_tuple(data, "entries"),
+        )
+
+
 # --- Слоты ответов по этапам (KIND зеркалит этапы Case, ADR-004) ---
 
 
@@ -287,17 +312,19 @@ class AttemptSes:
 
 @dataclass(frozen=True)
 class AttemptFinal:
-    """Ответы этапа 6 «Окончательный эпидемиологический диагноз»: поиск, документы."""
+    """Ответы этапа 6 «Окончательный эпидемиологический диагноз»: поиск, документы, таймлайны."""
 
     KIND: ClassVar[StageKind] = StageKind.FINAL
     search: SearchLog = SearchLog()
     documents: tuple[DocumentResponse, ...] = ()
+    timelines: tuple[TimelineResponse, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
             "kind": self.KIND.value,
             "search": self.search.to_dict(),
             "documents": [d.to_dict() for d in self.documents],
+            "timelines": [t.to_dict() for t in self.timelines],
         }
 
     @classmethod
@@ -311,6 +338,9 @@ class AttemptFinal:
             ),
             documents=tuple(
                 DocumentResponse.from_dict(as_map(item)) for item in seq(data, "documents")
+            ),
+            timelines=tuple(
+                TimelineResponse.from_dict(as_map(item)) for item in seq(data, "timelines")
             ),
         )
 

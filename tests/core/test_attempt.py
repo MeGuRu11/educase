@@ -17,6 +17,7 @@ from epicase_core.domain import (
     InspectionResponse,
     SearchLog,
     StageKind,
+    TimelineResponse,
 )
 
 
@@ -150,6 +151,45 @@ def test_document_response_legacy_dict_attachments_defaults() -> None:
     # Старый ответ без ключа attachments читается с дефолтом () (обратная совместимость).
     restored = DocumentResponse.from_dict({"task_id": "doc-old"})
     assert restored.attachments == ()
+
+
+def test_timeline_response_round_trip() -> None:
+    # Заполненный курсантом таймлайн (пары «дата → событие») переживает сериализацию.
+    response = TimelineResponse(
+        timeline_id="tl-1",
+        entries=(("01.01.2024", "Изоляция"), ("05.01.2024", "Снятие карантина")),
+    )
+    restored = TimelineResponse.from_dict(response.to_dict())
+    assert restored == response
+    assert restored.timeline_id == "tl-1"
+    assert restored.entries == (
+        ("01.01.2024", "Изоляция"),
+        ("05.01.2024", "Снятие карантина"),
+    )
+
+
+def test_attempt_final_with_timelines_round_trip() -> None:
+    # Непустые timelines в AttemptFinal переживают to_dict → from_dict.
+    final = AttemptFinal(
+        search=SearchLog(queries=("лихорадка",)),
+        documents=(DocumentResponse(task_id="akt", chosen_option_id="opt-akt"),),
+        timelines=(
+            TimelineResponse(
+                timeline_id="tl-1",
+                entries=(("02.01.2024", "Госпитализация"),),
+            ),
+        ),
+    )
+    attempt = Attempt(meta=AttemptMeta("case-tl"), final=final)
+    restored = Attempt.from_dict(attempt.to_dict())
+    assert restored == attempt
+    assert restored.final.timelines == final.timelines
+
+
+def test_attempt_final_legacy_dict_timelines_defaults() -> None:
+    # Старый ответ без ключа timelines читается с дефолтом () (обратная совместимость).
+    restored = AttemptFinal.from_dict({"kind": "final"})
+    assert restored.timelines == ()
 
 
 def test_attempt_optional_none_round_trip() -> None:
