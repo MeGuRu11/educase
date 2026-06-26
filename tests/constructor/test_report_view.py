@@ -5,10 +5,17 @@ from PySide6.QtWidgets import QGroupBox, QLabel
 from pytestqt.qtbot import QtBot
 
 from epicase_constructor.ui.report_view import ReportView
-from epicase_core.domain.report import CaseReport, Finding, FindingKind, StageReport
+from epicase_core.domain.report import (
+    CaseReport,
+    Finding,
+    FindingKind,
+    StageReport,
+    TimelineComparison,
+)
 from epicase_core.domain.stages import StageKind
 
 _CLINICAL_TITLE = "Клинико-эпидемиологический диагноз"
+_FINAL_TITLE = "Окончательный эпидемиологический диагноз"
 
 
 def _report() -> CaseReport:
@@ -78,3 +85,79 @@ def test_report_view_empty_stage_shows_placeholder(qtbot: QtBot) -> None:
 
     texts = [lbl.text() for lbl in _box(view, "Пациенты").findChildren(QLabel)]
     assert texts == ["— нет проверяемых элементов —"]
+
+
+def _timeline_report() -> CaseReport:
+    """Отчёт, где этап 6 несёт сопоставление таймлайнов (эталон + ввод курсанта)."""
+    return CaseReport(
+        case_id="case-tl",
+        stages=(
+            StageReport(StageKind.PATIENTS, ()),
+            StageReport(StageKind.CLINICAL, ()),
+            StageReport(StageKind.CONTACTS, ()),
+            StageReport(StageKind.ENVIRONMENT, ()),
+            StageReport(StageKind.SES, ()),
+            StageReport(
+                StageKind.FINAL,
+                (),
+                timelines=(
+                    TimelineComparison(
+                        timeline_id="tl-1",
+                        title="Сроки наблюдения за очагом",
+                        authored=(("01.06", "первый случай"),),
+                        cadet=(("01.06", "заболел"),),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def test_report_view_final_renders_timeline_columns(qtbot: QtBot) -> None:
+    """Этап 6 с таймлайном: заголовок + обе колонки построчно, без пометок верно/неверно."""
+    view = ReportView(_timeline_report())
+    qtbot.addWidget(view)
+
+    final_box = _box(view, _FINAL_TITLE)
+    card_titles = {b.title() for b in final_box.findChildren(QGroupBox)}
+    assert "Сроки наблюдения за очагом" in card_titles
+
+    texts = [lbl.text() for lbl in final_box.findChildren(QLabel)]
+    assert "Эталон" in texts
+    assert "Введено курсантом" in texts
+    assert any("первый случай" in t for t in texts)
+    assert any("заболел" in t for t in texts)
+    # Нейтральное сопоставление: никаких вердиктов «верно»/«неверно».
+    assert not any("верно" in t for t in texts)
+
+
+def test_report_view_final_timeline_without_cadet_shows_not_filled(qtbot: QtBot) -> None:
+    """Пустой ввод курсанта в таймлайне → колонка показывает «не заполнено»."""
+    report = CaseReport(
+        case_id="case-tl",
+        stages=(
+            StageReport(StageKind.PATIENTS, ()),
+            StageReport(StageKind.CLINICAL, ()),
+            StageReport(StageKind.CONTACTS, ()),
+            StageReport(StageKind.ENVIRONMENT, ()),
+            StageReport(StageKind.SES, ()),
+            StageReport(
+                StageKind.FINAL,
+                (),
+                timelines=(
+                    TimelineComparison(
+                        timeline_id="tl-1",
+                        title="Динамика лечения",
+                        authored=(("05.06", "выписка"),),
+                        cadet=(),
+                    ),
+                ),
+            ),
+        ),
+    )
+    view = ReportView(report)
+    qtbot.addWidget(view)
+
+    texts = [lbl.text() for lbl in _box(view, _FINAL_TITLE).findChildren(QLabel)]
+    assert "не заполнено" in texts
+    assert any("выписка" in t for t in texts)

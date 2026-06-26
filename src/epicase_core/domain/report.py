@@ -20,6 +20,7 @@ from epicase_core.domain._serde import (
     as_map,
     opt_bool,
     opt_str,
+    pair_tuple,
     req_str,
     seq,
 )
@@ -35,6 +36,7 @@ from epicase_core.domain.attempt import (
     ChoiceResponse,
     DocumentResponse,
     InspectionResponse,
+    TimelineResponse,
 )
 from epicase_core.domain.case import Case
 from epicase_core.domain.documents import DocumentField, DocumentTask
@@ -48,6 +50,7 @@ from epicase_core.domain.stages import (
     StageKind,
     StagePatients,
     StageSes,
+    Timeline,
 )
 
 
@@ -97,16 +100,53 @@ class Finding:
 
 
 @dataclass(frozen=True)
+class TimelineComparison:
+    """Нейтральное сопоставление таймлайна этапа 6: эталон кейса рядом с вводом курсанта.
+
+    Отдельная от ``Finding`` структура БЕЗ флага ``correct``: редактируемые таймлайны не
+    сверяются автоматически (ADR-008) — отчёт лишь показывает оба ряда событий рядом, а
+    вердикт остаётся за преподавателем. ``authored`` — пары «дата → событие» из
+    ``Timeline.events`` кейса; ``cadet`` — из ``TimelineResponse.entries`` (пусто, если
+    курсант таймлайн не заполнял). Эталон живёт в кейсе, НЕ в ``.epiresult``.
+    """
+
+    timeline_id: str
+    title: str = ""
+    authored: tuple[tuple[str, str], ...] = ()
+    cadet: tuple[tuple[str, str], ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "timeline_id": self.timeline_id,
+            "title": self.title,
+            "authored": [list(pair) for pair in self.authored],
+            "cadet": [list(pair) for pair in self.cadet],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> TimelineComparison:
+        return cls(
+            timeline_id=req_str(data, "timeline_id"),
+            title=opt_str(data, "title"),
+            authored=pair_tuple(data, "authored"),
+            cadet=pair_tuple(data, "cadet"),
+        )
+
+
+@dataclass(frozen=True)
 class StageReport:
-    """Сверка одного этапа: его ``kind`` и список найденных элементов."""
+    """Сверка одного этапа: его ``kind``, список найденных элементов и (для этапа 6)
+    нейтральное сопоставление таймлайнов курсанта с эталоном кейса."""
 
     kind: StageKind
     findings: tuple[Finding, ...] = ()
+    timelines: tuple[TimelineComparison, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
             "kind": self.kind.value,
             "findings": [f.to_dict() for f in self.findings],
+            "timelines": [t.to_dict() for t in self.timelines],
         }
 
     @classmethod
@@ -115,6 +155,10 @@ class StageReport:
             kind=StageKind(req_str(data, "kind")),
             findings=tuple(
                 Finding.from_dict(as_map(item)) for item in seq(data, "findings")
+            ),
+            timelines=tuple(
+                TimelineComparison.from_dict(as_map(item))
+                for item in seq(data, "timelines")
             ),
         )
 
@@ -205,10 +249,38 @@ def _grade_ses(stage: StageSes, att: AttemptSes) -> StageReport:
 
 
 def _grade_final(stage: StageFinal, att: AttemptFinal) -> StageReport:
-    """Этап 6 «Окончательный диагноз»: документы."""
+    """Этап 6 «Окончательный диагноз»: документы (сверка) + таймлайны (нейтральное сопоставление).
+
+    Документы грейдятся как прежде; редактируемые таймлайны не сверяются (ADR-008) — отчёт
+    лишь показывает ввод курсанта рядом с эталоном кейса (``_compare_timelines``).
+    """
     return StageReport(
         StageKind.FINAL,
-        _grade_documents(stage.documents, att.documents),
+        findings=_grade_documents(stage.documents, att.documents),
+        timelines=_compare_timelines(stage.timelines, att.timelines),
+    )
+
+
+def _compare_timelines(
+    stage_timelines: tuple[Timeline, ...],
+    att_timelines: tuple[TimelineResponse, ...],
+) -> tuple[TimelineComparison, ...]:
+    """Сопоставить эталонные таймлайны кейса с введёнными курсантом (без вердикта).
+
+    Пары — по id (``Timeline.id == TimelineResponse.timeline_id``); порядок — как в кейсе
+    (``case.final.timelines``). Эталон без ответа курсанта → ``cadet=()``. Никакого флага
+    ``correct``: редактируемые таймлайны вскрываются преподавателю как два ряда событий
+    рядом (ADR-008), а эталон берётся из кейса, не из ``.epiresult``.
+    """
+    by_id = {resp.timeline_id: resp for resp in att_timelines}
+    return tuple(
+        TimelineComparison(
+            timeline_id=timeline.id,
+            title=timeline.title,
+            authored=timeline.events,
+            cadet=by_id[timeline.id].entries if timeline.id in by_id else (),
+        )
+        for timeline in stage_timelines
     )
 
 

@@ -46,6 +46,7 @@ from epicase_core.domain.report import (
     Finding,
     FindingKind,
     StageReport,
+    TimelineComparison,
     grade_case,
 )
 from epicase_core.domain.scheme import (
@@ -128,6 +129,7 @@ __all__ = [
     "SynonymSet",
     "TextMatch",
     "Timeline",
+    "TimelineComparison",
     "TimelineResponse",
     "classify_ses",
     "extensive_indicator",

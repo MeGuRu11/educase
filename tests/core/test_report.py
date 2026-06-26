@@ -6,6 +6,7 @@ from epicase_core.domain import (
     Attempt,
     AttemptClinical,
     AttemptContacts,
+    AttemptFinal,
     AttemptMeta,
     AttemptSes,
     BranchOption,
@@ -27,11 +28,14 @@ from epicase_core.domain import (
     InspectionResponse,
     StageClinical,
     StageContacts,
+    StageFinal,
     StageKind,
     StageReport,
     StageSes,
     SynonymSet,
     TextMatch,
+    Timeline,
+    TimelineResponse,
     grade_case,
 )
 from epicase_core.domain.report import Finding
@@ -239,6 +243,77 @@ def test_grade_case_defaults_six_stages_in_order() -> None:
     )
     patients = _stage(report, StageKind.PATIENTS)
     assert patients.findings == ()
+
+
+def _final_stage() -> StageFinal:
+    """Этап 6 с двумя эталонными таймлайнами (на второй курсант не отвечает)."""
+    return StageFinal(
+        timelines=(
+            Timeline(
+                id="tl-outbreak",
+                title="Сроки наблюдения за очагом",
+                events=(("01.06", "первый случай"), ("03.06", "пик")),
+            ),
+            Timeline(
+                id="tl-care",
+                title="Динамика лечения",
+                events=(("05.06", "выписка"),),
+            ),
+        ),
+    )
+
+
+def _final_attempt() -> Attempt:
+    """Прохождение с ответом только на первый таймлайн."""
+    return Attempt(
+        AttemptMeta("case-final"),
+        final=AttemptFinal(
+            timelines=(
+                TimelineResponse(
+                    timeline_id="tl-outbreak",
+                    entries=(("01.06", "заболел"), ("04.06", "госпитализация")),
+                ),
+            ),
+        ),
+    )
+
+
+def test_final_timelines_compared_without_verdict() -> None:
+    """Этап 6: таймлайны сопоставляются нейтрально — эталон из кейса, ввод курсанта рядом."""
+    case = Case(CaseMeta("case-final"), final=_final_stage())
+    final = _stage(grade_case(case, _final_attempt()), StageKind.FINAL)
+
+    # Порядок — как в кейсе; нет авто-вердикта (нейтральная структура без correct).
+    assert tuple(t.timeline_id for t in final.timelines) == ("tl-outbreak", "tl-care")
+    outbreak = final.timelines[0]
+    assert outbreak.title == "Сроки наблюдения за очагом"
+    assert outbreak.authored == (("01.06", "первый случай"), ("03.06", "пик"))
+    assert outbreak.cadet == (("01.06", "заболел"), ("04.06", "госпитализация"))
+    assert not hasattr(outbreak, "correct")
+
+
+def test_final_timeline_without_cadet_answer_has_empty_cadet() -> None:
+    """Эталонный таймлайн без ответа курсанта → cadet пуст, эталон сохраняется."""
+    case = Case(CaseMeta("case-final"), final=_final_stage())
+    final = _stage(grade_case(case, _final_attempt()), StageKind.FINAL)
+
+    care = final.timelines[1]
+    assert care.timeline_id == "tl-care"
+    assert care.cadet == ()
+    assert care.authored == (("05.06", "выписка"),)
+
+
+def test_final_timelines_round_trip() -> None:
+    """to_dict/from_dict сохраняет таймлайны этапа 6 в отчёте."""
+    case = Case(CaseMeta("case-final"), final=_final_stage())
+    report = grade_case(case, _final_attempt())
+    assert CaseReport.from_dict(report.to_dict()) == report
+
+
+def test_stage_report_reads_legacy_serialization_without_timelines() -> None:
+    """Старая сериализация без ключа «timelines» читается (default ())."""
+    legacy = {"kind": StageKind.FINAL.value, "findings": []}
+    assert StageReport.from_dict(legacy).timelines == ()
 
 
 def test_case_report_round_trip() -> None:
