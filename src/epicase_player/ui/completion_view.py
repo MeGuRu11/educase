@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from PySide6.QtCore import QByteArray, Qt, Signal
+from PySide6.QtCore import QByteArray, QRectF, Qt, Signal
 from PySide6.QtGui import QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -31,7 +31,7 @@ def _success_badge(size: int = 72) -> QLabel:
     px.setDevicePixelRatio(2.0)
     px.fill(Qt.GlobalColor.transparent)
     painter = QPainter(px)
-    renderer.render(painter)
+    renderer.render(painter, QRectF(0, 0, float(size), float(size)))
     painter.end()
     lbl = QLabel()
     lbl.setPixmap(px)

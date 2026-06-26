@@ -56,3 +56,15 @@ def test_new_case_requested_on_open_button(qtbot: QtBot) -> None:
     btns[0].click()
 
     assert len(received) == 1
+
+
+def test_success_badge_fills_pixmap(qtbot: QtBot) -> None:
+    """Бейдж заполняет весь pixmap: центр непрозрачен (регресс на 2x-обрезку)."""
+    from epicase_player.ui.completion_view import _success_badge
+
+    lbl = _success_badge()
+    qtbot.addWidget(lbl)
+    pixmap = lbl.pixmap()
+    image = pixmap.toImage()
+    center = image.pixelColor(pixmap.width() // 2, pixmap.height() // 2)
+    assert center.alpha() == 255
