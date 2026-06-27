@@ -42,3 +42,4 @@ docs/**/*.xlsx
 docs/**/*.rtf
 docs/**/*.doc
 docs/**/*.pdf
+_*.txt) 
