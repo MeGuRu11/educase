@@ -103,6 +103,15 @@ class Finding:
             detail=opt_str(data, "detail"),
         )
 
+    @property
+    def answered(self) -> bool:
+        """False, если элемент не отвечен/не выбран — нейтральный пропуск, а не ошибка.
+
+        Ключ — detail-плейсхолдеры грейдера (_NOT_CHOSEN/_NOT_ANSWERED). Пустой detail
+        (например, покрытие осмотра) считается отвеченным: непокрытие — реальный промах.
+        """
+        return self.detail not in (_NOT_CHOSEN, _NOT_ANSWERED)
+
 
 @dataclass(frozen=True)
 class TimelineComparison:

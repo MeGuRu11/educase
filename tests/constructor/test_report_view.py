@@ -82,6 +82,49 @@ def test_report_view_stage_with_findings_shows_rows(qtbot: QtBot) -> None:
     assert any("неверно" in t and "Рапорт командира" in t for t in texts)
 
 
+def test_finding_render_marks_unanswered_as_neutral(qtbot: QtBot) -> None:
+    """Пропуск получает нейтральный стиль/статус без дублирования detail-плейсхолдера."""
+    finding = Finding(
+        FindingKind.DOCUMENT_CHOICE,
+        "document",
+        correct=False,
+        detail="— не выбрано —",
+    )
+    label = ReportView._finding_label(finding)
+    qtbot.addWidget(label)
+
+    text = ReportView._finding_text(finding)
+    assert label.objectName() == "findingSkip"
+    assert "не отвечено" in text
+    assert "— не выбрано —" not in text
+
+
+def test_finding_render_marks_answered_error_as_bad(qtbot: QtBot) -> None:
+    """Реальная ошибка сохраняет красный стиль, статус и контекст ответа."""
+    finding = Finding(
+        FindingKind.DOCUMENT_FIELD,
+        "field",
+        correct=False,
+        detail="неправильный ответ",
+    )
+    label = ReportView._finding_label(finding)
+    qtbot.addWidget(label)
+
+    text = ReportView._finding_text(finding)
+    assert label.objectName() == "findingBad"
+    assert "неверно" in text
+    assert "неправильный ответ" in text
+
+
+def test_finding_render_marks_correct_as_ok(qtbot: QtBot) -> None:
+    """Верный ответ сохраняет зелёный стиль."""
+    finding = Finding(FindingKind.BRANCH, "branch", correct=True)
+    label = ReportView._finding_label(finding)
+    qtbot.addWidget(label)
+
+    assert label.objectName() == "findingOk"
+
+
 def test_report_view_empty_stage_shows_placeholder(qtbot: QtBot) -> None:
     """Этап без findings показывает плейсхолдер вместо строк."""
     view = ReportView(_report())

@@ -101,7 +101,13 @@ class ReportView(QWidget):
     def _finding_label(finding: Finding) -> QLabel:
         """Строка элемента: текст со статусом + цвет статуса через objectName (QSS)."""
         label = QLabel(ReportView._finding_text(finding))
-        label.setObjectName("findingOk" if finding.correct else "findingBad")
+        if finding.correct:
+            name = "findingOk"
+        elif finding.answered:
+            name = "findingBad"
+        else:
+            name = "findingSkip"
+        label.setObjectName(name)
         label.setWordWrap(True)
         return label
 
@@ -218,9 +224,14 @@ class ReportView(QWidget):
     @staticmethod
     def _finding_text(finding: Finding) -> str:
         """Строка элемента: статус + подпись (или id) + приглушённый контекст (если есть)."""
-        status = "верно" if finding.correct else "неверно"
+        if finding.correct:
+            status = "верно"
+        elif finding.answered:
+            status = "неверно"
+        else:
+            status = "не отвечено"
         name = finding.label or finding.element_id
         text = f"[{status}] {name}"
-        if finding.detail:
+        if finding.detail and finding.answered:
             text += f" — {finding.detail}"
         return text

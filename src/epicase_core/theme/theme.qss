@@ -196,6 +196,9 @@ QLabel#findingOk {
 QLabel#findingBad {
     color: #B45454;
 }
+QLabel#findingSkip {
+    color: #66727E;
+}
 
 /* --- Просмотрщик схемы объекта (Player, ADR-013): фон + хотспоты --- */
 /* Заголовок схемы — подзаголовок секции этапа. */
