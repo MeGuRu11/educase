@@ -22,6 +22,9 @@ from epicase_core.theme.file_labels import file_size_label, file_type_label
 from epicase_player.ui.asset_image_widget import AssetImageWidget
 from epicase_player.ui.document_field_widget import DocumentFieldWidget
 
+_MAX_ATTACHMENTS = 10
+_ATTACHMENT_LIMIT_MESSAGE = "Можно прикрепить не более 10 файлов"
+
 
 @dataclass(frozen=True)
 class DocumentResult:
@@ -56,7 +59,7 @@ class DocumentWidget(QWidget):
         self._attach_cards_layout: QVBoxLayout | None = None
         self._attach_header: QLabel | None = None
         self._attach_empty: QLabel | None = None
-        self._clear_button: QPushButton | None = None
+        self._attach_button: QPushButton | None = None
 
         layout = QVBoxLayout(self)
 
@@ -120,28 +123,20 @@ class DocumentWidget(QWidget):
         """Байты вложений по asset_id в режиме ATTACHMENT; пусто иначе."""
         return dict(self._attach_bytes)
 
-    def _pick_files(self, allow_multiple: bool) -> None:
-        if allow_multiple:
-            paths, _ = QFileDialog.getOpenFileNames(self, "Выберите файл(ы)")
-        else:
-            path, _ = QFileDialog.getOpenFileName(self, "Выберите файл")
-            paths = [path] if path else []
+    def _pick_files(self) -> None:
+        paths, _ = QFileDialog.getOpenFileNames(self, "Выберите файл(ы)")
         if not paths:
             return
-        if not allow_multiple:
-            self._attachments = []
-            self._attach_bytes = {}
-        for p in paths:
+        available = _MAX_ATTACHMENTS - len(self._attachments)
+        self._status_label.setText(
+            _ATTACHMENT_LIMIT_MESSAGE if len(paths) > available else ""
+        )
+        for p in paths[:available]:
             data = Path(p).read_bytes()
             name = Path(p).name
             asset_id = "att-" + uuid4().hex + Path(p).suffix
             self._attach_bytes[asset_id] = data
             self._attachments.append((asset_id, name))
-        self._refresh_attach_list()
-
-    def _clear_attachments(self) -> None:
-        self._attachments = []
-        self._attach_bytes = {}
         self._refresh_attach_list()
 
     def _remove_attachment(self, asset_id: str) -> None:
@@ -167,11 +162,13 @@ class DocumentWidget(QWidget):
 
         count = len(self._attachments)
         if self._attach_header is not None:
-            self._attach_header.setText(f"Прикреплённые файлы · {count}")
+            self._attach_header.setText(
+                f"Прикреплённые файлы · {count} / {_MAX_ATTACHMENTS}"
+            )
         if self._attach_empty is not None:
             self._attach_empty.setVisible(count == 0)
-        if self._clear_button is not None:
-            self._clear_button.setVisible(count > 0)
+        if self._attach_button is not None:
+            self._attach_button.setEnabled(count < _MAX_ATTACHMENTS)
 
     def _attachment_card(self, asset_id: str, filename: str) -> QFrame:
         card = QFrame(self.form_area)
@@ -207,6 +204,7 @@ class DocumentWidget(QWidget):
 
     def _rebuild_form(self) -> None:
         """Перестроить form_area при смене выбора в combo; снять подсветку ошибки."""
+        self._status_label.clear()
         self.options_combo.setProperty("invalid", False)
         self.options_combo.style().unpolish(self.options_combo)
         self.options_combo.style().polish(self.options_combo)
@@ -222,7 +220,7 @@ class DocumentWidget(QWidget):
         self._attach_cards_layout = None
         self._attach_header = None
         self._attach_empty = None
-        self._clear_button = None
+        self._attach_button = None
 
         option = self.selected_option()
         if option is None:
@@ -235,26 +233,18 @@ class DocumentWidget(QWidget):
             return
 
         if option.template.fill_mode == FillMode.ATTACHMENT:
-            btn_text = (
-                "Прикрепить файлы" if option.template.allow_multiple else "Прикрепить файл"
-            )
-            attach_btn = QPushButton(btn_text)
+            attach_btn = QPushButton("Прикрепить файлы")
             attach_btn.setObjectName("attachButton")
+            self._attach_button = attach_btn
             self._form_layout.addWidget(attach_btn)
 
             attach_panel = QFrame()
             attach_panel.setObjectName("attachmentListPanel")
             attach_panel_layout = QVBoxLayout(attach_panel)
-            header_row = QHBoxLayout()
             attach_header = QLabel()
             attach_header.setObjectName("attachmentSectionTitle")
             self._attach_header = attach_header
-            header_row.addWidget(attach_header, 1)
-            clear_btn = QPushButton("Очистить всё")
-            clear_btn.setObjectName("attachClear")
-            self._clear_button = clear_btn
-            header_row.addWidget(clear_btn)
-            attach_panel_layout.addLayout(header_row)
+            attach_panel_layout.addWidget(attach_header)
 
             attach_empty = QLabel("Файлы ещё не прикреплены")
             attach_empty.setObjectName("attachmentEmpty")
@@ -266,9 +256,7 @@ class DocumentWidget(QWidget):
             attach_panel_layout.addLayout(attach_cards_layout)
             self._form_layout.addWidget(attach_panel)
 
-            allow_multiple = option.template.allow_multiple
-            attach_btn.clicked.connect(lambda: self._pick_files(allow_multiple))
-            clear_btn.clicked.connect(self._clear_attachments)
+            attach_btn.clicked.connect(self._pick_files)
             self._refresh_attach_list()
         else:
             for field in option.template.fields:

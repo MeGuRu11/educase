@@ -480,7 +480,6 @@ QPushButton#attachmentOpenButton:pressed {
     background: #0A524C;
     border-color: #0A524C;
 }
-QPushButton#attachClear,
 QPushButton#attachmentRemoveButton,
 QPushButton#attachmentSaveButton {
     background: #FFFFFF;
@@ -489,17 +488,16 @@ QPushButton#attachmentSaveButton {
     border-radius: 6px;
     padding: 4px 10px;
 }
-QPushButton#attachClear:hover,
 QPushButton#attachmentRemoveButton:hover,
 QPushButton#attachmentSaveButton:hover {
     background: #F0F3F5;
     border-color: #0F766E;
 }
-QPushButton#attachClear:pressed,
 QPushButton#attachmentRemoveButton:pressed,
 QPushButton#attachmentSaveButton:pressed {
     background: #E3E8EC;
 }
+QPushButton#attachButton:disabled,
 QPushButton#attachmentOpenButton:disabled,
 QPushButton#attachmentSaveButton:disabled {
     background: #F6F8FA;

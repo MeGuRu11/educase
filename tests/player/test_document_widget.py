@@ -299,14 +299,14 @@ def test_attachment_mode_shows_button_multiple(qtbot: QtBot) -> None:
 
 
 def test_attachment_mode_shows_button_single(qtbot: QtBot) -> None:
-    """ATTACHMENT allow_multiple=False → кнопка «Прикрепить файл»."""
+    """Legacy allow_multiple=False не меняет кнопку множественного выбора."""
     w = DocumentWidget(_make_attachment_task(allow_multiple=False))
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
     buttons: list[QPushButton] = [
         b for b in w.form_area.findChildren(QPushButton) if b.objectName() == "attachButton"
     ]
-    assert buttons and buttons[0].text() == "Прикрепить файл"
+    assert buttons and buttons[0].text() == "Прикрепить файлы"
 
 
 def test_attachment_getters_empty_before_pick(qtbot: QtBot) -> None:
@@ -332,10 +332,10 @@ def test_attachment_multiple_appends_files(
     w.options_combo.setCurrentIndex(0)
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f1)], ""))
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f2)], ""))
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     atts = w.attachments()
     assert len(atts) == 2
@@ -343,10 +343,10 @@ def test_attachment_multiple_appends_files(
     assert set(w.attachment_bytes().values()) == {b"content1", b"content2"}
 
 
-def test_attachment_single_replaces_on_repeat(
+def test_attachment_legacy_single_allows_two_files_per_pick(
     qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """allow_multiple=False: повторное прикрепление заменяет предыдущее вложение."""
+    """Legacy allow_multiple=False всё равно принимает два файла за один выбор."""
     f1 = tmp_path / "first.pdf"
     f1.write_bytes(b"first")
     f2 = tmp_path / "second.pdf"
@@ -356,36 +356,32 @@ def test_attachment_single_replaces_on_repeat(
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(f1), ""))
-    w._pick_files(allow_multiple=False)
-
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(f2), ""))
-    w._pick_files(allow_multiple=False)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *a, **kw: ([str(f1), str(f2)], ""),
+    )
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileName",
+        lambda *a, **kw: pytest.fail("single-file dialog must not be used"),
+    )
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    assert attach_button is not None
+    attach_button.click()
 
     atts = w.attachments()
-    assert len(atts) == 1
-    assert atts[0][1] == "second.pdf"
-    assert list(w.attachment_bytes().values()) == [b"second"]
+    assert [name for _, name in atts] == ["first.pdf", "second.pdf"]
+    assert list(w.attachment_bytes().values()) == [b"first", b"second"]
 
 
-def test_attachment_clear_empties_getters(
-    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """_clear_attachments() обнуляет оба геттера."""
-    f = tmp_path / "doc.txt"
-    f.write_bytes(b"data")
-
+def test_attachment_mode_has_no_clear_all_control(qtbot: QtBot) -> None:
+    """Панель вложений не предлагает массовое удаление."""
     w = DocumentWidget(_make_attachment_task(allow_multiple=True))
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
-    w._pick_files(allow_multiple=True)
-    assert len(w.attachments()) == 1
-
-    w._clear_attachments()
-    assert w.attachments() == ()
-    assert w.attachment_bytes() == {}
+    assert w.form_area.findChild(QPushButton, "attachClear") is None
 
 
 def test_attachment_asset_ids_unique_and_match_bytes(
@@ -404,7 +400,7 @@ def test_attachment_asset_ids_unique_and_match_bytes(
     monkeypatch.setattr(
         QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f1), str(f2)], "")
     )
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     atts = w.attachments()
     ab = w.attachment_bytes()
@@ -429,7 +425,7 @@ def test_attachment_pick_renders_compact_file_card(
         "getOpenFileNames",
         lambda *args, **kwargs: ([str(attachment)], ""),
     )
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     cards = [
         frame
@@ -447,7 +443,7 @@ def test_attachment_pick_renders_compact_file_card(
     assert empty.isHidden()
     header = w.form_area.findChild(QLabel, "attachmentSectionTitle")
     assert header is not None
-    assert header.text() == "Прикреплённые файлы · 1"
+    assert header.text() == "Прикреплённые файлы · 1 / 10"
 
 
 def test_attachment_remove_button_removes_only_its_file(
@@ -469,7 +465,7 @@ def test_attachment_remove_button_removes_only_its_file(
         "getOpenFileNames",
         lambda *args, **kwargs: ([str(first), str(second)], ""),
     )
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     remove_buttons = [
         button
@@ -485,6 +481,139 @@ def test_attachment_remove_button_removes_only_its_file(
     assert w.attachments() == ((second_asset_id, "second.docx"),)
     assert w.attachment_bytes() == {second_asset_id: b"second"}
     assert first_asset_id not in w.attachment_bytes()
+
+
+def test_attachment_limit_keeps_first_ten_and_disables_button(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Выбор сверх лимита сохраняет первые десять файлов и сообщает об ограничении."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(11)]
+    for index, file in enumerate(files):
+        file.write_bytes(str(index).encode())
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+
+    w._pick_files()
+
+    assert [name for _, name in w.attachments()] == [
+        f"file-{index}.txt" for index in range(10)
+    ]
+    header = w.form_area.findChild(QLabel, "attachmentSectionTitle")
+    assert header is not None
+    assert header.text() == "Прикреплённые файлы · 10 / 10"
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    assert attach_button is not None
+    assert not attach_button.isEnabled()
+    assert w._status_label.text() == "Можно прикрепить не более 10 файлов"
+
+
+def test_attachment_removing_from_limit_reenables_button(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Удаление одного из десяти файлов снова разрешает прикрепление."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(10)]
+    for file in files:
+        file.write_bytes(b"x")
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+    w._pick_files()
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    assert attach_button is not None
+    assert not attach_button.isEnabled()
+
+    remove_button = w.form_area.findChild(QPushButton, "attachmentRemoveButton")
+    assert remove_button is not None
+    remove_button.click()
+
+    assert len(w.attachments()) == 9
+    assert attach_button.isEnabled()
+
+
+def test_attachment_fitting_pick_clears_previous_limit_message(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Успешное добавление в освободившееся место убирает старое сообщение о лимите."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(11)]
+    for file in files:
+        file.write_bytes(b"x")
+    replacement = tmp_path / "replacement.txt"
+    replacement.write_bytes(b"replacement")
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+    w._pick_files()
+    assert len(w.attachments()) == 10
+    assert w._status_label.text() == "Можно прикрепить не более 10 файлов"
+
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    remove_button = w.form_area.findChild(QPushButton, "attachmentRemoveButton")
+    assert attach_button is not None
+    assert remove_button is not None
+    remove_button.click()
+    assert len(w.attachments()) == 9
+    assert attach_button.isEnabled()
+
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(replacement)], ""),
+    )
+    w._pick_files()
+
+    assert len(w.attachments()) == 10
+    assert w._status_label.text() == ""
+
+
+def test_attachment_option_change_clears_limit_message(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Смена выбранного документа не наследует сообщение о лимите вложений."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(11)]
+    for file in files:
+        file.write_bytes(b"x")
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+    w._pick_files()
+    assert w._status_label.text() == "Можно прикрепить не более 10 файлов"
+
+    w.options_combo.setCurrentIndex(-1)
+
+    assert w._status_label.text() == ""
 
 
 def test_attachment_getters_empty_in_other_modes(qtbot: QtBot) -> None:
