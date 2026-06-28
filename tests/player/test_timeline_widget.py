@@ -4,8 +4,8 @@ from __future__ import annotations
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.stages import Timeline
-from educase_player.ui.timeline_widget import TimelineWidget
+from epicase_core.domain.stages import Timeline
+from epicase_player.ui.timeline_widget import TimelineWidget
 
 
 def test_events_displayed(qtbot: QtBot) -> None:

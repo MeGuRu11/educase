@@ -3,10 +3,10 @@
 # Запуск из корня репозитория.
 
 a = Analysis(
-    ["../src/educase_player/__main__.py"],
+    ["../src/epicase_player/__main__.py"],
     pathex=["src"],
     binaries=[],
-    datas=[("../src/educase_core/theme/theme.qss", "educase_core/theme")],
+    datas=[("../src/epicase_core/theme/theme.qss", "epicase_core/theme")],
     hiddenimports=[],
     hookspath=[],
     excludes=[],
@@ -16,7 +16,7 @@ pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz, a.scripts, a.binaries, a.datas, [],
-    name="EduCase-Player",
+    name="EpiCase-Player",
     console=False,
     upx=False,
 )

@@ -1,7 +1,7 @@
 """Тесты загрузчика темы: ресурс читается и содержит ключевые селекторы."""
 from __future__ import annotations
 
-from educase_core.theme import load_qss
+from epicase_core.theme import load_qss
 
 
 def test_load_qss_returns_nonempty_string() -> None:

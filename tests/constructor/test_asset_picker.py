@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
+from epicase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
 
 
 def test_value_none_by_default(qtbot: QtBot) -> None:

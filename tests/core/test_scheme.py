@@ -1,14 +1,14 @@
 """Тесты доменной модели ``SchemeDocument`` (ADR-013): round-trip, hit-test, дефолт."""
 from __future__ import annotations
 
-from educase_core.domain.scheme import (
+from epicase_core.domain.scheme import (
     Hotspot,
     HotspotShape,
     SchemeDocument,
     SchemeView,
     scheme_from_raw,
 )
-from educase_core.domain.stages import StageContacts, StageEnvironment
+from epicase_core.domain.stages import StageContacts, StageEnvironment
 
 
 def _rich_scheme() -> SchemeDocument:

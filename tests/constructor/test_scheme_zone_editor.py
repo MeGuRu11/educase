@@ -10,8 +10,8 @@ from pathlib import Path
 from PySide6.QtGui import QColor, QPixmap
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor, ZonePropsCard
-from educase_core.application.case_builder import AssetRef, SchemeViewDraft
+from epicase_constructor.ui.scheme_zone_editor import SchemeZoneEditor, ZonePropsCard
+from epicase_core.application.case_builder import AssetRef, SchemeViewDraft
 
 
 def _make_ref(tmp_path: Path, name: str = "bg.png") -> AssetRef:

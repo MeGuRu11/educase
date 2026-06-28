@@ -4,7 +4,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QComboBox, QLineEdit
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.documents import (
+from epicase_core.domain.documents import (
     ChoiceMatch,
     DateMatch,
     DocumentField,
@@ -12,8 +12,8 @@ from educase_core.domain.documents import (
     NumberMatch,
     TextMatch,
 )
-from educase_core.domain.search import SynonymSet
-from educase_player.ui.document_field_widget import DocumentFieldWidget
+from epicase_core.domain.search import SynonymSet
+from epicase_player.ui.document_field_widget import DocumentFieldWidget
 
 
 def test_text_field_gives_line_edit(qtbot: QtBot) -> None:

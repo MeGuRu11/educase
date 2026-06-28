@@ -2,14 +2,16 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
-from PySide6.QtWidgets import QLabel, QWidget
+import pytest
+from PySide6.QtWidgets import QFileDialog, QLabel, QWidget
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.documents import DocumentOption, DocumentTask
-from educase_core.domain.scheme import SchemeDocument, SchemeView
-from educase_core.domain.search import InspectionCheck, KeywordSearch, SearchEntry, SynonymSet
-from educase_core.domain.stages import (
+from epicase_core.domain.documents import DocumentOption, DocumentTask, DocumentTemplate, FillMode
+from epicase_core.domain.scheme import SchemeDocument, SchemeView
+from epicase_core.domain.search import InspectionCheck, KeywordSearch, SearchEntry, SynonymSet
+from epicase_core.domain.stages import (
     BranchOption,
     BranchPoint,
     PatientCard,
@@ -19,17 +21,15 @@ from educase_core.domain.stages import (
     StageFinal,
     StagePatients,
     StageSes,
-    Timeline,
 )
-from educase_player.ui.asset_image_widget import AssetImageWidget
-from educase_player.ui.branch_widget import BranchWidget
-from educase_player.ui.document_widget import DocumentWidget
-from educase_player.ui.inspection_widget import InspectionWidget
-from educase_player.ui.patient_card_widget import PatientCardWidget
-from educase_player.ui.scheme_viewer import SchemeViewerWidget
-from educase_player.ui.search_widget import SearchWidget
-from educase_player.ui.stage_views import build_stage_view
-from educase_player.ui.timeline_widget import TimelineWidget
+from epicase_player.ui.asset_image_widget import AssetImageWidget
+from epicase_player.ui.branch_widget import BranchWidget
+from epicase_player.ui.document_widget import DocumentWidget
+from epicase_player.ui.inspection_widget import InspectionWidget
+from epicase_player.ui.patient_card_widget import PatientCardWidget
+from epicase_player.ui.scheme_viewer import SchemeViewerWidget
+from epicase_player.ui.search_widget import SearchWidget
+from epicase_player.ui.stage_views import _doc_resp, build_stage_view
 
 
 def _find_search_widget(widget: QWidget) -> SearchWidget | None:
@@ -149,15 +149,59 @@ def test_stage_clinical_without_branch_no_branch_widget(qtbot: QtBot) -> None:
     assert len(widgets) == 0
 
 
-def test_stage_final_with_timelines_contains_timeline_widget(qtbot: QtBot) -> None:
-    """StageFinal с timelines → TimelineWidget для каждого."""
+def test_stage_final_does_not_render_timeline_widget(qtbot: QtBot) -> None:
+    """StageFinal с timelines НЕ рендерит TimelineWidget курсанту (эталон скрыт)."""
+    from epicase_core.domain.stages import Timeline
+    from epicase_player.ui.timeline_widget import TimelineWidget
+
     tl = Timeline(id="tl1", title="Сроки", events=(("01.01.2024", "Начало"),))
     stage = StageFinal(timelines=(tl,))
     view = build_stage_view(stage)
     qtbot.addWidget(view)
 
     widgets: list[TimelineWidget] = view.findChildren(TimelineWidget)
+    assert len(widgets) == 0
+
+
+def test_stage_final_renders_editable_timeline_per_timeline(qtbot: QtBot) -> None:
+    """StageFinal с N таймлайнами → N EditableTimelineWidget (курсант заполняет сам)."""
+    from epicase_core.domain.stages import Timeline
+    from epicase_player.ui.editable_timeline_widget import EditableTimelineWidget
+
+    t1 = Timeline(id="tl1", title="Сроки 1", events=(("01.01.2024", "A"),))
+    t2 = Timeline(id="tl2", title="Сроки 2")
+    stage = StageFinal(timelines=(t1, t2))
+    view = build_stage_view(stage)
+    qtbot.addWidget(view)
+
+    widgets: list[EditableTimelineWidget] = view.findChildren(EditableTimelineWidget)
+    assert len(widgets) == 2
+
+
+def test_stage_final_to_response_collects_timeline_entries(qtbot: QtBot) -> None:
+    """FinalStageView.to_response() собирает введённые курсантом записи в timelines."""
+    from PySide6.QtWidgets import QTableWidgetItem
+
+    from epicase_core.domain.stages import Timeline
+    from epicase_player.ui.editable_timeline_widget import EditableTimelineWidget
+    from epicase_player.ui.stage_views import FinalStageView
+
+    tl = Timeline(id="tl1", title="Сроки", events=(("01.01.2024", "эталон"),))
+    stage = StageFinal(timelines=(tl,))
+    view = FinalStageView(stage)
+    qtbot.addWidget(view)
+
+    widgets: list[EditableTimelineWidget] = view.findChildren(EditableTimelineWidget)
     assert len(widgets) == 1
+    table = widgets[0]._table
+    table.setItem(0, 0, QTableWidgetItem("02.01.2024"))
+    table.setItem(0, 1, QTableWidgetItem("Госпитализация"))
+
+    response = view.to_response()
+    assert len(response.timelines) == 1
+    tr = response.timelines[0]
+    assert tr.timeline_id == "tl1"
+    assert ("02.01.2024", "Госпитализация") in tr.entries
 
 
 def test_stage_contacts_with_inspection_contains_inspection_widget(qtbot: QtBot) -> None:
@@ -282,3 +326,73 @@ def test_environment_photos_dangling_refs_show_placeholders(qtbot: QtBot) -> Non
     images: list[AssetImageWidget] = view.findChildren(AssetImageWidget)
     assert len(images) == 2
     assert all(img.has_image() is False for img in images)
+
+
+# --- ADR-015: ATTACHMENT и collect_assets ---
+
+
+def _make_attachment_option() -> DocumentOption:
+    return DocumentOption(
+        id="opt_att",
+        title="Акт",
+        is_correct=True,
+        template=DocumentTemplate(
+            id="tpl_att",
+            title="Акт",
+            fill_mode=FillMode.ATTACHMENT,
+            allow_multiple=True,
+        ),
+    )
+
+
+def test_doc_resp_includes_attachments(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """_doc_resp кладёт attachments в DocumentResponse."""
+    f = tmp_path / "file.txt"
+    f.write_bytes(b"x")
+    task = DocumentTask(id="t1", prompt="", options=(_make_attachment_option(),))
+    widget = DocumentWidget(task)
+    qtbot.addWidget(widget)
+    widget.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    widget._pick_files()
+
+    resp = _doc_resp(task, widget)
+    assert len(resp.attachments) == 1
+    asset_id, name = resp.attachments[0]
+    assert name == "file.txt"
+    assert asset_id in widget.attachment_bytes()
+
+
+def test_collect_assets_clinical_with_attachment(
+    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ClinicalStageView.collect_assets() возвращает байты ATTACHMENT-вложений."""
+    f = tmp_path / "act.pdf"
+    f.write_bytes(b"pdf data")
+    task = DocumentTask(id="t1", prompt="", options=(_make_attachment_option(),))
+    stage = StageClinical(documents=(task,))
+    view = build_stage_view(stage)
+    qtbot.addWidget(view)
+
+    doc_widgets: list[DocumentWidget] = view.findChildren(DocumentWidget)
+    assert len(doc_widgets) == 1
+    dw = doc_widgets[0]
+    dw.options_combo.setCurrentIndex(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    dw._pick_files()
+
+    assets = view.collect_assets()
+    assert len(assets) == 1
+    assert list(assets.values()) == [b"pdf data"]
+
+
+def test_collect_assets_empty_without_attachments(qtbot: QtBot) -> None:
+    """collect_assets() пуст, если нет ATTACHMENT-вложений."""
+    stage = StageClinical()
+    view = build_stage_view(stage)
+    qtbot.addWidget(view)
+    assert view.collect_assets() == {}

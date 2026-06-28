@@ -1,6 +1,6 @@
 from pytestqt.qtbot import QtBot
 
-from educase_player.ui.identity_dialog import IdentityDialog
+from epicase_player.ui.identity_dialog import IdentityDialog
 
 
 def test_save_button_disabled_until_fio_present(qtbot: QtBot) -> None:

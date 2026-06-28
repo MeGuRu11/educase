@@ -2,11 +2,13 @@
 вскрытие «Варианта B», устойчивость к дефолтному Attempt, round-trip отчёта."""
 from __future__ import annotations
 
-from educase_core.domain import (
+from epicase_core.domain import (
     Attempt,
     AttemptClinical,
     AttemptContacts,
+    AttemptFinal,
     AttemptMeta,
+    AttemptPatients,
     AttemptSes,
     BranchOption,
     BranchPoint,
@@ -25,16 +27,20 @@ from educase_core.domain import (
     FindingKind,
     InspectionCheck,
     InspectionResponse,
+    SearchLog,
     StageClinical,
     StageContacts,
+    StageFinal,
     StageKind,
     StageReport,
     StageSes,
     SynonymSet,
     TextMatch,
+    Timeline,
+    TimelineResponse,
     grade_case,
 )
-from educase_core.domain.report import Finding
+from epicase_core.domain.report import Finding
 
 DIARRHEA = SynonymSet(canonical="диарея", synonyms=("понос",))
 
@@ -47,6 +53,46 @@ def _stage(report: CaseReport, kind: StageKind) -> StageReport:
 def _finding(stage: StageReport, kind: FindingKind) -> Finding:
     """Первая Finding нужного типа в отчёте этапа."""
     return next(f for f in stage.findings if f.kind == kind)
+
+
+def test_finding_answered_distinguishes_skips_from_real_answers() -> None:
+    """Плейсхолдеры означают пропуск; произвольный и пустой detail — реальный ответ."""
+    assert (
+        Finding(
+            FindingKind.BRANCH,
+            "branch",
+            correct=False,
+            detail="— не выбрано —",
+        ).answered
+        is False
+    )
+    assert (
+        Finding(
+            FindingKind.DOCUMENT_FIELD,
+            "field",
+            correct=False,
+            detail="— не отвечено —",
+        ).answered
+        is False
+    )
+    assert (
+        Finding(
+            FindingKind.DOCUMENT_FIELD,
+            "field",
+            correct=False,
+            detail="произвольный ответ",
+        ).answered
+        is True
+    )
+    assert (
+        Finding(
+            FindingKind.INSPECTION,
+            "inspection",
+            correct=False,
+            detail="",
+        ).answered
+        is True
+    )
 
 
 def _clinical_stage() -> StageClinical:
@@ -241,6 +287,77 @@ def test_grade_case_defaults_six_stages_in_order() -> None:
     assert patients.findings == ()
 
 
+def _final_stage() -> StageFinal:
+    """Этап 6 с двумя эталонными таймлайнами (на второй курсант не отвечает)."""
+    return StageFinal(
+        timelines=(
+            Timeline(
+                id="tl-outbreak",
+                title="Сроки наблюдения за очагом",
+                events=(("01.06", "первый случай"), ("03.06", "пик")),
+            ),
+            Timeline(
+                id="tl-care",
+                title="Динамика лечения",
+                events=(("05.06", "выписка"),),
+            ),
+        ),
+    )
+
+
+def _final_attempt() -> Attempt:
+    """Прохождение с ответом только на первый таймлайн."""
+    return Attempt(
+        AttemptMeta("case-final"),
+        final=AttemptFinal(
+            timelines=(
+                TimelineResponse(
+                    timeline_id="tl-outbreak",
+                    entries=(("01.06", "заболел"), ("04.06", "госпитализация")),
+                ),
+            ),
+        ),
+    )
+
+
+def test_final_timelines_compared_without_verdict() -> None:
+    """Этап 6: таймлайны сопоставляются нейтрально — эталон из кейса, ввод курсанта рядом."""
+    case = Case(CaseMeta("case-final"), final=_final_stage())
+    final = _stage(grade_case(case, _final_attempt()), StageKind.FINAL)
+
+    # Порядок — как в кейсе; нет авто-вердикта (нейтральная структура без correct).
+    assert tuple(t.timeline_id for t in final.timelines) == ("tl-outbreak", "tl-care")
+    outbreak = final.timelines[0]
+    assert outbreak.title == "Сроки наблюдения за очагом"
+    assert outbreak.authored == (("01.06", "первый случай"), ("03.06", "пик"))
+    assert outbreak.cadet == (("01.06", "заболел"), ("04.06", "госпитализация"))
+    assert not hasattr(outbreak, "correct")
+
+
+def test_final_timeline_without_cadet_answer_has_empty_cadet() -> None:
+    """Эталонный таймлайн без ответа курсанта → cadet пуст, эталон сохраняется."""
+    case = Case(CaseMeta("case-final"), final=_final_stage())
+    final = _stage(grade_case(case, _final_attempt()), StageKind.FINAL)
+
+    care = final.timelines[1]
+    assert care.timeline_id == "tl-care"
+    assert care.cadet == ()
+    assert care.authored == (("05.06", "выписка"),)
+
+
+def test_final_timelines_round_trip() -> None:
+    """to_dict/from_dict сохраняет таймлайны этапа 6 в отчёте."""
+    case = Case(CaseMeta("case-final"), final=_final_stage())
+    report = grade_case(case, _final_attempt())
+    assert CaseReport.from_dict(report.to_dict()) == report
+
+
+def test_stage_report_reads_legacy_serialization_without_timelines() -> None:
+    """Старая сериализация без ключа «timelines» читается (default ())."""
+    legacy = {"kind": StageKind.FINAL.value, "findings": []}
+    assert StageReport.from_dict(legacy).timelines == ()
+
+
 def test_case_report_round_trip() -> None:
     case = Case(CaseMeta("case-1"), clinical=_clinical_stage())
     attempt = Attempt(
@@ -258,3 +375,95 @@ def test_case_report_round_trip() -> None:
     )
     report = grade_case(case, attempt)
     assert CaseReport.from_dict(report.to_dict()) == report
+
+
+# --- Нейтральный контекст: запросы, вывод осмотра, вложения (без вердикта) ---
+
+
+def test_search_queries_become_notes() -> None:
+    """Поисковые запросы курсанта попадают в notes этапа одной приглушённой строкой."""
+    case = Case(CaseMeta("case-1"))
+    attempt = Attempt(
+        AttemptMeta("case-1"),
+        patients=AttemptPatients(search=SearchLog(queries=("диарея", "рвота"))),
+    )
+    patients = _stage(grade_case(case, attempt), StageKind.PATIENTS)
+    assert patients.notes == (("Поисковые запросы", "диарея, рвота"),)
+
+
+def test_empty_search_yields_no_notes() -> None:
+    """Без поисковых запросов notes пуст (не показываем пустую строку)."""
+    case = Case(CaseMeta("case-1"))
+    patients = _stage(grade_case(case, Attempt(AttemptMeta("case-1"))), StageKind.PATIENTS)
+    assert patients.notes == ()
+
+
+def test_inspection_text_becomes_note() -> None:
+    """Свободный вывод осмотра курсанта попадает в notes этапа."""
+    case = Case(
+        CaseMeta("case-3"),
+        contacts=StageContacts(
+            inspection=InspectionCheck(expected=(SynonymSet(canonical="скученность"),)),
+        ),
+    )
+    attempt = Attempt(
+        AttemptMeta("case-3"),
+        contacts=AttemptContacts(inspection=InspectionResponse(text="Выявлена скученность")),
+    )
+    contacts = _stage(grade_case(case, attempt), StageKind.CONTACTS)
+    assert contacts.notes == (("Вывод осмотра", "Выявлена скученность"),)
+
+
+def test_document_attachments_collected_into_stage_report() -> None:
+    """Вложения курсанта по документам этапа собираются в StageReport.attachments."""
+    case = Case(CaseMeta("case-1"), clinical=_clinical_stage())
+    attempt = Attempt(
+        AttemptMeta("case-1"),
+        clinical=AttemptClinical(
+            documents=(
+                DocumentResponse(
+                    task_id="dm4",
+                    chosen_option_id="opt-dm4",
+                    attachments=(("att-1", "донесение.pdf"),),
+                ),
+            ),
+        ),
+    )
+    clinical = _stage(grade_case(case, attempt), StageKind.CLINICAL)
+    assert clinical.attachments == (("att-1", "донесение.pdf"),)
+
+
+def test_unanswered_clinical_details_are_readable() -> None:
+    """Неотвеченные элементы дают читаемый detail, а не пустую строку."""
+    case = Case(CaseMeta("case-1"), clinical=_clinical_stage())
+    clinical = _stage(grade_case(case, Attempt(AttemptMeta("case-1"))), StageKind.CLINICAL)
+    assert _finding(clinical, FindingKind.BRANCH).detail == "— не выбрано —"
+    assert _finding(clinical, FindingKind.DOCUMENT_CHOICE).detail == "— не выбрано —"
+    assert _finding(clinical, FindingKind.DOCUMENT_FIELD).detail == "— не отвечено —"
+
+
+def test_unanswered_ses_level_detail_is_readable() -> None:
+    """Невыбранный уровень СЭС показывается как «— не выбрано —»."""
+    ses = _stage(grade_case(_ses_case(), Attempt(AttemptMeta("case-4"))), StageKind.SES)
+    assert _finding(ses, FindingKind.LEVEL_CHOICE).detail == "— не выбрано —"
+
+
+def test_stage_report_round_trip_preserves_notes_and_attachments() -> None:
+    """to_dict/from_dict сохраняет notes и attachments этапа."""
+    stage = StageReport(
+        StageKind.CLINICAL,
+        notes=(("Поисковые запросы", "диарея"),),
+        attachments=(("att-1", "донесение.pdf"),),
+    )
+    restored = StageReport.from_dict(stage.to_dict())
+    assert restored.notes == (("Поисковые запросы", "диарея"),)
+    assert restored.attachments == (("att-1", "донесение.pdf"),)
+    assert restored == stage
+
+
+def test_stage_report_reads_legacy_without_notes_and_attachments() -> None:
+    """Старая сериализация без ключей «notes»/«attachments» читается (default ())."""
+    legacy = {"kind": StageKind.PATIENTS.value, "findings": []}
+    restored = StageReport.from_dict(legacy)
+    assert restored.notes == ()
+    assert restored.attachments == ()

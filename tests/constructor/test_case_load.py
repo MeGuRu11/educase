@@ -10,18 +10,18 @@ from _pytest.monkeypatch import MonkeyPatch
 from PySide6.QtWidgets import QMessageBox, QPushButton
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
-from educase_constructor.ui.case_editor import CaseEditor
-from educase_constructor.ui.clinical_editor import ClinicalEditor
-from educase_constructor.ui.contacts_editor import ContactsEditor
-from educase_constructor.ui.environment_editor import EnvironmentEditor
-from educase_constructor.ui.field_editor import FieldEditor
-from educase_constructor.ui.main_window import MainWindow
-from educase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
-from educase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
-from educase_constructor.ui.start_screen import StartScreen
-from educase_core.application.assets import read_asset_sources
-from educase_core.application.case_builder import (
+from epicase_constructor.ui.asset_picker import AssetListPicker, AssetPicker
+from epicase_constructor.ui.case_editor import CaseEditor
+from epicase_constructor.ui.clinical_editor import ClinicalEditor
+from epicase_constructor.ui.contacts_editor import ContactsEditor
+from epicase_constructor.ui.environment_editor import EnvironmentEditor
+from epicase_constructor.ui.field_editor import FieldEditor
+from epicase_constructor.ui.main_window import MainWindow
+from epicase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
+from epicase_constructor.ui.scheme_zone_editor import SchemeZoneEditor
+from epicase_constructor.ui.start_screen import StartScreen
+from epicase_core.application.assets import read_asset_sources
+from epicase_core.application.case_builder import (
     AssetRef,
     BranchDraft,
     BranchOptionDraft,
@@ -41,7 +41,7 @@ from educase_core.application.case_builder import (
     SynonymSetDraft,
     build_case,
 )
-from educase_core.application.cases import save_case
+from epicase_core.application.cases import save_case
 
 _PAGE_START = 0
 _PAGE_EDITOR = 1
@@ -260,11 +260,11 @@ def test_start_screen_open_button_emits_signal(qtbot: QtBot) -> None:
 
 
 def test_load_case_from_path_fills_editor(qtbot: QtBot, tmp_path: Path) -> None:
-    """``load_case_from_path`` на реально сохранённом .educase → True и редактор заполнен."""
+    """``load_case_from_path`` на реально сохранённом .epicase → True и редактор заполнен."""
     draft = _draft_with_patient()
     case = build_case(draft)
     assets = read_asset_sources(draft)
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     save_case(case, dst, assets=assets)
 
     window = MainWindow()
@@ -277,6 +277,7 @@ def test_load_case_from_path_fills_editor(qtbot: QtBot, tmp_path: Path) -> None:
     assert len(window.editor.patient_editors) == 1
     refs = window.editor.patient_editors[0].assets_picker.value()
     assert refs[0].data == b"IMG"
+    window._stack.setCurrentIndex(_PAGE_START)
 
 
 def test_load_case_from_path_broken_returns_false(
@@ -286,7 +287,7 @@ def test_load_case_from_path_broken_returns_false(
     monkeypatch.setattr(
         QMessageBox, "warning", lambda *args, **kwargs: QMessageBox.StandardButton.Ok
     )
-    bad = tmp_path / "broken.educase"
+    bad = tmp_path / "broken.epicase"
     bad.write_bytes(b"not a zip")
 
     window = MainWindow()

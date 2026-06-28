@@ -2,7 +2,7 @@
 фиксированный порядок слотов, корректная сериализация Optional-полей."""
 from __future__ import annotations
 
-from educase_core.domain import (
+from epicase_core.domain import (
     Attempt,
     AttemptClinical,
     AttemptContacts,
@@ -17,6 +17,7 @@ from educase_core.domain import (
     InspectionResponse,
     SearchLog,
     StageKind,
+    TimelineResponse,
 )
 
 
@@ -116,6 +117,72 @@ def test_attempt_meta_identity_fields_round_trip() -> None:
     assert restored == attempt
     assert restored.meta.rank == "лейтенант"
     assert restored.meta.study_group == "121"
+
+
+def test_document_response_ignores_legacy_free_text() -> None:
+    """Старое поле читается без ошибки, но не переносится в актуальную модель/serde."""
+    restored = DocumentResponse.from_dict(
+        {"task_id": "doc-old", "free_text": "устаревший ответ"}
+    )
+
+    assert not hasattr(restored, "free_text")
+    assert "free_text" not in restored.to_dict()
+
+
+def test_document_response_attachments_round_trip() -> None:
+    # ADR-015: пары (asset_id, имя_файла) режима ATTACHMENT переживают сериализацию.
+    response = DocumentResponse(
+        task_id="doc-att",
+        attachments=(("att-1", "Форма23.pdf"), ("att-2", "Акт.pdf")),
+    )
+    restored = DocumentResponse.from_dict(response.to_dict())
+    assert restored == response
+    assert restored.attachments == (("att-1", "Форма23.pdf"), ("att-2", "Акт.pdf"))
+
+
+def test_document_response_legacy_dict_attachments_defaults() -> None:
+    # Старый ответ без ключа attachments читается с дефолтом () (обратная совместимость).
+    restored = DocumentResponse.from_dict({"task_id": "doc-old"})
+    assert restored.attachments == ()
+
+
+def test_timeline_response_round_trip() -> None:
+    # Заполненный курсантом таймлайн (пары «дата → событие») переживает сериализацию.
+    response = TimelineResponse(
+        timeline_id="tl-1",
+        entries=(("01.01.2024", "Изоляция"), ("05.01.2024", "Снятие карантина")),
+    )
+    restored = TimelineResponse.from_dict(response.to_dict())
+    assert restored == response
+    assert restored.timeline_id == "tl-1"
+    assert restored.entries == (
+        ("01.01.2024", "Изоляция"),
+        ("05.01.2024", "Снятие карантина"),
+    )
+
+
+def test_attempt_final_with_timelines_round_trip() -> None:
+    # Непустые timelines в AttemptFinal переживают to_dict → from_dict.
+    final = AttemptFinal(
+        search=SearchLog(queries=("лихорадка",)),
+        documents=(DocumentResponse(task_id="akt", chosen_option_id="opt-akt"),),
+        timelines=(
+            TimelineResponse(
+                timeline_id="tl-1",
+                entries=(("02.01.2024", "Госпитализация"),),
+            ),
+        ),
+    )
+    attempt = Attempt(meta=AttemptMeta("case-tl"), final=final)
+    restored = Attempt.from_dict(attempt.to_dict())
+    assert restored == attempt
+    assert restored.final.timelines == final.timelines
+
+
+def test_attempt_final_legacy_dict_timelines_defaults() -> None:
+    # Старый ответ без ключа timelines читается с дефолтом () (обратная совместимость).
+    restored = AttemptFinal.from_dict({"kind": "final"})
+    assert restored.timelines == ()
 
 
 def test_attempt_optional_none_round_trip() -> None:

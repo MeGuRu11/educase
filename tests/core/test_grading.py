@@ -1,7 +1,7 @@
 """Тесты шва сведения результата с кейсом ``report_for_result`` (Qt-free, слой приложения).
 
 Проверяем: верные ответы дают ``correct=True`` findings; ``case_id_matches`` отражает
-соответствие кейсов; чужой тип архива (.educase по пути результата) → ``ArchiveError``.
+соответствие кейсов; чужой тип архива (.epicase по пути результата) → ``ArchiveError``.
 """
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from educase_core.application.cases import save_case
-from educase_core.application.grading import ArchiveError, report_for_result
-from educase_core.application.results import record_attempt
-from educase_core.domain import (
+from epicase_core.application.cases import save_case
+from epicase_core.application.grading import ArchiveError, report_for_result
+from epicase_core.application.results import record_attempt
+from epicase_core.domain import (
     Attempt,
     AttemptClinical,
     AttemptMeta,
@@ -84,7 +84,9 @@ def _case() -> Case:
 def _attempt(case_id: str = "case-1") -> Attempt:
     """Прохождение с верными ответами на клиническом этапе."""
     return Attempt(
-        meta=AttemptMeta(case_id=case_id, trainee_label="Иванов"),
+        meta=AttemptMeta(
+            case_id=case_id, trainee_label="Иванов", rank="лейтенант", study_group="121"
+        ),
         clinical=AttemptClinical(
             branch=BranchResponse(point_id="branch", chosen_option_id="b-ok"),
             documents=(
@@ -115,6 +117,8 @@ def test_report_for_result_grades_correct_attempt(tmp_path: Path) -> None:
     assert graded.case_id == "case-1"
     assert graded.attempt_case_id == "case-1"
     assert graded.trainee_label == "Иванов"
+    assert graded.rank == "лейтенант"
+    assert graded.study_group == "121"
     assert graded.case_id_matches is True
     assert graded.report.case_id == "case-1"
     assert len(graded.report.stages) == 6
@@ -141,7 +145,19 @@ def test_report_for_result_case_id_mismatch(tmp_path: Path) -> None:
 
 
 def test_report_for_result_wrong_archive_type_raises(tmp_path: Path) -> None:
-    """`.educase`, поданный как путь результата, → ``ArchiveError`` (несовпадение типа архива)."""
+    """`.epicase`, поданный как путь результата, → ``ArchiveError`` (несовпадение типа архива)."""
     case_path = save_case(_case(), tmp_path / "case")
     with pytest.raises(ArchiveError):
         report_for_result(case_path, case_path)
+
+
+def test_report_for_result_carries_result_assets(tmp_path: Path) -> None:
+    """Ассеты архива результата (вложения курсанта) доносятся в ``GradedResult.assets``."""
+    case_path = save_case(_case(), tmp_path / "case")
+    result_path = record_attempt(
+        _attempt(), tmp_path / "result", assets={"att-1": b"PDF-BYTES"}
+    )
+
+    graded = report_for_result(result_path, case_path)
+
+    assert graded.assets["att-1"] == b"PDF-BYTES"

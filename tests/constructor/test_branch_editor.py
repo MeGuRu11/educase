@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.branch_editor import BranchEditor, BranchOptionEditor
+from epicase_constructor.ui.branch_editor import BranchEditor, BranchOptionEditor
 
 
 def test_branch_option_correct_checkbox_object_name(qtbot: QtBot) -> None:

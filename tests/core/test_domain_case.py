@@ -1,10 +1,12 @@
 """Тесты доменной модели Case/Stage (FEATURE-02): round-trip to_dict/from_dict,
-интеграция с кодеком .educase, фиксированный порядок этапов, строгий поиск."""
+интеграция с кодеком .epicase, фиксированный порядок этапов, строгий поиск."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from educase_core.domain import (
+import pytest
+
+from epicase_core.domain import (
     AssetKind,
     AssetRef,
     BranchOption,
@@ -36,7 +38,8 @@ from educase_core.domain import (
     TextMatch,
     Timeline,
 )
-from educase_core.infrastructure.archive.codec import read_educase, write_educase
+from epicase_core.domain.documents import FillMode
+from epicase_core.infrastructure.archive.codec import read_epicase, write_epicase
 
 
 def _rich_case() -> Case:
@@ -229,10 +232,10 @@ def test_case_meta_author_rank_round_trip() -> None:
     assert restored.meta.author_rank == "полковник медицинской службы"
 
 
-def test_case_via_educase_archive(tmp_path: Path) -> None:
+def test_case_via_epicase_archive(tmp_path: Path) -> None:
     case = _rich_case()
-    dst = write_educase(case.to_dict(), tmp_path / "case")
-    bundle = read_educase(dst)
+    dst = write_epicase(case.to_dict(), tmp_path / "case")
+    bundle = read_epicase(dst)
     assert Case.from_dict(bundle.payload) == case
 
 
@@ -247,6 +250,55 @@ def test_stage_kinds_fixed() -> None:
         StageKind.SES,
         StageKind.FINAL,
     )
+
+
+def test_document_template_legacy_free_text_loads_as_fields() -> None:
+    """Старый free_text читается как FIELDS, но в актуальном enum отсутствует."""
+    raw = DocumentTemplate(id="tpl-legacy", title="Старый документ").to_dict()
+    raw["fill_mode"] = "free_text"
+
+    restored = DocumentTemplate.from_dict(raw)
+
+    assert restored.fill_mode is FillMode.FIELDS
+    assert not hasattr(FillMode, "FREE_TEXT")
+
+
+def test_document_template_attachment_mode_and_allow_multiple_round_trip() -> None:
+    # ADR-015: режим ATTACHMENT и флаг allow_multiple (True/False) переживают сериализацию.
+    for allow in (True, False):
+        template = DocumentTemplate(
+            id="tpl-att",
+            title="Форма 23",
+            fill_mode=FillMode.ATTACHMENT,
+            allow_multiple=allow,
+        )
+        restored = DocumentTemplate.from_dict(template.to_dict())
+        assert restored == template
+        assert restored.fill_mode is FillMode.ATTACHMENT
+        assert restored.allow_multiple is allow
+
+
+def test_document_template_attachment_serializes_as_string() -> None:
+    # FillMode.ATTACHMENT существует и сериализуется как "attachment".
+    assert FillMode.ATTACHMENT.value == "attachment"
+    data = DocumentTemplate(id="tpl", fill_mode=FillMode.ATTACHMENT).to_dict()
+    assert data["fill_mode"] == "attachment"
+
+
+def test_document_legacy_dict_defaults_back_compat() -> None:
+    # Старые архивы без новых ключей читаются: fill_mode → FIELDS, reference_assets → (),
+    # allow_multiple → False.
+    template = DocumentTemplate.from_dict({"id": "tpl-old", "title": "Старый"})
+    assert template.fill_mode is FillMode.FIELDS
+    assert template.allow_multiple is False
+    task = DocumentTask.from_dict({"id": "doc-old", "prompt": "Старое задание"})
+    assert task.reference_assets == ()
+
+
+def test_document_template_unknown_fill_mode_raises() -> None:
+    # Неизвестный режим заполнения (например, из будущего формата) — fail-fast ValueError.
+    with pytest.raises(ValueError):
+        DocumentTemplate.from_dict({"id": "tpl", "fill_mode": "bulk_import"})
 
 
 def test_strict_keyword_search_no_fuzzy() -> None:

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.timeline_editor import TimelineEditor, TimelineListEditor
-from educase_core.application.case_builder import TimelineDraft
+from epicase_constructor.ui.timeline_editor import TimelineEditor, TimelineListEditor
+from epicase_core.application.case_builder import TimelineDraft
 
 
 def test_timeline_editor_events_table_minimum_height(qtbot: QtBot) -> None:

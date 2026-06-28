@@ -1,6 +1,6 @@
 """Скриншот-прогон шести этапов Player на синтетическом кейсе (offscreen-режим).
 
-Загружает ``_scratch/sample.educase``, строит ``CaseNavigator`` и для каждого из шести
+Загружает ``_scratch/sample.epicase``, строит ``CaseNavigator`` и для каждого из шести
 этапов переключает стек реальной кнопкой «Далее» (проверка свободной навигации, ADR-008),
 снимает ``QWidget.grab()`` и пишет ``_scratch/stage_{N}_{kind}.png``. Любое исключение на
 этапе ловится, попадает в отчёт, прогон продолжается. Предупреждения Qt перехватываются
@@ -37,8 +37,8 @@ from PySide6.QtCore import (  # noqa: E402
 )
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from educase_core.application.cases import ArchiveError, load_case  # noqa: E402
-from educase_player.ui.case_navigator import CaseNavigator  # noqa: E402
+from epicase_core.application.cases import ArchiveError, load_case  # noqa: E402
+from epicase_player.ui.case_navigator import CaseNavigator  # noqa: E402
 
 _QT_MESSAGES: list[str] = []
 
@@ -49,8 +49,8 @@ def _qt_handler(mode: QtMsgType, context: QMessageLogContext, message: str) -> N
 
 
 def _scratch_dir() -> Path:
-    """Каталог пруфов: ``EDUCASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
-    base = os.environ.get("EDUCASE_SCRATCH")
+    """Каталог пруфов: ``EPICASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
+    base = os.environ.get("EPICASE_SCRATCH")
     return Path(base) if base else _REPO_ROOT / "_scratch"
 
 
@@ -58,7 +58,7 @@ def main() -> int:
     """Снять скриншоты всех этапов; вернуть 0, если каждый отрисовался."""
     qInstallMessageHandler(_qt_handler)
     scratch = _scratch_dir()
-    case_path = scratch / "sample.educase"
+    case_path = scratch / "sample.epicase"
 
     report: list[str] = []
     rendered: list[str] = []

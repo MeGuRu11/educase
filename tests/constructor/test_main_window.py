@@ -1,16 +1,25 @@
 from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
-from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
+from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.field_editor import FieldEditor
-from educase_constructor.ui.main_window import MainWindow
-from educase_constructor.ui.report_dialog import ReportDialog
-from educase_core.application.case_builder import build_case
-from educase_core.application.cases import load_case, save_case
-from educase_core.application.results import record_attempt
-from educase_core.domain import Attempt, AttemptMeta, Case, CaseMeta
+from epicase_constructor.ui.case_saved_view import CaseSavedView
+from epicase_constructor.ui.field_editor import FieldEditor
+from epicase_constructor.ui.main_window import _PAGE_EDITOR, _PAGE_SAVED, _PAGE_START, MainWindow
+from epicase_constructor.ui.report_dialog import ReportDialog
+from epicase_core.application.case_builder import build_case
+from epicase_core.application.cases import load_case, save_case
+from epicase_core.application.results import record_attempt
+from epicase_core.domain import (
+    Attempt,
+    AttemptClinical,
+    AttemptMeta,
+    Case,
+    CaseMeta,
+    DocumentResponse,
+)
 
 
 def _select_type(field: FieldEditor, value: str) -> None:
@@ -21,11 +30,11 @@ def _select_type(field: FieldEditor, value: str) -> None:
 def test_constructor_window_title(qtbot: QtBot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    assert window.windowTitle() == "EduCase Constructor"
+    assert window.windowTitle() == "EpiCase Constructor"
 
 
 def test_save_then_load_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
-    """Сквозной цикл Constructor → .educase → back: мета и пациенты совпадают."""
+    """Сквозной цикл Constructor → .epicase → back: мета и пациенты совпадают."""
     window = MainWindow()
     qtbot.addWidget(window)
 
@@ -34,7 +43,7 @@ def test_save_then_load_round_trip(qtbot: QtBot, tmp_path: Path) -> None:
     window.editor.patient_editors[0].title_edit.setText("Пациент 1")
     expected_id = window.editor._case_id  # автогенерированный служебный id кейса
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
     assert dst.exists()
 
@@ -106,7 +115,7 @@ def test_save_then_load_full_six_stages(qtbot: QtBot, tmp_path: Path) -> None:
 
     expected = build_case(editor.to_draft())
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
     loaded = load_case(dst)
 
@@ -123,7 +132,7 @@ def test_save_then_load_full_six_stages(qtbot: QtBot, tmp_path: Path) -> None:
 
 
 def test_save_packs_scheme_asset_bytes(qtbot: QtBot, tmp_path: Path) -> None:
-    """Сквозная цепочка ассета: выбор файла → стабильный id в Case → реальные байты в .educase."""
+    """Сквозная цепочка ассета: выбор файла → стабильный id в Case → реальные байты в .epicase."""
     contacts_scheme = tmp_path / "scheme_contacts.png"
     contacts_scheme.write_bytes(b"\x89PNG-contacts")
     env_scheme = tmp_path / "scheme_env.jpg"
@@ -141,7 +150,7 @@ def test_save_packs_scheme_asset_bytes(qtbot: QtBot, tmp_path: Path) -> None:
     env_ref = editor.environment_editor.scheme_picker.value()
     assert contacts_ref is not None and env_ref is not None
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
 
     loaded = load_case(dst)
@@ -189,7 +198,7 @@ def test_save_packs_multi_location_asset_bytes(qtbot: QtBot, tmp_path: Path) -> 
     photo_ref = editor.environment_editor.photos_picker.value()[0]
     reveal_ref = entry.reveal_assets_picker.value()[0]
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is True
 
     loaded = load_case(dst)
@@ -222,7 +231,7 @@ def test_save_invalid_template_number_warns_and_skips(
     _select_type(level, "number")
     level.number_value_edit.setText("abc")
 
-    dst = tmp_path / "case.educase"
+    dst = tmp_path / "case.epicase"
     assert window.save_case_to_path(dst) is False
     assert not dst.exists()
 
@@ -230,7 +239,7 @@ def test_save_invalid_template_number_warns_and_skips(
 def test_report_dialog_for_valid_pair_returns_dialog(
     qtbot: QtBot, tmp_path: Path
 ) -> None:
-    """Шов отчёта на валидной паре .eduresult/.educase → ``ReportDialog`` (не None)."""
+    """Шов отчёта на валидной паре .epiresult/.epicase → ``ReportDialog`` (не None)."""
     case_path = save_case(Case(meta=CaseMeta(id="case-x")), tmp_path / "case")
     result_path = record_attempt(
         Attempt(meta=AttemptMeta(case_id="case-x", trainee_label="Петров")),
@@ -249,10 +258,154 @@ def test_report_dialog_for_valid_pair_returns_dialog(
 def test_report_dialog_for_broken_archive_returns_none(
     qtbot: QtBot, tmp_path: Path
 ) -> None:
-    """Шов отчёта на чужом типе архива (.educase как результат) → ``None`` (не падение)."""
+    """Шов отчёта на чужом типе архива (.epicase как результат) → ``None`` (не падение)."""
     case_path = save_case(Case(meta=CaseMeta(id="case-x")), tmp_path / "case")
 
     window = MainWindow()
     qtbot.addWidget(window)
 
     assert window.report_dialog_for(case_path, case_path) is None
+
+
+def test_report_dialog_for_carries_attachments_and_assets(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """Вложения курсанта и байты архива доносятся через ``report_dialog_for`` в диалог."""
+    case_path = save_case(Case(meta=CaseMeta(id="case-att")), tmp_path / "case")
+    attempt = Attempt(
+        meta=AttemptMeta(case_id="case-att", trainee_label="Петров"),
+        clinical=AttemptClinical(
+            documents=(
+                DocumentResponse(
+                    task_id="d1", attachments=(("att-1", "донесение.pdf"),)
+                ),
+            ),
+        ),
+    )
+    result_path = record_attempt(
+        attempt, tmp_path / "result", assets={"att-1": b"PDF-BYTES"}
+    )
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    dialog = window.report_dialog_for(result_path, case_path)
+    assert dialog is not None
+    qtbot.addWidget(dialog)
+    assert dialog._assets.get("att-1") == b"PDF-BYTES"
+
+
+# --- Тесты экрана сохранения ---
+
+
+def test_show_case_saved_switches_stack(qtbot: QtBot) -> None:
+    """После load в редактор + _show_case_saved стек переключается на страницу saved."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    # Сначала переходим на редактор (имитируем открытый кейс)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+    assert window._stack.currentIndex() == _PAGE_EDITOR
+
+    window._show_case_saved("C:/cases/my.epicase")
+
+    assert window._stack.currentIndex() == _PAGE_SAVED
+    assert isinstance(window._stack.currentWidget(), CaseSavedView)
+    assert window._saved_view._path_label.text() == "C:/cases/my.epicase"
+
+
+def test_continue_requested_returns_to_editor(qtbot: QtBot) -> None:
+    """continue_requested от CaseSavedView возвращает стек на страницу редактора."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    window._show_case_saved("/path/case.epicase")
+    assert window._stack.currentIndex() == _PAGE_SAVED
+
+    window._saved_view.continue_requested.emit()
+
+    assert window._stack.currentIndex() == _PAGE_EDITOR
+    window._stack.setCurrentIndex(_PAGE_START)
+
+
+def test_home_requested_returns_to_start(qtbot: QtBot) -> None:
+    """home_requested от CaseSavedView возвращает стек на стартовый экран."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    window._show_case_saved("/path/case.epicase")
+    assert window._stack.currentIndex() == _PAGE_SAVED
+
+    window._saved_view.home_requested.emit()
+
+    assert window._stack.currentIndex() == _PAGE_START
+
+
+# --- Тесты подтверждения перед потерей несохранённого кейса ---
+
+
+def test_close_event_editor_no_ignores(qtbot: QtBot, monkeypatch: MonkeyPatch) -> None:
+    """closeEvent на странице редактора при ответе No → событие проигнорировано."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+    monkeypatch.setattr(window, "_confirm_discard", lambda *a, **kw: False)
+
+    event = QCloseEvent()
+    window.closeEvent(event)
+    assert not event.isAccepted()
+
+
+def test_close_event_editor_yes_accepts(qtbot: QtBot, monkeypatch: MonkeyPatch) -> None:
+    """closeEvent на странице редактора при ответе Yes → событие принято."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+    monkeypatch.setattr(window, "_confirm_discard", lambda *a, **kw: True)
+
+    event = QCloseEvent()
+    window.closeEvent(event)
+    assert event.isAccepted()
+
+
+def test_close_event_start_no_question(qtbot: QtBot, monkeypatch: MonkeyPatch) -> None:
+    """closeEvent на стартовой странице принимается без вызова _confirm_discard."""
+    called: list[bool] = []
+
+    def _fake_confirm(*a: object, **kw: object) -> bool:
+        called.append(True)
+        return False
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    monkeypatch.setattr(window, "_confirm_discard", _fake_confirm)
+    # _PAGE_START по умолчанию
+
+    event = QCloseEvent()
+    window.closeEvent(event)
+    assert event.isAccepted()
+    assert not called
+
+
+def test_open_case_dialog_editor_no_skips_load(
+    qtbot: QtBot, monkeypatch: MonkeyPatch
+) -> None:
+    """open_case_dialog на странице редактора при ответе No не открывает файл."""
+    monkeypatch.setattr(
+        QFileDialog, "getOpenFileName", lambda *a, **kw: ("dummy.epicase", "")
+    )
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+    monkeypatch.setattr(window, "_confirm_discard", lambda *a, **kw: False)
+
+    load_called: list[Path] = []
+
+    def _load(p: Path) -> bool:
+        load_called.append(p)
+        return True
+
+    monkeypatch.setattr(window, "load_case_from_path", _load)
+
+    window.open_case_dialog()
+    assert load_called == []

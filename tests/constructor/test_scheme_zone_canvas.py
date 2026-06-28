@@ -13,8 +13,8 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import QGraphicsTextItem
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
-from educase_core.application.case_builder import AssetRef
+from epicase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
+from epicase_core.application.case_builder import AssetRef
 
 # Фон 40×30: меньше _MAX_WIDTH, без масштабирования; минимум зоны 2*_HANDLE = 16 px.
 _BG_W = 40
@@ -159,3 +159,25 @@ def test_remove_selected_and_clear_zones(qtbot: QtBot, tmp_path: Path) -> None:
 
     canvas.clear_zones()
     assert canvas.normalized_zones() == []
+
+
+def test_renumber_assigns_1based_indices(qtbot: QtBot, tmp_path: Path) -> None:
+    """``_renumber`` нумерует зоны 1-based в порядке списка; после удаления индексы сжимаются."""
+    from PySide6.QtCore import QRectF
+
+    from epicase_constructor.ui.scheme_zone_canvas import ZoneItem
+
+    canvas = SchemeZoneCanvas()
+    qtbot.addWidget(canvas)
+
+    zone_a = ZoneItem(QRectF(0, 0, 20, 20))
+    zone_b = ZoneItem(QRectF(0, 0, 20, 20))
+    zone_c = ZoneItem(QRectF(0, 0, 20, 20))
+    canvas._zones.extend([zone_a, zone_b, zone_c])
+
+    canvas._renumber()
+    assert [z._index for z in canvas._zones] == [1, 2, 3]
+
+    canvas._zones.remove(zone_b)
+    canvas._renumber()
+    assert [z._index for z in canvas._zones] == [1, 2]

@@ -1,4 +1,4 @@
-# EduCase
+# EpiCase
 
 Десктоп-тренажёр для подготовки военных эпидемиологов (ВМА им. Кирова). Windows 10/11,
 компьютерный класс. Две раздельные программы:
@@ -6,13 +6,13 @@
 - **Constructor** — преподаватель собирает кейсы (без авторизации).
 - **Player** — курсант проходит кейс и формирует результат.
 
-Обмен — только файлами `.educase` (кейс) и `.eduresult` (результат), перенос вручную.
+Обмен — только файлами `.epicase` (кейс) и `.epiresult` (результат), перенос вручную.
 **Сетевого кода в проекте нет** (ADR-003).
 
 ## Стек
 
 Python 3.12 · PySide6 (только виджеты) · loguru · PyInstaller · pytest-qt · ruff ·
-mypy (strict). Персистентность — файловая (кодек `.educase`/`.eduresult`), без БД/ORM (ADR-009).
+mypy (strict). Персистентность — файловая (кодек `.epicase`/`.epiresult`), без БД/ORM (ADR-009).
 
 ## Разработка
 
@@ -21,8 +21,8 @@ python -m venv .venv && . .venv/Scripts/activate    # Windows
 pip install -e ".[dev]"
 
 # Запуск
-educase-constructor      # или: python -m educase_constructor
-educase-player           # или: python -m educase_player
+epicase-constructor      # или: python -m epicase_constructor
+epicase-player           # или: python -m epicase_player
 
 # Quality gate
 ruff check src tests
@@ -40,18 +40,24 @@ pyinstaller packaging/player.spec
 
 ## Для ИИ-агентов
 
+- `AGENTS.md` — инструкция для Codex.
 - `CLAUDE.md` — инструкция для Claude Code (архитектор/senior/UI/ревью).
 - `CODEX.md` — правила для Codex GPT 5.5 (скаффолдинг).
+- `.agents/skills/` — проектные skills Codex.
 - `.claude/agents/` — сабагенты с привязкой к лестнице моделей (`model:`).
 - `.claude/skills/` — проектные скиллы (контекст, механика этапов, документы, формат архива).
 
 ## Структура
 
 ```
-src/educase_core/          общий слой (домен, application, infrastructure, кодеки архивов)
-src/educase_constructor/   GUI преподавателя
-src/educase_player/        GUI курсанта
+src/epicase_core/          общий слой (домен, application, infrastructure, кодеки архивов)
+src/epicase_constructor/   GUI преподавателя
+src/epicase_player/        GUI курсанта
 tests/                     pytest / pytest-qt
 packaging/                 .spec для PyInstaller
-docs/adr/                  архитектурные решения (ADR-001..008)
+docs/adr/                  материализованные архитектурные решения (ADR-013..016)
 ```
+
+Constructor показывает преподавателю подробную предварительную машинную сверку, но
+не вычисляет баллы или pass/fail. Player правильность не показывает; окончательное
+решение принимает преподаватель (ADR-016).

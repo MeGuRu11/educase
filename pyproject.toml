@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "educase"
+name = "epicase"
 version = "0.1.0"
-description = "EduCase — тренажёр для подготовки военных эпидемиологов (Constructor + Player)"
+description = "EpiCase — тренажёр для подготовки военных эпидемиологов (Constructor + Player)"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
@@ -25,14 +25,14 @@ dev = [
 
 # Две раздельные программы — два GUI-входа (gui-scripts: без консольного окна в Windows).
 [project.gui-scripts]
-educase-constructor = "educase_constructor.__main__:main"
-educase-player = "educase_player.__main__:main"
+epicase-constructor = "epicase_constructor.__main__:main"
+epicase-player = "epicase_player.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "src/educase_core",
-    "src/educase_constructor",
-    "src/educase_player",
+    "src/epicase_core",
+    "src/epicase_constructor",
+    "src/epicase_player",
 ]
 
 # ---- Качество кода ----
@@ -51,7 +51,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 python_version = "3.12"
 strict = true
 mypy_path = "src"
-packages = ["educase_core", "educase_constructor", "educase_player"]
+packages = ["epicase_core", "epicase_constructor", "epicase_player"]
 
 # PySide6 и pytest-qt поставляют неполные стабы — точечно гасим шум по missing imports.
 [[tool.mypy.overrides]]

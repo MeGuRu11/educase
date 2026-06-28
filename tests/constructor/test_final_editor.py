@@ -4,8 +4,8 @@ from __future__ import annotations
 from PySide6.QtWidgets import QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.final_editor import FinalEditor
-from educase_core.application.case_builder import (
+from epicase_constructor.ui.final_editor import FinalEditor
+from epicase_core.application.case_builder import (
     DocumentOptionDraft,
     DocumentTaskDraft,
     FinalDraft,

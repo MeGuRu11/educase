@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from educase_core.application.assets import read_asset_sources
-from educase_core.application.case_builder import (
+from epicase_core.application.assets import read_asset_sources
+from epicase_core.application.case_builder import (
     AssetRef,
     BranchDraft,
     BranchOptionDraft,
@@ -28,15 +28,15 @@ from educase_core.application.case_builder import (
     TimelineDraft,
     build_case,
 )
-from educase_core.application.case_loader import case_to_draft
-from educase_core.application.cases import LoadedCase, load_case, save_case
-from educase_core.domain import Case, CaseMeta
-from educase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
-from educase_core.domain.stages import PatientCard, StageContacts, StagePatients
+from epicase_core.application.case_loader import case_to_draft
+from epicase_core.application.cases import LoadedCase, load_case, save_case
+from epicase_core.domain import Case, CaseMeta
+from epicase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
+from epicase_core.domain.stages import PatientCard, StageContacts, StagePatients
 
 
 def test_case_to_draft_round_trip(tmp_path: Path) -> None:
-    """CaseDraft → .educase → load_case → case_to_draft: мета, пациенты и ассеты сохранены."""
+    """CaseDraft → .epicase → load_case → case_to_draft: мета, пациенты и ассеты сохранены."""
     draft = CaseDraft(
         case_id="case-l1",
         title="Вспышка ОКИ",
@@ -59,7 +59,7 @@ def test_case_to_draft_round_trip(tmp_path: Path) -> None:
 
     case = build_case(draft)
     assets = read_asset_sources(draft)
-    dst = tmp_path / "c.educase"
+    dst = tmp_path / "c.epicase"
     save_case(case, dst, assets=assets)
 
     reloaded = case_to_draft(load_case(dst))
@@ -187,12 +187,12 @@ def _clinical_draft() -> ClinicalDraft:
 
 
 def test_clinical_round_trip(tmp_path: Path) -> None:
-    """Этап 2: CaseDraft → .educase → load → case_to_draft даёт симметричный домен этапа 2."""
+    """Этап 2: CaseDraft → .epicase → load → case_to_draft даёт симметричный домен этапа 2."""
     draft = CaseDraft(case_id="case-l2", title="Клин", clinical=_clinical_draft())
 
     case = build_case(draft)
     assets = read_asset_sources(draft)
-    dst = tmp_path / "c.educase"
+    dst = tmp_path / "c.epicase"
     save_case(case, dst, assets=assets)
 
     reloaded = case_to_draft(load_case(dst))
@@ -230,6 +230,75 @@ def test_clinical_round_trip(tmp_path: Path) -> None:
     decoy = clinical.documents[0].options[1]
     assert decoy.is_correct is False
     assert decoy.template == TemplateDraft()
+
+
+def test_document_fields_mode_and_reference_assets_round_trip(tmp_path: Path) -> None:
+    """FIELDS и reference_assets переживают build_case → .epicase → case_to_draft."""
+    task = DocumentTaskDraft(
+        prompt="Заполните поля формы",
+        reference_assets=("ref-1", "ref-2"),
+        options=(
+            DocumentOptionDraft(
+                title="Форма 23",
+                is_correct=True,
+                template=TemplateDraft(title="Форма 23", fill_mode="fields"),
+            ),
+            DocumentOptionDraft(title="Обманка", is_correct=False),
+        ),
+    )
+    draft = CaseDraft(
+        case_id="case-fm", title="Док", clinical=ClinicalDraft(documents=(task,))
+    )
+
+    case = build_case(draft)
+    assets = read_asset_sources(draft)
+    dst = tmp_path / "c.epicase"
+    save_case(case, dst, assets=assets)
+    reloaded = case_to_draft(load_case(dst))
+
+    # Доменный инвариант симметрии: повторная сборка даёт тот же этап.
+    assert build_case(reloaded).clinical == build_case(draft).clinical
+
+    clinical = reloaded.clinical
+    assert clinical is not None
+    reloaded_task = clinical.documents[0]
+    assert reloaded_task.reference_assets == ("ref-1", "ref-2")
+    assert reloaded_task.options[0].template.fill_mode == "fields"
+
+
+def test_document_attachment_mode_and_allow_multiple_round_trip(tmp_path: Path) -> None:
+    """ADR-015: attachment и allow_multiple переживают build_case → .epicase → case_to_draft."""
+    task = DocumentTaskDraft(
+        prompt="Прикрепите заполненную форму",
+        options=(
+            DocumentOptionDraft(
+                title="Форма 23",
+                is_correct=True,
+                template=TemplateDraft(
+                    title="Форма 23", fill_mode="attachment", allow_multiple=True
+                ),
+            ),
+            DocumentOptionDraft(title="Обманка", is_correct=False),
+        ),
+    )
+    draft = CaseDraft(
+        case_id="case-att", title="Док", clinical=ClinicalDraft(documents=(task,))
+    )
+
+    case = build_case(draft)
+    assets = read_asset_sources(draft)
+    dst = tmp_path / "c.epicase"
+    save_case(case, dst, assets=assets)
+    reloaded = case_to_draft(load_case(dst))
+
+    # Доменный инвариант симметрии: повторная сборка даёт тот же этап.
+    assert build_case(reloaded).clinical == build_case(draft).clinical
+
+    clinical = reloaded.clinical
+    assert clinical is not None
+    reloaded_template = clinical.documents[0].options[0].template
+    assert reloaded_template.fill_mode == "attachment"
+    assert reloaded_template.allow_multiple is True
 
 
 def _contacts_draft() -> ContactsDraft:
@@ -344,7 +413,7 @@ def _environment_draft() -> EnvironmentDraft:
 
 
 def test_contacts_environment_round_trip(tmp_path: Path) -> None:
-    """Этапы 3–4: CaseDraft → .educase → case_to_draft даёт симметричный домен (рекурсия схемы)."""
+    """Этапы 3–4: CaseDraft → .epicase → case_to_draft даёт симметричный домен (рекурсия схемы)."""
     draft = CaseDraft(
         case_id="case-l3",
         title="Очаг",
@@ -354,7 +423,7 @@ def test_contacts_environment_round_trip(tmp_path: Path) -> None:
 
     case = build_case(draft)
     assets = read_asset_sources(draft)
-    dst = tmp_path / "c.educase"
+    dst = tmp_path / "c.epicase"
     save_case(case, dst, assets=assets)
 
     reloaded = case_to_draft(load_case(dst))
@@ -535,7 +604,7 @@ def test_case_to_draft_round_trip_ses_final(tmp_path: Path) -> None:
 
     case = build_case(draft)
     assets = read_asset_sources(draft)
-    dst = tmp_path / "c.educase"
+    dst = tmp_path / "c.epicase"
     save_case(case, dst, assets=assets)
     reloaded = case_to_draft(load_case(dst))
 

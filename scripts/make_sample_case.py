@@ -1,15 +1,15 @@
-"""Генератор богатого синтетического кейса EduCase для визуальной приёмки Player.
+"""Генератор богатого синтетического кейса EpiCase для визуальной приёмки Player.
 
 Собирает доменный ``Case`` со ВСЕМИ шестью заполненными этапами (поиск, пациенты,
 развилка, документы с обманками, осмотр, выбор уровня СЭС, таймлайны) и пакует его в
-``_scratch/sample.educase`` через слой приложения (``save_case``).
+``_scratch/sample.epicase`` через слой приложения (``save_case``).
 
 Запуск из .venv::
 
     python scripts/make_sample_case.py
 
-Каталог вывода — ``_scratch`` в корне репозитория (``*.educase`` уже в .gitignore);
-переопределяется переменной окружения ``EDUCASE_SCRATCH``.
+Каталог вывода — ``_scratch`` в корне репозитория (``*.epicase`` уже в .gitignore);
+переопределяется переменной окружения ``EPICASE_SCRATCH``.
 """
 from __future__ import annotations
 
@@ -21,10 +21,10 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from educase_core.application.cases import save_case  # noqa: E402
-from educase_core.domain.assets import AssetKind, AssetRef  # noqa: E402
-from educase_core.domain.case import Case, CaseMeta  # noqa: E402
-from educase_core.domain.documents import (  # noqa: E402
+from epicase_core.application.cases import save_case  # noqa: E402
+from epicase_core.domain.assets import AssetKind, AssetRef  # noqa: E402
+from epicase_core.domain.case import Case, CaseMeta  # noqa: E402
+from epicase_core.domain.documents import (  # noqa: E402
     ChoiceMatch,
     DateMatch,
     DocumentField,
@@ -35,19 +35,19 @@ from educase_core.domain.documents import (  # noqa: E402
     NumberMatch,
     TextMatch,
 )
-from educase_core.domain.scheme import (  # noqa: E402
+from epicase_core.domain.scheme import (  # noqa: E402
     Hotspot,
     HotspotShape,
     SchemeDocument,
     SchemeView,
 )
-from educase_core.domain.search import (  # noqa: E402
+from epicase_core.domain.search import (  # noqa: E402
     InspectionCheck,
     KeywordSearch,
     SearchEntry,
     SynonymSet,
 )
-from educase_core.domain.stages import (  # noqa: E402
+from epicase_core.domain.stages import (  # noqa: E402
     BranchOption,
     BranchPoint,
     PatientCard,
@@ -544,10 +544,10 @@ def build_sample_case() -> Case:
 
 
 def _output_path() -> Path:
-    """Путь вывода: ``EDUCASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
-    base = os.environ.get("EDUCASE_SCRATCH")
+    """Путь вывода: ``EPICASE_SCRATCH`` или ``_scratch`` в корне репозитория."""
+    base = os.environ.get("EPICASE_SCRATCH")
     scratch = Path(base) if base else _REPO_ROOT / "_scratch"
-    return scratch / "sample.educase"
+    return scratch / "sample.epicase"
 
 
 def _describe(case: Case) -> str:
@@ -590,7 +590,7 @@ def _describe(case: Case) -> str:
 
 
 def main() -> int:
-    """Собрать кейс, упаковать в .educase, напечатать путь и состав."""
+    """Собрать кейс, упаковать в .epicase, напечатать путь и состав."""
     case = build_sample_case()
     dst = _output_path()
     written = save_case(case, dst)

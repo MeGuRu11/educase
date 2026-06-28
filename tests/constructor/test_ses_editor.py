@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pytestqt.qtbot import QtBot
 
-from educase_constructor.ui.field_editor import FieldEditor
-from educase_constructor.ui.ses_editor import SesEditor
-from educase_core.application.case_builder import (
+from epicase_constructor.ui.field_editor import FieldEditor
+from epicase_constructor.ui.ses_editor import SesEditor
+from epicase_core.application.case_builder import (
     DocumentOptionDraft,
     DocumentTaskDraft,
     FieldDraft,

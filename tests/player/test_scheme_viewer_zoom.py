@@ -8,8 +8,8 @@ from PySide6.QtGui import QMouseEvent, QPixmap
 from PySide6.QtWidgets import QGraphicsScene
 from pytestqt.qtbot import QtBot
 
-from educase_core.domain.scheme import Hotspot, HotspotShape
-from educase_player.ui.scheme_viewer import _ZOOM_MAX, _SchemeGraphicsView
+from epicase_core.domain.scheme import Hotspot, HotspotShape
+from epicase_player.ui.scheme_viewer import _ZOOM_MAX, _SchemeGraphicsView
 
 _PX_W = 80
 _PX_H = 60
