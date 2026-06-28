@@ -337,10 +337,117 @@ QTabWidget#caseTabs QTabBar::tab:hover:!selected {
     color: #1F2A33;
 }
 
-/* --- Карточки пациентов: ховер-подсветка кликабельности --- */
-QWidget#patientCard:hover {
-    background: #F2F6F7;
-    border-radius: 8px;
+/* --- Карта пациента: карточка и диалог медицинских сведений --- */
+QFrame#patientCard {
+    background: #FFFFFF;
+    border: 1px solid #D4DAE0;
+    border-radius: 10px;
+}
+QFrame#patientCard:hover {
+    background: #F6F8FA;
+    border: 1px solid #0F766E;
+}
+QFrame#patientCard:focus {
+    border: 2px solid #0F766E;
+}
+QFrame#patientCardMarker {
+    background: #0F766E;
+    border: none;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+QLabel#patientCardMarkerSymbol {
+    color: #FFFFFF;
+    font-size: 26px;
+    font-weight: bold;
+}
+QLabel#patientCardMarkerText {
+    color: #D9EEEB;
+    font-size: 10px;
+    font-weight: bold;
+}
+QWidget#patientCardContent {
+    background: transparent;
+}
+QLabel#patientCardTitle {
+    color: #1F2A33;
+    font-size: 15px;
+    font-weight: bold;
+}
+QLabel#patientCardType {
+    color: #66727E;
+    font-size: 12px;
+}
+QLabel#patientCardAction {
+    color: #0F766E;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QDialog#patientDetailDialog {
+    background: #EDF0F3;
+}
+QFrame#patientDetailHeader {
+    background: #0F766E;
+    border: none;
+}
+QLabel#patientDetailEyebrow {
+    color: #D9EEEB;
+    font-size: 12px;
+}
+QLabel#patientDetailTitle {
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: bold;
+}
+QScrollArea#patientDetailScroll {
+    background: #EDF0F3;
+    border: none;
+}
+QFrame#patientDetailBody {
+    background: #FFFFFF;
+    border: none;
+}
+QFrame#patientFieldRow {
+    border: none;
+    border-bottom: 1px solid #E1E6EA;
+}
+QLabel#patientFieldName {
+    color: #66727E;
+    font-size: 12px;
+    font-weight: bold;
+}
+QLabel#patientFieldValue {
+    color: #1F2A33;
+    font-size: 14px;
+}
+QLabel#patientEmptyState {
+    color: #66727E;
+}
+QLabel#patientMaterialsTitle {
+    color: #1F2A33;
+    font-size: 16px;
+    font-weight: bold;
+}
+QFrame#patientDetailFooter {
+    background: #FFFFFF;
+    border: none;
+    border-top: 1px solid #D4DAE0;
+}
+QPushButton#patientDetailClose {
+    background: #0F766E;
+    color: #FFFFFF;
+    border: 1px solid #0F766E;
+    border-radius: 6px;
+    padding: 7px 20px;
+}
+QPushButton#patientDetailClose:hover {
+    background: #0B5E57;
+    border-color: #0B5E57;
+}
+QPushButton#patientDetailClose:pressed {
+    background: #0A524C;
+    border-color: #0A524C;
 }
 
 /* --- Экран завершения / подтверждение сохранения --- */
