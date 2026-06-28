@@ -325,6 +325,7 @@ def test_continue_requested_returns_to_editor(qtbot: QtBot) -> None:
     window._saved_view.continue_requested.emit()
 
     assert window._stack.currentIndex() == _PAGE_EDITOR
+    window._stack.setCurrentIndex(_PAGE_START)
 
 
 def test_home_requested_returns_to_start(qtbot: QtBot) -> None:
