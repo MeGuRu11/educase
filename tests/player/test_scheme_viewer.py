@@ -4,7 +4,15 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtWidgets import QDialog
+from PySide6.QtGui import QColor, QFontMetricsF
+from PySide6.QtWidgets import (
+    QDialog,
+    QGraphicsItem,
+    QGraphicsPathItem,
+    QGraphicsRectItem,
+    QGraphicsTextItem,
+    QGraphicsView,
+)
 from pytestqt.qtbot import QtBot
 
 from epicase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
@@ -52,6 +60,65 @@ def test_viewer_renders_background(qtbot: QtBot, png_bytes: Callable[..., bytes]
     )
     qtbot.addWidget(viewer)
     assert viewer.has_background() is True
+
+
+def test_viewer_hotspot_label_has_contrast_background_and_wraps(
+    qtbot: QtBot, png_bytes: Callable[..., bytes]
+) -> None:
+    """Подпись хотспота контрастная, жирная и переносится внутри ширины зоны."""
+    label = "Водонапорная башня с длинным названием"
+    scheme = SchemeDocument(
+        root=SchemeView(
+            background="bg",
+            hotspots=(
+                Hotspot(
+                    id="tower",
+                    shape=HotspotShape(x=0.1, y=0.1, w=0.35, h=0.4),
+                    label=label,
+                ),
+            ),
+        )
+    )
+    viewer = SchemeViewerWidget(scheme, {"bg": png_bytes(300, 200)})
+    qtbot.addWidget(viewer)
+
+    graphics_view = viewer.findChild(QGraphicsView)
+    assert graphics_view is not None
+    scene = graphics_view.scene()
+    assert scene is not None
+
+    zones = [
+        item
+        for item in scene.items()
+        if isinstance(item, QGraphicsRectItem) and item.parentItem() is None
+    ]
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.toolTip() == label
+    assert (
+        zone.flags() & QGraphicsItem.GraphicsItemFlag.ItemClipsChildrenToShape
+    )
+
+    text_items = [
+        item for item in scene.items() if isinstance(item, QGraphicsTextItem)
+    ]
+    assert len(text_items) == 1
+    text_item = text_items[0]
+    assert text_item.toPlainText() == label
+    assert text_item.defaultTextColor() == QColor("#FFFFFF")
+    assert text_item.font().bold() is True
+    assert 0 < text_item.textWidth() <= 105
+    font_metrics = QFontMetricsF(text_item.font())
+    assert text_item.boundingRect().height() > 2 * font_metrics.lineSpacing()
+
+    background_items = [
+        item for item in scene.items() if isinstance(item, QGraphicsPathItem)
+    ]
+    assert len(background_items) == 1
+    background = background_items[0]
+    assert background.brush().color().alpha() >= 230
+    assert background.brush().color() == QColor(20, 49, 48, 240)
+    assert zone.rect().contains(background.boundingRect())
 
 
 def test_viewer_missing_background_shows_placeholder(qtbot: QtBot) -> None:

@@ -17,13 +17,25 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 
 from PySide6.QtCore import QPoint, QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPen, QPixmap, QWheelEvent
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QWheelEvent,
+)
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
+    QGraphicsItem,
+    QGraphicsPathItem,
     QGraphicsRectItem,
     QGraphicsScene,
-    QGraphicsSimpleTextItem,
+    QGraphicsTextItem,
     QGraphicsView,
     QHBoxLayout,
     QLabel,
@@ -41,7 +53,10 @@ _MAX_WIDTH = 600
 # Акцентные цвета хотспота берём из общей темы (theme.qss): teal-обводка и лёгкая заливка.
 _HOTSPOT_PEN = QColor("#0F766E")
 _HOTSPOT_FILL = QColor(15, 118, 110, 48)
-_HOTSPOT_TEXT = QColor("#1F2A33")
+_HOTSPOT_LABEL_BACKGROUND = QColor(20, 49, 48, 240)
+_HOTSPOT_LABEL_TEXT = QColor("#FFFFFF")
+_HOTSPOT_LABEL_HORIZONTAL_PADDING = 6.0
+_HOTSPOT_LABEL_VERTICAL_PADDING = 3.0
 
 # Зум вьюера схемы (R3): шаг колеса и пределы масштаба относительно базового 1:1.
 _ZOOM_STEP = 1.15
@@ -52,6 +67,42 @@ _ZOOM_MAX = 6.0
 def _hotspot_rect(shape: HotspotShape, px_w: int, px_h: int) -> QRectF:
     """Геометрия хотспота в пикселях: доли [0..1] × размер pixmap."""
     return QRectF(shape.x * px_w, shape.y * px_h, shape.w * px_w, shape.h * px_h)
+
+
+def _add_hotspot_label(
+    rect_item: QGraphicsRectItem, label: str, rect: QRectF
+) -> None:
+    """Добавить контрастную многострочную подпись внутри верхней части хотспота."""
+    scene = rect_item.scene()
+    assert scene is not None
+    text_item: QGraphicsTextItem = scene.addText(label)
+    text_item.setParentItem(rect_item)
+    font = QFont()
+    font.setPointSize(10)
+    font.setBold(True)
+    text_item.setFont(font)
+    text_item.setDefaultTextColor(_HOTSPOT_LABEL_TEXT)
+    text_item.setTextWidth(
+        max(1.0, rect.width() - _HOTSPOT_LABEL_HORIZONTAL_PADDING * 2)
+    )
+    text_item.setPos(
+        rect.x() + _HOTSPOT_LABEL_HORIZONTAL_PADDING,
+        rect.y() + _HOTSPOT_LABEL_VERTICAL_PADDING,
+    )
+
+    background_height = min(
+        rect.height(),
+        text_item.boundingRect().height() + _HOTSPOT_LABEL_VERTICAL_PADDING * 2,
+    )
+    background_path = QPainterPath()
+    background_path.addRoundedRect(
+        QRectF(rect.x(), rect.y(), rect.width(), background_height), 3.0, 3.0
+    )
+    background_item = QGraphicsPathItem(background_path, rect_item)
+    background_item.setPen(QPen(Qt.PenStyle.NoPen))
+    background_item.setBrush(QBrush(_HOTSPOT_LABEL_BACKGROUND))
+    background_item.setZValue(1.0)
+    text_item.setZValue(2.0)
 
 
 class _SchemeGraphicsView(QGraphicsView):
@@ -275,6 +326,7 @@ class SchemeViewerWidget(QWidget):
     ) -> None:
         """Нарисовать зону хотспота (рамка + лёгкая заливка) и подпись-тултип."""
         rect_item = QGraphicsRectItem(_hotspot_rect(hotspot.shape, px_w, px_h))
+        rect_item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsChildrenToShape)
         rect_item.setPen(QPen(_HOTSPOT_PEN, 2))
         rect_item.setBrush(QBrush(_HOTSPOT_FILL))
         rect_item.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -283,9 +335,7 @@ class SchemeViewerWidget(QWidget):
             rect_item.setToolTip(tooltip)
         scene.addItem(rect_item)
         if hotspot.label:
-            text_item = QGraphicsSimpleTextItem(hotspot.label, rect_item)
-            text_item.setBrush(QBrush(_HOTSPOT_TEXT))
-            text_item.setPos(hotspot.shape.x * px_w + 2.0, hotspot.shape.y * px_h + 2.0)
+            _add_hotspot_label(rect_item, hotspot.label, rect_item.rect())
 
     def _activate_hotspot(self, hotspot: Hotspot) -> None:
         """Клик по зоне: открыть вложенный вид либо панель раскрытия (текст/ассеты)."""
