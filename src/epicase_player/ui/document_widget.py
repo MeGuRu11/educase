@@ -9,15 +9,16 @@ from uuid import uuid4
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
-    QListWidget,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from epicase_core.domain.documents import DocumentOption, DocumentTask, FillMode
+from epicase_core.theme.file_labels import file_size_label, file_type_label
 from epicase_player.ui.asset_image_widget import AssetImageWidget
 from epicase_player.ui.document_field_widget import DocumentFieldWidget
 
@@ -52,7 +53,10 @@ class DocumentWidget(QWidget):
         self._field_widgets: list[DocumentFieldWidget] = []
         self._attachments: list[tuple[str, str]] = []
         self._attach_bytes: dict[str, bytes] = {}
-        self._attach_list: QListWidget | None = None
+        self._attach_cards_layout: QVBoxLayout | None = None
+        self._attach_header: QLabel | None = None
+        self._attach_empty: QLabel | None = None
+        self._clear_button: QPushButton | None = None
 
         layout = QVBoxLayout(self)
 
@@ -140,11 +144,66 @@ class DocumentWidget(QWidget):
         self._attach_bytes = {}
         self._refresh_attach_list()
 
+    def _remove_attachment(self, asset_id: str) -> None:
+        self._attachments = [
+            attachment for attachment in self._attachments if attachment[0] != asset_id
+        ]
+        self._attach_bytes.pop(asset_id, None)
+        self._refresh_attach_list()
+
     def _refresh_attach_list(self) -> None:
-        if self._attach_list is not None:
-            self._attach_list.clear()
-            for _, name in self._attachments:
-                self._attach_list.addItem(name)
+        if self._attach_cards_layout is None:
+            return
+        while self._attach_cards_layout.count():
+            item = self._attach_cards_layout.takeAt(0)
+            if item is None:
+                continue
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
+        for asset_id, filename in self._attachments:
+            self._attach_cards_layout.addWidget(self._attachment_card(asset_id, filename))
+
+        count = len(self._attachments)
+        if self._attach_header is not None:
+            self._attach_header.setText(f"Прикреплённые файлы · {count}")
+        if self._attach_empty is not None:
+            self._attach_empty.setVisible(count == 0)
+        if self._clear_button is not None:
+            self._clear_button.setVisible(count > 0)
+
+    def _attachment_card(self, asset_id: str, filename: str) -> QFrame:
+        card = QFrame(self.form_area)
+        card.setObjectName("attachmentCard")
+        card_layout = QHBoxLayout(card)
+
+        type_badge = QLabel(file_type_label(filename), card)
+        type_badge.setObjectName("attachmentTypeBadge")
+        card_layout.addWidget(type_badge)
+
+        text_column = QWidget(card)
+        text_layout = QVBoxLayout(text_column)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        name_label = QLabel(filename, text_column)
+        name_label.setObjectName("attachmentName")
+        name_label.setWordWrap(True)
+        text_layout.addWidget(name_label)
+        meta_label = QLabel(
+            file_size_label(len(self._attach_bytes.get(asset_id, b""))),
+            text_column,
+        )
+        meta_label.setObjectName("attachmentMeta")
+        text_layout.addWidget(meta_label)
+        card_layout.addWidget(text_column, 1)
+
+        remove_button = QPushButton("Удалить", card)
+        remove_button.setObjectName("attachmentRemoveButton")
+        remove_button.clicked.connect(
+            lambda _checked=False, aid=asset_id: self._remove_attachment(aid)
+        )
+        card_layout.addWidget(remove_button)
+        return card
 
     def _rebuild_form(self) -> None:
         """Перестроить form_area при смене выбора в combo; снять подсветку ошибки."""
@@ -160,7 +219,10 @@ class DocumentWidget(QWidget):
         self._field_widgets.clear()
         self._attachments = []
         self._attach_bytes = {}
-        self._attach_list = None
+        self._attach_cards_layout = None
+        self._attach_header = None
+        self._attach_empty = None
+        self._clear_button = None
 
         option = self.selected_option()
         if option is None:
@@ -180,18 +242,34 @@ class DocumentWidget(QWidget):
             attach_btn.setObjectName("attachButton")
             self._form_layout.addWidget(attach_btn)
 
-            attach_list = QListWidget()
-            attach_list.setObjectName("attachList")
-            self._attach_list = attach_list
-            self._form_layout.addWidget(attach_list)
-
-            clear_btn = QPushButton("Очистить")
+            attach_panel = QFrame()
+            attach_panel.setObjectName("attachmentListPanel")
+            attach_panel_layout = QVBoxLayout(attach_panel)
+            header_row = QHBoxLayout()
+            attach_header = QLabel()
+            attach_header.setObjectName("attachmentSectionTitle")
+            self._attach_header = attach_header
+            header_row.addWidget(attach_header, 1)
+            clear_btn = QPushButton("Очистить всё")
             clear_btn.setObjectName("attachClear")
-            self._form_layout.addWidget(clear_btn)
+            self._clear_button = clear_btn
+            header_row.addWidget(clear_btn)
+            attach_panel_layout.addLayout(header_row)
+
+            attach_empty = QLabel("Файлы ещё не прикреплены")
+            attach_empty.setObjectName("attachmentEmpty")
+            self._attach_empty = attach_empty
+            attach_panel_layout.addWidget(attach_empty)
+
+            attach_cards_layout = QVBoxLayout()
+            self._attach_cards_layout = attach_cards_layout
+            attach_panel_layout.addLayout(attach_cards_layout)
+            self._form_layout.addWidget(attach_panel)
 
             allow_multiple = option.template.allow_multiple
             attach_btn.clicked.connect(lambda: self._pick_files(allow_multiple))
             clear_btn.clicked.connect(self._clear_attachments)
+            self._refresh_attach_list()
         else:
             for field in option.template.fields:
                 fw = DocumentFieldWidget(field, self.form_area)

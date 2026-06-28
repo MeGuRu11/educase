@@ -7,9 +7,9 @@ import pytest
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
+    QFrame,
     QLabel,
     QLineEdit,
-    QListWidget,
     QPushButton,
 )
 from pytestqt.qtbot import QtBot
@@ -413,23 +413,78 @@ def test_attachment_asset_ids_unique_and_match_bytes(
     assert set(ids) == set(ab.keys())
 
 
-def test_attachment_list_widget_updated_on_pick(
+def test_attachment_pick_renders_compact_file_card(
     qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """После pick QListWidget отображает имена прикреплённых файлов."""
-    f = tmp_path / "report.docx"
-    f.write_bytes(b"doc")
+    """После выбора панель показывает компактную карточку с типом, именем и размером."""
+    attachment = tmp_path / "report.pdf"
+    attachment.write_bytes(b"x" * 1536)
 
     w = DocumentWidget(_make_attachment_task(allow_multiple=True))
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(attachment)], ""),
+    )
     w._pick_files(allow_multiple=True)
 
-    lists: list[QListWidget] = w.form_area.findChildren(QListWidget)
-    assert lists and lists[0].count() == 1
-    assert lists[0].item(0).text() == "report.docx"
+    cards = [
+        frame
+        for frame in w.form_area.findChildren(QFrame)
+        if frame.objectName() == "attachmentCard"
+    ]
+    assert len(cards) == 1
+    assert {label.text() for label in cards[0].findChildren(QLabel)} >= {
+        "PDF",
+        "report.pdf",
+        "1,5 КБ",
+    }
+    empty = w.form_area.findChild(QLabel, "attachmentEmpty")
+    assert empty is not None
+    assert empty.isHidden()
+    header = w.form_area.findChild(QLabel, "attachmentSectionTitle")
+    assert header is not None
+    assert header.text() == "Прикреплённые файлы · 1"
+
+
+def test_attachment_remove_button_removes_only_its_file(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Кнопка карточки удаляет только соответствующие метаданные и байты."""
+    first = tmp_path / "first.pdf"
+    first.write_bytes(b"first")
+    second = tmp_path / "second.docx"
+    second.write_bytes(b"second")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(first), str(second)], ""),
+    )
+    w._pick_files(allow_multiple=True)
+
+    remove_buttons = [
+        button
+        for button in w.form_area.findChildren(QPushButton)
+        if button.objectName() == "attachmentRemoveButton"
+    ]
+    assert len(remove_buttons) == 2
+    first_asset_id = w.attachments()[0][0]
+    second_asset_id = w.attachments()[1][0]
+
+    remove_buttons[0].click()
+
+    assert w.attachments() == ((second_asset_id, "second.docx"),)
+    assert w.attachment_bytes() == {second_asset_id: b"second"}
+    assert first_asset_id not in w.attachment_bytes()
 
 
 def test_attachment_getters_empty_in_other_modes(qtbot: QtBot) -> None:

@@ -431,3 +431,78 @@ QPushButton#confirmCancelButton:hover {
 QPushButton#confirmCancelButton:pressed {
     background: #D0EAE8;
 }
+
+/* --- Компактные карточки вложений в Player и отчёте Constructor --- */
+QFrame#attachmentListPanel {
+    background: #F6F8FA;
+    border: 1px solid #D4DAE0;
+    border-radius: 8px;
+}
+QFrame#attachmentCard {
+    background: #FFFFFF;
+    border: 1px solid #D4DAE0;
+    border-radius: 8px;
+}
+QLabel#attachmentSectionTitle,
+QLabel#attachmentName {
+    color: #1F2A33;
+    font-weight: bold;
+}
+QLabel#attachmentTypeBadge {
+    background: #D9EEEB;
+    color: #0F766E;
+    border-radius: 6px;
+    padding: 7px;
+    font-weight: bold;
+}
+QLabel#attachmentMeta,
+QLabel#attachmentEmpty {
+    color: #66727E;
+}
+QLabel#attachmentWarning {
+    color: #B45454;
+}
+QPushButton#attachButton,
+QPushButton#attachmentOpenButton {
+    background: #0F766E;
+    color: #FFFFFF;
+    border: 1px solid #0F766E;
+    border-radius: 6px;
+    padding: 6px 14px;
+}
+QPushButton#attachButton:hover,
+QPushButton#attachmentOpenButton:hover {
+    background: #0B5E57;
+    border-color: #0B5E57;
+}
+QPushButton#attachButton:pressed,
+QPushButton#attachmentOpenButton:pressed {
+    background: #0A524C;
+    border-color: #0A524C;
+}
+QPushButton#attachClear,
+QPushButton#attachmentRemoveButton,
+QPushButton#attachmentSaveButton {
+    background: #FFFFFF;
+    color: #40515F;
+    border: 1px solid #C7CED5;
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+QPushButton#attachClear:hover,
+QPushButton#attachmentRemoveButton:hover,
+QPushButton#attachmentSaveButton:hover {
+    background: #F0F3F5;
+    border-color: #0F766E;
+}
+QPushButton#attachClear:pressed,
+QPushButton#attachmentRemoveButton:pressed,
+QPushButton#attachmentSaveButton:pressed {
+    background: #E3E8EC;
+}
+QPushButton#attachmentOpenButton:disabled,
+QPushButton#attachmentSaveButton:disabled {
+    background: #F6F8FA;
+    color: #9AA5AF;
+    border: 1px solid #E1E6EA;
+}
