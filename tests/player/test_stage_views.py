@@ -357,7 +357,7 @@ def test_doc_resp_includes_attachments(
     widget.options_combo.setCurrentIndex(0)
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
-    widget._pick_files(allow_multiple=True)
+    widget._pick_files()
 
     resp = _doc_resp(task, widget)
     assert len(resp.attachments) == 1
@@ -383,7 +383,7 @@ def test_collect_assets_clinical_with_attachment(
     dw.options_combo.setCurrentIndex(0)
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
-    dw._pick_files(allow_multiple=True)
+    dw._pick_files()
 
     assets = view.collect_assets()
     assert len(assets) == 1

@@ -55,6 +55,46 @@ def _finding(stage: StageReport, kind: FindingKind) -> Finding:
     return next(f for f in stage.findings if f.kind == kind)
 
 
+def test_finding_answered_distinguishes_skips_from_real_answers() -> None:
+    """Плейсхолдеры означают пропуск; произвольный и пустой detail — реальный ответ."""
+    assert (
+        Finding(
+            FindingKind.BRANCH,
+            "branch",
+            correct=False,
+            detail="— не выбрано —",
+        ).answered
+        is False
+    )
+    assert (
+        Finding(
+            FindingKind.DOCUMENT_FIELD,
+            "field",
+            correct=False,
+            detail="— не отвечено —",
+        ).answered
+        is False
+    )
+    assert (
+        Finding(
+            FindingKind.DOCUMENT_FIELD,
+            "field",
+            correct=False,
+            detail="произвольный ответ",
+        ).answered
+        is True
+    )
+    assert (
+        Finding(
+            FindingKind.INSPECTION,
+            "inspection",
+            correct=False,
+            detail="",
+        ).answered
+        is True
+    )
+
+
 def _clinical_stage() -> StageClinical:
     """Клинический этап: верная ветвь + документ с одним TextMatch-полем и обманкой."""
     return StageClinical(

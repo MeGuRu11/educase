@@ -35,9 +35,8 @@ class FieldType(StrEnum):
 
 
 class FillMode(StrEnum):
-    """Режим заполнения документа курсантом (ADR-014; ATTACHMENT — ADR-015)."""
+    """Режим заполнения документа курсантом (ADR-015)."""
 
-    FREE_TEXT = "free_text"
     FIELDS = "fields"
     ATTACHMENT = "attachment"
 
@@ -201,11 +200,12 @@ class DocumentField:
 
 @dataclass(frozen=True)
 class DocumentTemplate:
-    """Шаблон документа: заголовок, поля, режим заполнения и флаг нескольких вложений.
+    """Шаблон документа: заголовок, поля, режим заполнения и legacy-поле формата.
 
     ``fill_mode`` — режим заполнения курсантом (ADR-014; ATTACHMENT — ADR-015).
-    ``allow_multiple`` — в режиме ATTACHMENT разрешает прикрепить несколько файлов (ADR-015);
-    для прочих режимов значения не имеет.
+    ``allow_multiple`` сериализуется только для обратной совместимости формата v1.
+    Player игнорирует поле, а Constructor нормализует его в ``True`` для ATTACHMENT
+    и в ``False`` для FIELDS; активной настройкой оно не является.
     """
 
     id: str
@@ -225,13 +225,16 @@ class DocumentTemplate:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, object]) -> DocumentTemplate:
+        raw_fill_mode = opt_str(data, "fill_mode") or FillMode.FIELDS.value
+        if raw_fill_mode == "free_text":
+            raw_fill_mode = FillMode.FIELDS.value
         return cls(
             id=req_str(data, "id"),
             title=opt_str(data, "title"),
             fields=tuple(
                 DocumentField.from_dict(as_map(item)) for item in seq(data, "fields")
             ),
-            fill_mode=FillMode(opt_str(data, "fill_mode") or "fields"),
+            fill_mode=FillMode(raw_fill_mode),
             allow_multiple=opt_bool(data, "allow_multiple"),
         )
 

@@ -146,8 +146,10 @@ def test_save_result_assets_round_trip(
     dw = doc_widgets[0]
     dw.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(att_file), ""))
-    dw._pick_files(allow_multiple=False)
+    monkeypatch.setattr(
+        QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(att_file)], "")
+    )
+    dw._pick_files()
 
     out = tmp_path / "result.epiresult"
     assert window.save_result_to_path(out, "Курсант") is True

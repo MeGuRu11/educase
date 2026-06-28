@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from PySide6.QtWidgets import QGroupBox, QLabel, QPushButton
+from PySide6.QtWidgets import QFrame, QGroupBox, QLabel, QPushButton
 from pytestqt.qtbot import QtBot
 
 from epicase_constructor.ui.report_view import ReportView
@@ -17,6 +17,7 @@ from epicase_core.domain.report import (
     TimelineComparison,
 )
 from epicase_core.domain.stages import StageKind
+from epicase_core.theme import load_qss
 
 _CLINICAL_TITLE = "Клинико-эпидемиологический диагноз"
 _FINAL_TITLE = "Окончательный эпидемиологический диагноз"
@@ -80,6 +81,49 @@ def test_report_view_stage_with_findings_shows_rows(qtbot: QtBot) -> None:
     assert any("Выберите путь" in t and "верно" in t for t in texts)
     # Неверный выбор документа: статус «неверно» + приглушённый контекст ответа.
     assert any("неверно" in t and "Рапорт командира" in t for t in texts)
+
+
+def test_finding_render_marks_unanswered_as_neutral(qtbot: QtBot) -> None:
+    """Пропуск получает нейтральный стиль/статус без дублирования detail-плейсхолдера."""
+    finding = Finding(
+        FindingKind.DOCUMENT_CHOICE,
+        "document",
+        correct=False,
+        detail="— не выбрано —",
+    )
+    label = ReportView._finding_label(finding)
+    qtbot.addWidget(label)
+
+    text = ReportView._finding_text(finding)
+    assert label.objectName() == "findingSkip"
+    assert "не отвечено" in text
+    assert "— не выбрано —" not in text
+
+
+def test_finding_render_marks_answered_error_as_bad(qtbot: QtBot) -> None:
+    """Реальная ошибка сохраняет красный стиль, статус и контекст ответа."""
+    finding = Finding(
+        FindingKind.DOCUMENT_FIELD,
+        "field",
+        correct=False,
+        detail="неправильный ответ",
+    )
+    label = ReportView._finding_label(finding)
+    qtbot.addWidget(label)
+
+    text = ReportView._finding_text(finding)
+    assert label.objectName() == "findingBad"
+    assert "неверно" in text
+    assert "неправильный ответ" in text
+
+
+def test_finding_render_marks_correct_as_ok(qtbot: QtBot) -> None:
+    """Верный ответ сохраняет зелёный стиль."""
+    finding = Finding(FindingKind.BRANCH, "branch", correct=True)
+    label = ReportView._finding_label(finding)
+    qtbot.addWidget(label)
+
+    assert label.objectName() == "findingOk"
 
 
 def test_report_view_empty_stage_shows_placeholder(qtbot: QtBot) -> None:
@@ -202,12 +246,24 @@ def test_report_view_renders_notes(qtbot: QtBot) -> None:
 
 
 def test_report_view_renders_attachment_buttons(qtbot: QtBot) -> None:
-    """Вложение с присутствующими байтами: имя + активные кнопки «Открыть»/«Сохранить как…»."""
-    view = ReportView(_attachment_report(), {"att-1": b"PDF"})
+    """Вложение с байтами отображается карточкой с метаданными и активными действиями."""
+    view = ReportView(_attachment_report(), {"att-1": b"x" * 1536})
     qtbot.addWidget(view)
 
-    texts = [lbl.text() for lbl in view.findChildren(QLabel)]
-    assert any("донесение.pdf" in t for t in texts)
+    cards = [
+        frame
+        for frame in view.findChildren(QFrame)
+        if frame.objectName() == "attachmentCard"
+    ]
+    assert len(cards) == 1
+    assert {label.text() for label in cards[0].findChildren(QLabel)} >= {
+        "PDF",
+        "донесение.pdf",
+        "1,5 КБ",
+    }
+    header = view.findChild(QLabel, "attachmentSectionTitle")
+    assert header is not None
+    assert header.text() == "Вложенные документы · 1"
     buttons = view.findChildren(QPushButton)
     labels = {b.text() for b in buttons}
     assert "Открыть" in labels
@@ -223,8 +279,23 @@ def test_report_view_missing_asset_disables_buttons(qtbot: QtBot) -> None:
     buttons = view.findChildren(QPushButton)
     assert buttons
     assert all(not b.isEnabled() for b in buttons)
-    texts = [lbl.text() for lbl in view.findChildren(QLabel)]
-    assert any("файл отсутствует в архиве" in t for t in texts)
+    warning = view.findChild(QLabel, "attachmentWarning")
+    assert warning is not None
+    assert warning.text() == "(файл отсутствует в архиве)"
+
+
+def test_missing_attachment_actions_have_explicit_disabled_style() -> None:
+    """Missing-asset actions stay visibly disabled despite ID selector precedence."""
+    qss = load_qss()
+    disabled_rule = """QPushButton#attachmentOpenButton:disabled,
+QPushButton#attachmentSaveButton:disabled {
+    background: #F6F8FA;
+    color: #9AA5AF;
+    border: 1px solid #E1E6EA;
+}"""
+
+    assert disabled_rule in qss
+    assert qss.index(disabled_rule) > qss.index("QPushButton#attachmentOpenButton {")
 
 
 def test_report_view_save_attachment_writes_file(

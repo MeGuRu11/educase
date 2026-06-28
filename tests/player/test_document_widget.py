@@ -7,10 +7,9 @@ import pytest
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
+    QFrame,
     QLabel,
     QLineEdit,
-    QListWidget,
-    QPlainTextEdit,
     QPushButton,
 )
 from pytestqt.qtbot import QtBot
@@ -233,44 +232,7 @@ def test_selection_after_invalid_clears_property(qtbot: QtBot) -> None:
     assert w.options_combo.property("invalid") is False
 
 
-# --- ADR-014: FREE_TEXT и reference_assets ---
-
-
-def _make_free_text_task() -> DocumentTask:
-    """DocumentTask с верным документом FREE_TEXT и обманкой (template=None)."""
-    correct_opt = DocumentOption(
-        id="opt_free",
-        title="Объяснительная",
-        is_correct=True,
-        template=DocumentTemplate(
-            id="tpl_free",
-            title="Объяснительная",
-            fill_mode=FillMode.FREE_TEXT,
-        ),
-    )
-    decoy_opt = DocumentOption(
-        id="opt_decoy2",
-        title="Рапорт",
-        is_correct=False,
-        template=None,
-    )
-    return DocumentTask(
-        id="task_free",
-        prompt="Заполните объяснительную",
-        options=(correct_opt, decoy_opt),
-    )
-
-
-def test_free_text_mode_shows_plain_text_edit(qtbot: QtBot) -> None:
-    """FREE_TEXT-режим → QPlainTextEdit в форме, поля пусты; ввод → free_text()."""
-    w = DocumentWidget(_make_free_text_task())
-    qtbot.addWidget(w)
-    w.options_combo.setCurrentIndex(0)
-    assert w.current_field_widgets() == []
-    te_list: list[QPlainTextEdit] = w.form_area.findChildren(QPlainTextEdit)
-    assert len(te_list) == 1
-    te_list[0].setPlainText("Объяснительная записка")
-    assert w.free_text() == "Объяснительная записка"
+# --- Справочные материалы и сбор ответа ---
 
 
 def test_reference_assets_widgets_present(qtbot: QtBot) -> None:
@@ -291,25 +253,19 @@ def test_reference_assets_widgets_present(qtbot: QtBot) -> None:
     assert len(w_without.findChildren(AssetImageWidget)) == 0
 
 
-def test_doc_resp_free_text_and_field_mode(qtbot: QtBot) -> None:
-    """_doc_resp: FREE_TEXT-режим → free_text == введённый текст, field_answers пуст;
-    FIELDS-режим → free_text == ''."""
-    free_task = _make_free_text_task()
-    free_widget = DocumentWidget(free_task)
-    qtbot.addWidget(free_widget)
-    free_widget.options_combo.setCurrentIndex(0)
-    te_list: list[QPlainTextEdit] = free_widget.form_area.findChildren(QPlainTextEdit)
-    te_list[0].setPlainText("Мой текст")
-    resp = _doc_resp(free_task, free_widget)
-    assert resp.free_text == "Мой текст"
-    assert resp.field_answers == ()
-
+def test_doc_resp_fields_mode_contains_only_field_answers(qtbot: QtBot) -> None:
+    """FIELDS-режим собирает ответы полей без устаревшего free_text."""
     fields_task = _make_task()
     fields_widget = DocumentWidget(fields_task)
     qtbot.addWidget(fields_widget)
     fields_widget.options_combo.setCurrentIndex(0)
-    resp2 = _doc_resp(fields_task, fields_widget)
-    assert resp2.free_text == ""
+    response = _doc_resp(fields_task, fields_widget)
+
+    assert tuple(field_id for field_id, _answer in response.field_answers) == (
+        "fld_diag",
+        "fld_level",
+    )
+    assert not hasattr(response, "free_text")
 
 
 # --- ADR-015: ATTACHMENT mode ---
@@ -343,14 +299,14 @@ def test_attachment_mode_shows_button_multiple(qtbot: QtBot) -> None:
 
 
 def test_attachment_mode_shows_button_single(qtbot: QtBot) -> None:
-    """ATTACHMENT allow_multiple=False → кнопка «Прикрепить файл»."""
+    """Legacy allow_multiple=False не меняет кнопку множественного выбора."""
     w = DocumentWidget(_make_attachment_task(allow_multiple=False))
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
     buttons: list[QPushButton] = [
         b for b in w.form_area.findChildren(QPushButton) if b.objectName() == "attachButton"
     ]
-    assert buttons and buttons[0].text() == "Прикрепить файл"
+    assert buttons and buttons[0].text() == "Прикрепить файлы"
 
 
 def test_attachment_getters_empty_before_pick(qtbot: QtBot) -> None:
@@ -376,10 +332,10 @@ def test_attachment_multiple_appends_files(
     w.options_combo.setCurrentIndex(0)
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f1)], ""))
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f2)], ""))
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     atts = w.attachments()
     assert len(atts) == 2
@@ -387,10 +343,10 @@ def test_attachment_multiple_appends_files(
     assert set(w.attachment_bytes().values()) == {b"content1", b"content2"}
 
 
-def test_attachment_single_replaces_on_repeat(
+def test_attachment_legacy_single_allows_two_files_per_pick(
     qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """allow_multiple=False: повторное прикрепление заменяет предыдущее вложение."""
+    """Legacy allow_multiple=False всё равно принимает два файла за один выбор."""
     f1 = tmp_path / "first.pdf"
     f1.write_bytes(b"first")
     f2 = tmp_path / "second.pdf"
@@ -400,36 +356,32 @@ def test_attachment_single_replaces_on_repeat(
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(f1), ""))
-    w._pick_files(allow_multiple=False)
-
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **kw: (str(f2), ""))
-    w._pick_files(allow_multiple=False)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *a, **kw: ([str(f1), str(f2)], ""),
+    )
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileName",
+        lambda *a, **kw: pytest.fail("single-file dialog must not be used"),
+    )
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    assert attach_button is not None
+    attach_button.click()
 
     atts = w.attachments()
-    assert len(atts) == 1
-    assert atts[0][1] == "second.pdf"
-    assert list(w.attachment_bytes().values()) == [b"second"]
+    assert [name for _, name in atts] == ["first.pdf", "second.pdf"]
+    assert list(w.attachment_bytes().values()) == [b"first", b"second"]
 
 
-def test_attachment_clear_empties_getters(
-    qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """_clear_attachments() обнуляет оба геттера."""
-    f = tmp_path / "doc.txt"
-    f.write_bytes(b"data")
-
+def test_attachment_mode_has_no_clear_all_control(qtbot: QtBot) -> None:
+    """Панель вложений не предлагает массовое удаление."""
     w = DocumentWidget(_make_attachment_task(allow_multiple=True))
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
-    w._pick_files(allow_multiple=True)
-    assert len(w.attachments()) == 1
-
-    w._clear_attachments()
-    assert w.attachments() == ()
-    assert w.attachment_bytes() == {}
+    assert w.form_area.findChild(QPushButton, "attachClear") is None
 
 
 def test_attachment_asset_ids_unique_and_match_bytes(
@@ -448,7 +400,7 @@ def test_attachment_asset_ids_unique_and_match_bytes(
     monkeypatch.setattr(
         QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f1), str(f2)], "")
     )
-    w._pick_files(allow_multiple=True)
+    w._pick_files()
 
     atts = w.attachments()
     ab = w.attachment_bytes()
@@ -457,33 +409,215 @@ def test_attachment_asset_ids_unique_and_match_bytes(
     assert set(ids) == set(ab.keys())
 
 
-def test_attachment_list_widget_updated_on_pick(
+def test_attachment_pick_renders_compact_file_card(
     qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """После pick QListWidget отображает имена прикреплённых файлов."""
-    f = tmp_path / "report.docx"
-    f.write_bytes(b"doc")
+    """После выбора панель показывает компактную карточку с типом, именем и размером."""
+    attachment = tmp_path / "report.pdf"
+    attachment.write_bytes(b"x" * 1536)
 
     w = DocumentWidget(_make_attachment_task(allow_multiple=True))
     qtbot.addWidget(w)
     w.options_combo.setCurrentIndex(0)
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileNames", lambda *a, **kw: ([str(f)], ""))
-    w._pick_files(allow_multiple=True)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(attachment)], ""),
+    )
+    w._pick_files()
 
-    lists: list[QListWidget] = w.form_area.findChildren(QListWidget)
-    assert lists and lists[0].count() == 1
-    assert lists[0].item(0).text() == "report.docx"
+    cards = [
+        frame
+        for frame in w.form_area.findChildren(QFrame)
+        if frame.objectName() == "attachmentCard"
+    ]
+    assert len(cards) == 1
+    assert {label.text() for label in cards[0].findChildren(QLabel)} >= {
+        "PDF",
+        "report.pdf",
+        "1,5 КБ",
+    }
+    empty = w.form_area.findChild(QLabel, "attachmentEmpty")
+    assert empty is not None
+    assert empty.isHidden()
+    header = w.form_area.findChild(QLabel, "attachmentSectionTitle")
+    assert header is not None
+    assert header.text() == "Прикреплённые файлы · 1 / 10"
+
+
+def test_attachment_remove_button_removes_only_its_file(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Кнопка карточки удаляет только соответствующие метаданные и байты."""
+    first = tmp_path / "first.pdf"
+    first.write_bytes(b"first")
+    second = tmp_path / "second.docx"
+    second.write_bytes(b"second")
+
+    w = DocumentWidget(_make_attachment_task(allow_multiple=True))
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(first), str(second)], ""),
+    )
+    w._pick_files()
+
+    remove_buttons = [
+        button
+        for button in w.form_area.findChildren(QPushButton)
+        if button.objectName() == "attachmentRemoveButton"
+    ]
+    assert len(remove_buttons) == 2
+    first_asset_id = w.attachments()[0][0]
+    second_asset_id = w.attachments()[1][0]
+
+    remove_buttons[0].click()
+
+    assert w.attachments() == ((second_asset_id, "second.docx"),)
+    assert w.attachment_bytes() == {second_asset_id: b"second"}
+    assert first_asset_id not in w.attachment_bytes()
+
+
+def test_attachment_limit_keeps_first_ten_and_disables_button(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Выбор сверх лимита сохраняет первые десять файлов и сообщает об ограничении."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(11)]
+    for index, file in enumerate(files):
+        file.write_bytes(str(index).encode())
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+
+    w._pick_files()
+
+    assert [name for _, name in w.attachments()] == [
+        f"file-{index}.txt" for index in range(10)
+    ]
+    header = w.form_area.findChild(QLabel, "attachmentSectionTitle")
+    assert header is not None
+    assert header.text() == "Прикреплённые файлы · 10 / 10"
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    assert attach_button is not None
+    assert not attach_button.isEnabled()
+    assert w._status_label.text() == "Можно прикрепить не более 10 файлов"
+
+
+def test_attachment_removing_from_limit_reenables_button(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Удаление одного из десяти файлов снова разрешает прикрепление."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(10)]
+    for file in files:
+        file.write_bytes(b"x")
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+    w._pick_files()
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    assert attach_button is not None
+    assert not attach_button.isEnabled()
+
+    remove_button = w.form_area.findChild(QPushButton, "attachmentRemoveButton")
+    assert remove_button is not None
+    remove_button.click()
+
+    assert len(w.attachments()) == 9
+    assert attach_button.isEnabled()
+
+
+def test_attachment_fitting_pick_clears_previous_limit_message(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Успешное добавление в освободившееся место убирает старое сообщение о лимите."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(11)]
+    for file in files:
+        file.write_bytes(b"x")
+    replacement = tmp_path / "replacement.txt"
+    replacement.write_bytes(b"replacement")
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+    w._pick_files()
+    assert len(w.attachments()) == 10
+    assert w._status_label.text() == "Можно прикрепить не более 10 файлов"
+
+    attach_button = w.form_area.findChild(QPushButton, "attachButton")
+    remove_button = w.form_area.findChild(QPushButton, "attachmentRemoveButton")
+    assert attach_button is not None
+    assert remove_button is not None
+    remove_button.click()
+    assert len(w.attachments()) == 9
+    assert attach_button.isEnabled()
+
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(replacement)], ""),
+    )
+    w._pick_files()
+
+    assert len(w.attachments()) == 10
+    assert w._status_label.text() == ""
+
+
+def test_attachment_option_change_clears_limit_message(
+    qtbot: QtBot,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Смена выбранного документа не наследует сообщение о лимите вложений."""
+    files = [tmp_path / f"file-{index}.txt" for index in range(11)]
+    for file in files:
+        file.write_bytes(b"x")
+
+    w = DocumentWidget(_make_attachment_task())
+    qtbot.addWidget(w)
+    w.options_combo.setCurrentIndex(0)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileNames",
+        lambda *args, **kwargs: ([str(file) for file in files], ""),
+    )
+    w._pick_files()
+    assert w._status_label.text() == "Можно прикрепить не более 10 файлов"
+
+    w.options_combo.setCurrentIndex(-1)
+
+    assert w._status_label.text() == ""
 
 
 def test_attachment_getters_empty_in_other_modes(qtbot: QtBot) -> None:
-    """FREE_TEXT и FIELDS-режимы не возвращают вложений."""
-    w_free = DocumentWidget(_make_free_text_task())
-    qtbot.addWidget(w_free)
-    w_free.options_combo.setCurrentIndex(0)
-    assert w_free.attachments() == ()
-    assert w_free.attachment_bytes() == {}
-
+    """FIELDS-режим не возвращает вложений."""
     w_fields = DocumentWidget(_make_task())
     qtbot.addWidget(w_fields)
     w_fields.options_combo.setCurrentIndex(0)

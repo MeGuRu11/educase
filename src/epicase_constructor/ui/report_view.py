@@ -1,11 +1,11 @@
-"""Нейтральный read-only просмотр отчёта сверки результата (Constructor).
+"""Read-only просмотр предварительной машинной проверки результата (Constructor).
 
 Секции по этапам в порядке отчёта; в каждой — приглушённый нейтральный контекст (что
-курсант искал/писал), строки по ``Finding`` (статус цветом: верно — зелёный, неверно —
-приглушённый красный) и блок вложенных документов курсанта с возможностью открыть/сохранить.
+курсант искал/писал), строки по ``Finding`` (верно, неверно, не отвечено) и блок
+вложенных документов курсанта с возможностью открыть/сохранить.
 На этапе 6 дополнительно показываются ``TimelineComparison`` — эталон кейса рядом с вводом
 курсанта, БЕЗ пометок верно/неверно. БЕЗ итогов, баллов, процентов и вердикта pass/fail —
-формат оценивания кафедры подключится позже поверх этой структуры. Только виджеты и
+окончательное решение принимает преподаватель (ADR-016). Только виджеты и
 layout-менеджеры, без inline-стиля (статусы — через objectName + QSS).
 """
 from __future__ import annotations
@@ -18,6 +18,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QFileDialog,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -33,6 +34,7 @@ from epicase_core.domain.report import (
     TimelineComparison,
 )
 from epicase_core.domain.stages import StageKind
+from epicase_core.theme.file_labels import file_size_label, file_type_label
 
 _STAGE_TITLES: dict[StageKind, str] = {
     StageKind.PATIENTS: "Пациенты",
@@ -101,7 +103,13 @@ class ReportView(QWidget):
     def _finding_label(finding: Finding) -> QLabel:
         """Строка элемента: текст со статусом + цвет статуса через objectName (QSS)."""
         label = QLabel(ReportView._finding_text(finding))
-        label.setObjectName("findingOk" if finding.correct else "findingBad")
+        if finding.correct:
+            name = "findingOk"
+        elif finding.answered:
+            name = "findingBad"
+        else:
+            name = "findingSkip"
+        label.setObjectName(name)
         label.setWordWrap(True)
         return label
 
@@ -114,25 +122,42 @@ class ReportView(QWidget):
         section = QWidget()
         section_layout = QVBoxLayout(section)
         section_layout.setContentsMargins(0, 0, 0, 0)
-        header = QLabel(_ATTACHMENTS_HEADER)
-        header.setObjectName("schemeTitle")
+        header = QLabel(f"{_ATTACHMENTS_HEADER} · {len(attachments)}")
+        header.setObjectName("attachmentSectionTitle")
         section_layout.addWidget(header)
         for asset_id, filename in attachments:
             section_layout.addWidget(self._attachment_row(asset_id, filename))
         return section
 
-    def _attachment_row(self, asset_id: str, filename: str) -> QWidget:
-        """Строка вложения: имя + кнопки. Нет байтов в архиве → подпись и кнопки приглушены."""
-        present = asset_id in self._assets
-        row = QWidget()
+    def _attachment_row(self, asset_id: str, filename: str) -> QFrame:
+        """Карточка вложения; при отсутствии байтов действия отключены."""
+        data = self._assets.get(asset_id)
+        present = data is not None
+        row = QFrame()
+        row.setObjectName("attachmentCard")
         row_layout = QHBoxLayout(row)
         row_layout.setContentsMargins(0, 0, 0, 0)
 
-        name_label = QLabel(filename if present else f"{filename}  {_MISSING_ASSET}")
-        if not present:
-            name_label.setObjectName("mutedHint")
+        type_badge = QLabel(file_type_label(filename), row)
+        type_badge.setObjectName("attachmentTypeBadge")
+        row_layout.addWidget(type_badge)
+
+        text_column = QWidget(row)
+        text_layout = QVBoxLayout(text_column)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        name_label = QLabel(filename, text_column)
+        name_label.setObjectName("attachmentName")
         name_label.setWordWrap(True)
-        row_layout.addWidget(name_label, 1)
+        text_layout.addWidget(name_label)
+        if data is not None:
+            meta_label = QLabel(file_size_label(len(data)), text_column)
+            meta_label.setObjectName("attachmentMeta")
+            text_layout.addWidget(meta_label)
+        else:
+            warning_label = QLabel(_MISSING_ASSET, text_column)
+            warning_label.setObjectName("attachmentWarning")
+            text_layout.addWidget(warning_label)
+        row_layout.addWidget(text_column, 1)
 
         open_button = QPushButton("Открыть")
         open_button.setObjectName("attachmentOpenButton")
@@ -218,9 +243,14 @@ class ReportView(QWidget):
     @staticmethod
     def _finding_text(finding: Finding) -> str:
         """Строка элемента: статус + подпись (или id) + приглушённый контекст (если есть)."""
-        status = "верно" if finding.correct else "неверно"
+        if finding.correct:
+            status = "верно"
+        elif finding.answered:
+            status = "неверно"
+        else:
+            status = "не отвечено"
         name = finding.label or finding.element_id
         text = f"[{status}] {name}"
-        if finding.detail:
+        if finding.detail and finding.answered:
             text += f" — {finding.detail}"
         return text

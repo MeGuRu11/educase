@@ -277,6 +277,7 @@ def test_load_case_from_path_fills_editor(qtbot: QtBot, tmp_path: Path) -> None:
     assert len(window.editor.patient_editors) == 1
     refs = window.editor.patient_editors[0].assets_picker.value()
     assert refs[0].data == b"IMG"
+    window._stack.setCurrentIndex(_PAGE_START)
 
 
 def test_load_case_from_path_broken_returns_false(

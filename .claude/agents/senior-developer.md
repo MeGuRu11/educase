@@ -1,6 +1,6 @@
 ---
 name: senior-developer
-description: Senior-разработчик EpiCase. Критичный и сложный код — доменный слой, кодеки архивов .epicase/.epiresult, движок прохождения кейса, БД. Вызывать для ответственных реализаций.
+description: Senior-разработчик EpiCase. Критичный код — домен, архивы .epicase/.epiresult и движок прохождения. Вызывать для ответственных реализаций.
 model: opus
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---

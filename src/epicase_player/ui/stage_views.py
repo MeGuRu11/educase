@@ -344,7 +344,8 @@ class FinalStageView(StageView):
     """Этап 6 «Окончательный диагноз»: поиск, документы и таймлайны, заполняемые курсантом.
 
     Таймлайны курсант заполняет сам (``EditableTimelineWidget``); эталонные события из
-    конфига (``Timeline.events``) ему не показываются — сверка живёт в будущем отчёте.
+    конфига (``Timeline.events``) ему не показываются — сверка доступна преподавателю
+    в итоговом отчёте (ADR-016).
     """
 
     def __init__(
@@ -421,7 +422,6 @@ def _doc_resp(task: DocumentTask, widget: DocumentWidget) -> DocumentResponse:
         field_answers=tuple(
             (fw.field.id, fw.answer()) for fw in widget.current_field_widgets()
         ),
-        free_text=widget.free_text(),
         attachments=widget.attachments(),
     )
 
