@@ -1,6 +1,7 @@
-"""Тесты TemplateEditor: переключатель режима, видимость полей/чекбокса, load/to_draft."""
+"""Тесты TemplateEditor: переключатель режима, видимость полей и load/to_draft."""
 from __future__ import annotations
 
+from PySide6.QtWidgets import QCheckBox
 from pytestqt.qtbot import QtBot
 
 from epicase_constructor.ui.template_editor import TemplateEditor
@@ -8,27 +9,33 @@ from epicase_core.application.case_builder import TemplateDraft
 
 
 def test_default_mode_is_attachment(qtbot: QtBot) -> None:
-    """По умолчанию режим «Прикрепить файл»: контейнер полей скрыт, чекбокс «несколько» виден."""
+    """По умолчанию режим «Прикрепить файл», а контейнер полей скрыт."""
     w = TemplateEditor()
     qtbot.addWidget(w)
     w.show()
     assert w.mode_combo.currentData() == "attachment"
     assert not w._fields_container.isVisible()
-    assert w.multiple_checkbox.isVisible()
 
 
-def test_switch_to_fields_shows_container_hides_checkbox(qtbot: QtBot) -> None:
-    """Переключение на «Поля» показывает контейнер полей и скрывает чекбокс «несколько»."""
+def test_attachment_mode_has_no_allow_multiple_toggle(qtbot: QtBot) -> None:
+    """Constructor не предлагает ограничить число вложений."""
+    w = TemplateEditor()
+    qtbot.addWidget(w)
+
+    assert w.findChild(QCheckBox, "allowMultipleToggle") is None
+
+
+def test_switch_to_fields_shows_container(qtbot: QtBot) -> None:
+    """Переключение на «Поля» показывает контейнер полей."""
     w = TemplateEditor()
     qtbot.addWidget(w)
     w.show()
     w.mode_combo.setCurrentIndex(w.mode_combo.findData("fields"))
     assert w._fields_container.isVisible()
-    assert not w.multiple_checkbox.isVisible()
 
 
 def test_switch_back_to_attachment_restores_visibility(qtbot: QtBot) -> None:
-    """Возврат на «Прикрепить файл» скрывает контейнер полей и показывает чекбокс."""
+    """Возврат на «Прикрепить файл» скрывает контейнер полей."""
     w = TemplateEditor()
     qtbot.addWidget(w)
     w.show()
@@ -36,48 +43,43 @@ def test_switch_back_to_attachment_restores_visibility(qtbot: QtBot) -> None:
     assert w._fields_container.isVisible()
     w.mode_combo.setCurrentIndex(w.mode_combo.findData("attachment"))
     assert not w._fields_container.isVisible()
-    assert w.multiple_checkbox.isVisible()
 
 
-def test_to_draft_returns_fill_mode_and_allow_multiple(qtbot: QtBot) -> None:
-    """to_draft() отдаёт выбранный режим и состояние чекбокса «несколько файлов»."""
+def test_to_draft_derives_allow_multiple_from_fill_mode(qtbot: QtBot) -> None:
+    """Attachment допускает несколько файлов, fields — нет."""
     w = TemplateEditor()
     qtbot.addWidget(w)
 
     assert w.to_draft().fill_mode == "attachment"
-    assert w.to_draft().allow_multiple is False
-
-    w.multiple_checkbox.setChecked(True)
     assert w.to_draft().allow_multiple is True
 
     w.mode_combo.setCurrentIndex(w.mode_combo.findData("fields"))
     assert w.to_draft().fill_mode == "fields"
+    assert w.to_draft().allow_multiple is False
 
 
-def test_load_attachment_sets_combo_checkbox_and_visibility(qtbot: QtBot) -> None:
-    """load с attachment+allow_multiple выставляет combo, чекбокс и видимость."""
+def test_load_old_single_attachment_normalizes_allow_multiple(qtbot: QtBot) -> None:
+    """Старое attachment+False повторно сохраняется с новой политикой."""
     w = TemplateEditor()
     qtbot.addWidget(w)
     w.show()
     w.mode_combo.setCurrentIndex(w.mode_combo.findData("fields"))  # начальное ≠ attachment
     w.load(
-        TemplateDraft(title="T", fields=(), fill_mode="attachment", allow_multiple=True)
+        TemplateDraft(title="T", fields=(), fill_mode="attachment", allow_multiple=False)
     )
     assert w.mode_combo.currentData() == "attachment"
-    assert w.multiple_checkbox.isChecked()
     assert not w._fields_container.isVisible()
-    assert w.multiple_checkbox.isVisible()
+    assert w.to_draft().allow_multiple is True
 
 
 def test_load_fields_sets_combo_and_shows_container(qtbot: QtBot) -> None:
-    """load с fill_mode="fields" выставляет combo, показывает поля и скрывает чекбокс."""
+    """load с fill_mode="fields" выставляет combo и показывает поля."""
     w = TemplateEditor()
     qtbot.addWidget(w)
     w.show()
     w.load(TemplateDraft(title="T", fields=(), fill_mode="fields"))
     assert w.mode_combo.currentData() == "fields"
     assert w._fields_container.isVisible()
-    assert not w.multiple_checkbox.isVisible()
 
 
 def test_load_legacy_free_text_falls_back_to_fields(qtbot: QtBot) -> None:

@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QFormLayout,
     QGroupBox,
@@ -38,9 +37,6 @@ class TemplateEditor(QWidget):
         self.mode_combo.addItem("Прикрепить файл", "attachment")
         self.mode_combo.addItem("Поля", "fields")
 
-        self.multiple_checkbox = QCheckBox("Можно прикрепить несколько файлов", self)
-        self.multiple_checkbox.setObjectName("allowMultipleToggle")
-
         self.field_editors: list[FieldEditor] = []
         self._field_cards: list[QGroupBox] = []
 
@@ -67,7 +63,6 @@ class TemplateEditor(QWidget):
         title_form = QFormLayout()
         title_form.addRow("Заголовок шаблона", self.title_edit)
         title_form.addRow("Режим заполнения", self.mode_combo)
-        title_form.addRow("", self.multiple_checkbox)
 
         layout = QVBoxLayout(self)
         layout.addLayout(title_form)
@@ -78,10 +73,9 @@ class TemplateEditor(QWidget):
         self._sync_mode_visibility()
 
     def _sync_mode_visibility(self) -> None:
-        """Показать/скрыть редактор полей и чекбокс «несколько файлов» под выбранный режим."""
+        """Показать редактор полей только для соответствующего режима."""
         mode = self.mode_combo.currentData()
         self._fields_container.setVisible(mode == "fields")
-        self.multiple_checkbox.setVisible(mode == "attachment")
 
     def add_field(self) -> None:
         """Добавить редактор нового поля в конец списка."""
@@ -109,7 +103,6 @@ class TemplateEditor(QWidget):
         if idx == -1:
             idx = self.mode_combo.findData("fields")
         self.mode_combo.setCurrentIndex(idx)
-        self.multiple_checkbox.setChecked(draft.allow_multiple)
         self.title_edit.setText(draft.title)
         while self.field_editors:
             self.remove_last_field()
@@ -124,5 +117,5 @@ class TemplateEditor(QWidget):
             title=self.title_edit.text(),
             fields=tuple(editor.to_draft() for editor in self.field_editors),
             fill_mode=self.mode_combo.currentData(),
-            allow_multiple=self.multiple_checkbox.isChecked(),
+            allow_multiple=self.mode_combo.currentData() == "attachment",
         )
