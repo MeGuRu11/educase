@@ -1,10 +1,11 @@
-"""Виджет карточки пациента: заголовок + подсказка по клику."""
+"""Интерактивная плитка медицинской карты пациента."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
-    QGroupBox,
+    QFrame,
+    QHBoxLayout,
     QLabel,
     QVBoxLayout,
     QWidget,
@@ -13,8 +14,8 @@ from PySide6.QtWidgets import (
 from epicase_core.domain.stages import PatientCard
 
 
-class PatientCardWidget(QWidget):
-    """Отображение карточки пациента: заголовок и подсказка о деталях по клику."""
+class PatientCardWidget(QFrame):
+    """Плитка-идентификатор для открытия медицинской карты пациента."""
 
     clicked = Signal()
 
@@ -23,19 +24,65 @@ class PatientCardWidget(QWidget):
         self.card = card
         self.setObjectName("patientCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName(f"Открыть медицинскую карту: {card.title}")
+        self.setMinimumHeight(124)
 
-        layout = QVBoxLayout(self)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        group = QGroupBox(card.title)
-        group_layout = QVBoxLayout(group)
+        marker = QFrame()
+        marker.setObjectName("patientCardMarker")
+        marker.setFixedWidth(64)
+        marker_layout = QVBoxLayout(marker)
 
-        hint = QLabel("Подробности — по клику")
-        hint.setObjectName("mutedHint")
-        hint.setEnabled(False)
-        group_layout.addWidget(hint)
+        marker_symbol = QLabel("+")
+        marker_symbol.setObjectName("patientCardMarkerSymbol")
+        marker_symbol.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        marker_layout.addWidget(marker_symbol)
 
-        layout.addWidget(group)
+        marker_text = QLabel("КАРТА")
+        marker_text.setObjectName("patientCardMarkerText")
+        marker_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        marker_layout.addWidget(marker_text)
+
+        content = QWidget()
+        content.setObjectName("patientCardContent")
+        content_layout = QVBoxLayout(content)
+
+        title = QLabel(card.title)
+        title.setObjectName("patientCardTitle")
+        title.setWordWrap(True)
+        content_layout.addWidget(title)
+
+        card_type = QLabel("Медицинская карта пациента")
+        card_type.setObjectName("patientCardType")
+        content_layout.addWidget(card_type)
+
+        action = QLabel("Открыть карту →")
+        action.setObjectName("patientCardAction")
+        content_layout.addWidget(action)
+
+        layout.addWidget(marker)
+        layout.addWidget(content, 1)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit()
+        """Испустить clicked при нажатии основной кнопки мыши."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+            event.accept()
+            return
         super().mousePressEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Испустить clicked при стандартной клавиатурной активации."""
+        if event.key() in (
+            Qt.Key.Key_Return,
+            Qt.Key.Key_Enter,
+            Qt.Key.Key_Space,
+        ):
+            self.clicked.emit()
+            event.accept()
+            return
+        super().keyPressEvent(event)
