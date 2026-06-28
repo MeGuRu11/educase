@@ -139,9 +139,11 @@ class FieldDraft:
 
 @dataclass(frozen=True)
 class TemplateDraft:
-    """Сырые значения шаблона документа: заголовок, поля, режим заполнения, флаг вложений.
+    """Сырые значения шаблона документа, включая legacy-поле формата.
 
-    ``allow_multiple`` — флаг «несколько файлов» для режима ATTACHMENT (ADR-015).
+    ``allow_multiple`` сохраняется только для обратной совместимости формата v1.
+    Player игнорирует поле, а Constructor нормализует его в ``True`` для ATTACHMENT
+    и в ``False`` для FIELDS; активной настройкой UI оно не является (ADR-015).
     """
 
     title: str = ""
