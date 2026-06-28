@@ -1,8 +1,9 @@
-"""Модальный диалог полной информации о пациенте (read-only, ADR-008)."""
+"""Модальный read-only диалог медицинской карты пациента."""
 from __future__ import annotations
 
 from collections.abc import Mapping
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
@@ -19,7 +20,7 @@ from epicase_player.ui.asset_image_widget import AssetImageWidget
 
 
 class PatientDetailDialog(QDialog):
-    """Полная карточка пациента: все поля и фото в натуральном размере."""
+    """Показывает первичные данные и материалы пациента без редактирования."""
 
     def __init__(
         self,
@@ -28,43 +29,87 @@ class PatientDetailDialog(QDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setObjectName("schemeReveal")
+        self.setObjectName("patientDetailDialog")
         self.setWindowTitle(card.title)
-        self.setMinimumWidth(420)
+        self.setModal(True)
+        self.setMinimumWidth(600)
+        self.resize(720, 560)
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(16, 16, 16, 16)
-        outer.setSpacing(10)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
 
-        title_label = QLabel(card.title)
-        title_label.setObjectName("schemeRevealTitle")
-        title_label.setWordWrap(True)
-        outer.addWidget(title_label)
+        header = QFrame()
+        header.setObjectName("patientDetailHeader")
+        header_layout = QVBoxLayout(header)
+        header_layout.setContentsMargins(24, 18, 24, 18)
+
+        eyebrow = QLabel("Медицинская карта пациента")
+        eyebrow.setObjectName("patientDetailEyebrow")
+        header_layout.addWidget(eyebrow)
+
+        title = QLabel(card.title)
+        title.setObjectName("patientDetailTitle")
+        title.setWordWrap(True)
+        header_layout.addWidget(title)
+        outer.addWidget(header)
 
         scroll = QScrollArea()
+        scroll.setObjectName("patientDetailScroll")
         scroll.setWidgetResizable(True)
 
-        card_frame = QFrame()
-        card_frame.setObjectName("schemeRevealCard")
-        card_layout = QVBoxLayout(card_frame)
-        card_layout.setContentsMargins(12, 12, 12, 12)
-        card_layout.setSpacing(8)
+        body = QFrame()
+        body.setObjectName("patientDetailBody")
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(24, 20, 24, 20)
 
-        for key, value in card.fields:
-            field_label = QLabel(f"{key}: {value}")
-            field_label.setWordWrap(True)
-            card_layout.addWidget(field_label)
+        if card.fields:
+            for name, value in card.fields:
+                field_row = QFrame()
+                field_row.setObjectName("patientFieldRow")
+                field_layout = QVBoxLayout(field_row)
+                field_layout.setContentsMargins(0, 0, 0, 0)
 
-        for asset_id in card.assets:
-            card_layout.addWidget(AssetImageWidget(asset_id, assets))
+                name_label = QLabel(name)
+                name_label.setObjectName("patientFieldName")
+                name_label.setWordWrap(True)
+                field_layout.addWidget(name_label)
 
-        scroll.setWidget(card_frame)
-        outer.addWidget(scroll)
+                value_label = QLabel(value)
+                value_label.setObjectName("patientFieldValue")
+                value_label.setWordWrap(True)
+                value_label.setTextInteractionFlags(
+                    Qt.TextInteractionFlag.TextSelectableByMouse
+                )
+                field_layout.addWidget(value_label)
 
-        btn_row = QHBoxLayout()
-        btn_row.addStretch()
-        close_btn = QPushButton("Закрыть")
-        close_btn.setObjectName("schemeRevealClose")
-        close_btn.clicked.connect(self.accept)
-        btn_row.addWidget(close_btn)
-        outer.addLayout(btn_row)
+                body_layout.addWidget(field_row)
+        else:
+            empty_state = QLabel("Первичные данные не заполнены")
+            empty_state.setObjectName("patientEmptyState")
+            empty_state.setWordWrap(True)
+            body_layout.addWidget(empty_state)
+
+        if card.assets:
+            materials_title = QLabel("Материалы пациента")
+            materials_title.setObjectName("patientMaterialsTitle")
+            body_layout.addWidget(materials_title)
+
+            for asset_id in card.assets:
+                body_layout.addWidget(AssetImageWidget(asset_id, assets))
+
+        body_layout.addStretch()
+        scroll.setWidget(body)
+        outer.addWidget(scroll, 1)
+
+        footer = QFrame()
+        footer.setObjectName("patientDetailFooter")
+        footer_layout = QHBoxLayout(footer)
+        footer_layout.setContentsMargins(24, 16, 24, 16)
+        footer_layout.addStretch()
+
+        close_button = QPushButton("Закрыть")
+        close_button.setObjectName("patientDetailClose")
+        close_button.clicked.connect(self.accept)
+        footer_layout.addWidget(close_button)
+        outer.addWidget(footer)
