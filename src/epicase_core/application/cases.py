@@ -2,7 +2,7 @@
 
 Оркестрация между доменной моделью ``Case`` и кодеком архива ``infrastructure/archive``:
 склейка ``to_dict``/``from_dict`` с упаковкой ZIP. Бизнес-правил здесь нет (ADR-009).
-Результат курсанта (.epiresult) — отдельная будущая фича, здесь не трогается.
+Результаты курсантов ``.epiresult`` обслуживает отдельный модуль ``application.results``.
 """
 from __future__ import annotations
 

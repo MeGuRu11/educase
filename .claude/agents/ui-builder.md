@@ -15,6 +15,5 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - Layout-менеджеры обязательны — никакого абсолютного позиционирования.
 - Стили в QSS (resources/), никакого inline-стиля в Python.
 - Долгие операции — QThread/QRunnable, никогда в основном потоке.
-- Данные из БД — QTableView + QAbstractTableModel.
 - UI вызывает только application-сервисы, не infrastructure напрямую.
 - Типы на всё; после изменений — `ruff check` + `mypy` + `pytest -q` (pytest-qt, реальные виджеты).

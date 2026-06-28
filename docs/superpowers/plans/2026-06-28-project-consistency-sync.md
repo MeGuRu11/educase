@@ -115,7 +115,7 @@ def test_document_response_ignores_legacy_free_text() -> None:
   функции `write_epicase/read_epicase/write_epiresult/read_epiresult`.
 - [ ] Описать ADR-013 вместо векторного ADR-012 и ADR-016 вместо полного отказа от
   машинной проверки.
-- [ ] Удалить все упоминания дедлайна.
+- [ ] Удалить устаревшие календарные ограничения.
 - [ ] Обновить пути Codex-skills на `.agents/skills/epicase-*`.
 
 ### Task 5: Синхронизировать рабочие документы и трекер
@@ -131,7 +131,7 @@ def test_document_response_ignores_legacy_free_text() -> None:
   преподавателем; формат отчёта подробный поэлементный.
 - [ ] Исправить утверждение, что tracked-файл `TASKS.md` не отслеживается Git.
 - [ ] Отметить завершение CLN-1 после прохождения тестов.
-- [ ] Удалить дедлайн и устаревшие расширения/имена.
+- [ ] Удалить календарные ограничения и устаревшие расширения/имена.
 
 ### Task 6: Проверка и коммиты
 
@@ -142,7 +142,7 @@ def test_document_response_ignores_legacy_free_text() -> None:
 
 ```powershell
 rg -n --hidden -g '!.git/**' -g '!.venv/**' -g '!.worktrees/**' `
-  '25 июня|дедлайн|\.educase|\.eduresult|educase_core|FREE_TEXT|free_text|ADR-012' .
+  '\.educase|\.eduresult|educase_core|FREE_TEXT|free_text|ADR-012' .
 ```
 
 - [ ] Разобрать каждое совпадение: оставить только исторические упоминания ADR-012 и

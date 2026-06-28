@@ -24,9 +24,7 @@ description: >-
 ## Код
 - `epicase_core/infrastructure/archive/__init__.py` — константы формата.
 - `epicase_core/infrastructure/archive/codec.py` — `write_epicase` / `read_epicase` /
-  `write_epiresult` (заготовки, реализует senior-developer).
+  `write_epiresult` / `read_epiresult`.
 
-## TODO (сверить с DATA_MODEL.md / decisions.md)
-- [ ] Точная схема `manifest.json`: версия формата, id кейса, контрольная сумма, метаданные.
-- [ ] Раскладка ассетов внутри архива и ссылки на них из JSON.
-- [ ] Валидация при импорте (несовместимая версия, повреждённый архив).
+`manifest.json` содержит `format_version`, `kind`, `created_at`, SHA-256 `data.json`
+и `meta`. Кодек проверяет ZIP, обязательные записи, тип, версию, JSON и checksum.

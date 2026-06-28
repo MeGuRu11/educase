@@ -40,8 +40,10 @@ pyinstaller packaging/player.spec
 
 ## Для ИИ-агентов
 
+- `AGENTS.md` — инструкция для Codex.
 - `CLAUDE.md` — инструкция для Claude Code (архитектор/senior/UI/ревью).
 - `CODEX.md` — правила для Codex GPT 5.5 (скаффолдинг).
+- `.agents/skills/` — проектные skills Codex.
 - `.claude/agents/` — сабагенты с привязкой к лестнице моделей (`model:`).
 - `.claude/skills/` — проектные скиллы (контекст, механика этапов, документы, формат архива).
 
@@ -53,5 +55,9 @@ src/epicase_constructor/   GUI преподавателя
 src/epicase_player/        GUI курсанта
 tests/                     pytest / pytest-qt
 packaging/                 .spec для PyInstaller
-docs/adr/                  архитектурные решения (ADR-001..008)
+docs/adr/                  материализованные архитектурные решения (ADR-013..016)
 ```
+
+Constructor показывает преподавателю подробную предварительную машинную сверку, но
+не вычисляет баллы или pass/fail. Player правильность не показывает; окончательное
+решение принимает преподаватель (ADR-016).
