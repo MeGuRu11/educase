@@ -364,16 +364,16 @@ def test_build_case_clinical_drops_blank_option_and_task() -> None:
     assert documents[0].options[0].title == "Годная опция"
 
 
-def test_build_case_document_fill_mode_and_reference_assets() -> None:
-    """ADR-014: ``fill_mode`` шаблона и ``reference_assets`` задания доходят до домена."""
+def test_build_case_document_fields_mode_and_reference_assets() -> None:
+    """FIELDS и ``reference_assets`` задания доходят до домена."""
     task = DocumentTaskDraft(
-        prompt="Заполните свободным текстом",
+        prompt="Заполните поля документа",
         reference_assets=("ref-1", "ref-2"),
         options=(
             DocumentOptionDraft(
-                title="Объяснительная",
+                title="Форма 23",
                 is_correct=True,
-                template=TemplateDraft(title="Объяснительная", fill_mode="free_text"),
+                template=TemplateDraft(title="Форма 23", fill_mode="fields"),
             ),
         ),
     )
@@ -384,7 +384,7 @@ def test_build_case_document_fill_mode_and_reference_assets() -> None:
     assert doc.reference_assets == ("ref-1", "ref-2")
     template = doc.options[0].template
     assert template is not None
-    assert template.fill_mode is FillMode.FREE_TEXT
+    assert template.fill_mode is FillMode.FIELDS
 
 
 def test_build_case_document_attachment_mode_and_allow_multiple() -> None:

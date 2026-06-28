@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
-    QPlainTextEdit,
     QPushButton,
 )
 from pytestqt.qtbot import QtBot
@@ -233,44 +232,7 @@ def test_selection_after_invalid_clears_property(qtbot: QtBot) -> None:
     assert w.options_combo.property("invalid") is False
 
 
-# --- ADR-014: FREE_TEXT и reference_assets ---
-
-
-def _make_free_text_task() -> DocumentTask:
-    """DocumentTask с верным документом FREE_TEXT и обманкой (template=None)."""
-    correct_opt = DocumentOption(
-        id="opt_free",
-        title="Объяснительная",
-        is_correct=True,
-        template=DocumentTemplate(
-            id="tpl_free",
-            title="Объяснительная",
-            fill_mode=FillMode.FREE_TEXT,
-        ),
-    )
-    decoy_opt = DocumentOption(
-        id="opt_decoy2",
-        title="Рапорт",
-        is_correct=False,
-        template=None,
-    )
-    return DocumentTask(
-        id="task_free",
-        prompt="Заполните объяснительную",
-        options=(correct_opt, decoy_opt),
-    )
-
-
-def test_free_text_mode_shows_plain_text_edit(qtbot: QtBot) -> None:
-    """FREE_TEXT-режим → QPlainTextEdit в форме, поля пусты; ввод → free_text()."""
-    w = DocumentWidget(_make_free_text_task())
-    qtbot.addWidget(w)
-    w.options_combo.setCurrentIndex(0)
-    assert w.current_field_widgets() == []
-    te_list: list[QPlainTextEdit] = w.form_area.findChildren(QPlainTextEdit)
-    assert len(te_list) == 1
-    te_list[0].setPlainText("Объяснительная записка")
-    assert w.free_text() == "Объяснительная записка"
+# --- Справочные материалы и сбор ответа ---
 
 
 def test_reference_assets_widgets_present(qtbot: QtBot) -> None:
@@ -291,25 +253,19 @@ def test_reference_assets_widgets_present(qtbot: QtBot) -> None:
     assert len(w_without.findChildren(AssetImageWidget)) == 0
 
 
-def test_doc_resp_free_text_and_field_mode(qtbot: QtBot) -> None:
-    """_doc_resp: FREE_TEXT-режим → free_text == введённый текст, field_answers пуст;
-    FIELDS-режим → free_text == ''."""
-    free_task = _make_free_text_task()
-    free_widget = DocumentWidget(free_task)
-    qtbot.addWidget(free_widget)
-    free_widget.options_combo.setCurrentIndex(0)
-    te_list: list[QPlainTextEdit] = free_widget.form_area.findChildren(QPlainTextEdit)
-    te_list[0].setPlainText("Мой текст")
-    resp = _doc_resp(free_task, free_widget)
-    assert resp.free_text == "Мой текст"
-    assert resp.field_answers == ()
-
+def test_doc_resp_fields_mode_contains_only_field_answers(qtbot: QtBot) -> None:
+    """FIELDS-режим собирает ответы полей без устаревшего free_text."""
     fields_task = _make_task()
     fields_widget = DocumentWidget(fields_task)
     qtbot.addWidget(fields_widget)
     fields_widget.options_combo.setCurrentIndex(0)
-    resp2 = _doc_resp(fields_task, fields_widget)
-    assert resp2.free_text == ""
+    response = _doc_resp(fields_task, fields_widget)
+
+    assert tuple(field_id for field_id, _answer in response.field_answers) == (
+        "fld_diag",
+        "fld_level",
+    )
+    assert not hasattr(response, "free_text")
 
 
 # --- ADR-015: ATTACHMENT mode ---
@@ -477,13 +433,7 @@ def test_attachment_list_widget_updated_on_pick(
 
 
 def test_attachment_getters_empty_in_other_modes(qtbot: QtBot) -> None:
-    """FREE_TEXT и FIELDS-режимы не возвращают вложений."""
-    w_free = DocumentWidget(_make_free_text_task())
-    qtbot.addWidget(w_free)
-    w_free.options_combo.setCurrentIndex(0)
-    assert w_free.attachments() == ()
-    assert w_free.attachment_bytes() == {}
-
+    """FIELDS-режим не возвращает вложений."""
     w_fields = DocumentWidget(_make_task())
     qtbot.addWidget(w_fields)
     w_fields.options_combo.setCurrentIndex(0)

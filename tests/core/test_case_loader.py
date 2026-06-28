@@ -232,16 +232,16 @@ def test_clinical_round_trip(tmp_path: Path) -> None:
     assert decoy.template == TemplateDraft()
 
 
-def test_document_fill_mode_and_reference_assets_round_trip(tmp_path: Path) -> None:
-    """ADR-014: fill_mode и reference_assets переживают build_case → .epicase → case_to_draft."""
+def test_document_fields_mode_and_reference_assets_round_trip(tmp_path: Path) -> None:
+    """FIELDS и reference_assets переживают build_case → .epicase → case_to_draft."""
     task = DocumentTaskDraft(
-        prompt="Заполните объяснительную свободным текстом",
+        prompt="Заполните поля формы",
         reference_assets=("ref-1", "ref-2"),
         options=(
             DocumentOptionDraft(
-                title="Объяснительная",
+                title="Форма 23",
                 is_correct=True,
-                template=TemplateDraft(title="Объяснительная", fill_mode="free_text"),
+                template=TemplateDraft(title="Форма 23", fill_mode="fields"),
             ),
             DocumentOptionDraft(title="Обманка", is_correct=False),
         ),
@@ -263,7 +263,7 @@ def test_document_fill_mode_and_reference_assets_round_trip(tmp_path: Path) -> N
     assert clinical is not None
     reloaded_task = clinical.documents[0]
     assert reloaded_task.reference_assets == ("ref-1", "ref-2")
-    assert reloaded_task.options[0].template.fill_mode == "free_text"
+    assert reloaded_task.options[0].template.fill_mode == "fields"
 
 
 def test_document_attachment_mode_and_allow_multiple_round_trip(tmp_path: Path) -> None:

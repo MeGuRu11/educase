@@ -1,4 +1,4 @@
-"""Виджет свободного вывода осмотра объектов (ADR-008/ADR-012)."""
+"""Виджет свободного вывода осмотра объектов (ADR-008/ADR-013)."""
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -4,7 +4,7 @@
 формата живёт исключительно в ``manifest`` архива (ADR-010) и здесь НЕ дублируется.
 
 ``Attempt`` хранит СЫРЫЕ ответы курсанта без вычисления правильности (ADR-008): никакого
-сопоставления с конфигурацией кейса — сверка живёт в будущем слое ``report``. Слоты этапов
+сопоставления с конфигурацией кейса — сверка выполняется отдельно в ``report``. Слоты этапов
 зеркалят слоты ``Case`` и сопоставляются с ними по ``KIND`` (переиспользуется ``StageKind``).
 """
 from __future__ import annotations
@@ -62,8 +62,6 @@ class BranchResponse:
 class DocumentResponse:
     """Ответ по заданию документа: выбранная опция + пары «поле → ответ» + вложения.
 
-    ``free_text`` — ответ в режиме свободного заполнения (ADR-014); в полевом режиме пуст
-    (убирается отдельным срезом позже).
     ``attachments`` — пары ``(asset_id, имя_файла)`` для режима ATTACHMENT (ADR-015): ссылки
     на вложения курсанта, а не байты. ``asset_id`` — ключ в assets-карте архива результата,
     ``имя_файла`` — отображаемое имя для отчёта; сами байты лежат в assets архива результата.
@@ -72,7 +70,6 @@ class DocumentResponse:
     task_id: str
     chosen_option_id: str = ""
     field_answers: tuple[tuple[str, str], ...] = ()
-    free_text: str = ""
     attachments: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, object]:
@@ -80,7 +77,6 @@ class DocumentResponse:
             "task_id": self.task_id,
             "chosen_option_id": self.chosen_option_id,
             "field_answers": [list(pair) for pair in self.field_answers],
-            "free_text": self.free_text,
             "attachments": [list(pair) for pair in self.attachments],
         }
 
@@ -90,7 +86,6 @@ class DocumentResponse:
             task_id=req_str(data, "task_id"),
             chosen_option_id=opt_str(data, "chosen_option_id"),
             field_answers=pair_tuple(data, "field_answers"),
-            free_text=opt_str(data, "free_text"),
             attachments=pair_tuple(data, "attachments"),
         )
 

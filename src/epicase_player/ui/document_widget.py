@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QListWidget,
-    QPlainTextEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -51,7 +50,6 @@ class DocumentWidget(QWidget):
         self._assets: Mapping[str, bytes] = assets if assets is not None else {}
         self._result: DocumentResult | None = None
         self._field_widgets: list[DocumentFieldWidget] = []
-        self._free_text_edit: QPlainTextEdit | None = None
         self._attachments: list[tuple[str, str]] = []
         self._attach_bytes: dict[str, bytes] = {}
         self._attach_list: QListWidget | None = None
@@ -110,10 +108,6 @@ class DocumentWidget(QWidget):
         """Текущие виджеты полей (пусто, если обманка или документ не выбран)."""
         return list(self._field_widgets)
 
-    def free_text(self) -> str:
-        """Текст в режиме свободного заполнения; "" если режим полевой/не выбран."""
-        return self._free_text_edit.toPlainText() if self._free_text_edit is not None else ""
-
     def attachments(self) -> tuple[tuple[str, str], ...]:
         """Пары (asset_id, имя_файла) в режиме ATTACHMENT; пусто иначе."""
         return tuple(self._attachments)
@@ -164,7 +158,6 @@ class DocumentWidget(QWidget):
                 if wid is not None:
                     wid.deleteLater()
         self._field_widgets.clear()
-        self._free_text_edit = None
         self._attachments = []
         self._attach_bytes = {}
         self._attach_list = None
@@ -199,11 +192,6 @@ class DocumentWidget(QWidget):
             allow_multiple = option.template.allow_multiple
             attach_btn.clicked.connect(lambda: self._pick_files(allow_multiple))
             clear_btn.clicked.connect(self._clear_attachments)
-        elif option.template.fill_mode == FillMode.FREE_TEXT:
-            te = QPlainTextEdit()
-            te.setPlaceholderText("Введите текст документа")
-            self._free_text_edit = te
-            self._form_layout.addWidget(te)
         else:
             for field in option.template.fields:
                 fw = DocumentFieldWidget(field, self.form_area)

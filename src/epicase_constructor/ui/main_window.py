@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         return True
 
     def open_result_dialog(self) -> None:
-        """Открыть .epiresult + эталонный .epicase и показать нейтральный отчёт сверки."""
+        """Открыть результат с эталонным кейсом и показать предварительную проверку."""
         result_path, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть результат",

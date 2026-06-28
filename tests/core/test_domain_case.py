@@ -252,33 +252,15 @@ def test_stage_kinds_fixed() -> None:
     )
 
 
-def test_document_fill_mode_and_reference_assets_round_trip() -> None:
-    # ADR-014: режим свободного заполнения шаблона и справочные вложения задания
-    # переживают сериализацию (невакуумно — оба значения не дефолтные).
-    task = DocumentTask(
-        id="doc-free",
-        prompt="Заполните объяснительную свободным текстом",
-        options=(
-            DocumentOption(
-                id="opt-1",
-                title="Объяснительная",
-                is_correct=True,
-                template=DocumentTemplate(
-                    id="tpl-1",
-                    title="Объяснительная",
-                    fill_mode=FillMode.FREE_TEXT,
-                ),
-            ),
-            DocumentOption(id="opt-decoy", title="Рапорт"),
-        ),
-        reference_assets=("a1", "a2"),
-    )
-    restored = DocumentTask.from_dict(task.to_dict())
-    assert restored == task
-    assert restored.reference_assets == ("a1", "a2")
-    template = restored.options[0].template
-    assert template is not None
-    assert template.fill_mode is FillMode.FREE_TEXT
+def test_document_template_legacy_free_text_loads_as_fields() -> None:
+    """Старый free_text читается как FIELDS, но в актуальном enum отсутствует."""
+    raw = DocumentTemplate(id="tpl-legacy", title="Старый документ").to_dict()
+    raw["fill_mode"] = "free_text"
+
+    restored = DocumentTemplate.from_dict(raw)
+
+    assert restored.fill_mode is FillMode.FIELDS
+    assert not hasattr(FillMode, "FREE_TEXT")
 
 
 def test_document_template_attachment_mode_and_allow_multiple_round_trip() -> None:
