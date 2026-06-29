@@ -94,17 +94,19 @@ def test_start_screen_has_centered_branded_action_card(qtbot: QtBot) -> None:
         assert label.alignment() == Qt.AlignmentFlag.AlignCenter
 
     role = card.findChild(QLabel, "startRole")
-    create = card.findChild(QPushButton, "startAccentButton")
-    secondary = card.findChildren(QPushButton, "startSecondaryButton")
     assert role is not None
     assert role.wordWrap()
-    assert create is not None
-    assert len(secondary) == 2
+
+    buttons = cast(list[QPushButton], card.findChildren(QPushButton))
+    buttons_by_text = {button.text(): button for button in buttons}
+    create = buttons_by_text["Создать новый кейс"]
+    open_button = buttons_by_text["Открыть кейс для правки"]
+    check_button = buttons_by_text["Проверить результат курсанта"]
 
     role_index = layout.indexOf(role)
     create_index = layout.indexOf(create)
-    open_index = layout.indexOf(secondary[0])
-    check_index = layout.indexOf(secondary[1])
+    open_index = layout.indexOf(open_button)
+    check_index = layout.indexOf(check_button)
     assert role_index >= 0
     assert create_index == role_index + 2
     assert open_index == create_index + 1

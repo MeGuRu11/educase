@@ -196,7 +196,9 @@ class AnimatedStartBackground(QWidget):
         self._sync_timer()
 
     def hideEvent(self, event: QHideEvent) -> None:
-        """Stop frame updates synchronously when hidden."""
+        """Finish a left page, or only pause when the application is suspended."""
+        if self._application_active and not self.window().isMinimized():
+            self._finish_intro()
         self._stop_timer()
         super().hideEvent(event)
 
@@ -297,16 +299,25 @@ class AnimatedStartBackground(QWidget):
             return self._accumulated_active_ms + self._active_segment.elapsed()
         return self._accumulated_active_ms
 
+    def _finish_intro(self) -> None:
+        if self._intro_complete:
+            return
+        progress_changed = self._intro_progress != 1.0
+        self._intro_progress = 1.0
+        self._intro_complete = True
+        if progress_changed:
+            self.intro_progress_changed.emit(1.0)
+        self.intro_finished.emit()
+
     def _on_frame(self) -> None:
         if not self._intro_complete:
             elapsed_ms = self._active_milliseconds()
             progress = min(1.0, elapsed_ms / self._intro_duration_ms)
-            if progress != self._intro_progress:
+            if progress >= 1.0:
+                self._finish_intro()
+            elif progress != self._intro_progress:
                 self._intro_progress = progress
                 self.intro_progress_changed.emit(progress)
-            if progress >= 1.0:
-                self._intro_complete = True
-                self.intro_finished.emit()
         self.update()
 
     def _node_position(

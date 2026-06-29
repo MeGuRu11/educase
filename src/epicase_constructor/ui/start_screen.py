@@ -1,4 +1,4 @@
-"""Стартовый экран Constructor: приветствие + два действия (ADR-009)."""
+"""Стартовый экран Constructor: приветствие + три действия (ADR-009)."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal

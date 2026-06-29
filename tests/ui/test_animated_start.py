@@ -116,74 +116,93 @@ def test_intro_finishes_once_and_does_not_replay_after_hide_show(qtbot: QtBot) -
     assert completions == [True]
 
 
-def test_timer_tracks_visibility_and_hidden_time_does_not_advance_intro(
+def test_page_leave_finishes_intro_once_and_reshow_keeps_background_running(
     qtbot: QtBot,
 ) -> None:
-    """Only visible active time contributes to the intro animation."""
-    background = AnimatedStartBackground(
-        StartVariant.PLAYER,
-        intro_duration_ms=300,
-        frame_interval_ms=5,
-    )
-    qtbot.addWidget(background)
-
-    assert background.timer_active is False
-    _emit_application_state(Qt.ApplicationState.ApplicationActive)
-    background.show()
-    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
-    qtbot.wait(25)
-    background.hide()
-    paused_progress = background.intro_progress
-
-    assert background.timer_active is False
-    qtbot.wait(50)
-    assert background.intro_progress == paused_progress
-
-    background.show()
-    _emit_application_state(Qt.ApplicationState.ApplicationActive)
-    qtbot.waitUntil(lambda: background.intro_progress > paused_progress, timeout=250)
-    assert background.timer_active is True
-
-    qtbot.waitUntil(lambda: background.intro_complete, timeout=750)
-    background.hide()
-    assert background.timer_active is False
-    background.show()
-    _emit_application_state(Qt.ApplicationState.ApplicationActive)
-    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
-
-    assert background.intro_complete is True
-
-
-def test_application_state_changes_stop_and_resume_visible_background(
-    qtbot: QtBot,
-) -> None:
-    """Application inactivity synchronously suspends the animation timer."""
-    background = AnimatedStartBackground(
-        StartVariant.CONSTRUCTOR,
-        intro_duration_ms=300,
-        frame_interval_ms=5,
-    )
-    qtbot.addWidget(background)
-    _emit_application_state(Qt.ApplicationState.ApplicationActive)
-    background.show()
-    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
-
-    _emit_application_state(Qt.ApplicationState.ApplicationInactive)
-    assert background.timer_active is False
-
-    _emit_application_state(Qt.ApplicationState.ApplicationActive)
-    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
-
-
-def test_minimize_restore_host_pauses_timer_without_replaying_intro(
-    qtbot: QtBot,
-) -> None:
-    """A real top-level host suspends and resumes its completed background."""
+    """Leaving a visible start page completes intro without stopping later drift."""
     host = QFrame()
     background = AnimatedStartBackground(
         StartVariant.PLAYER,
         host,
-        intro_duration_ms=10,
+        intro_duration_ms=1_000,
+        frame_interval_ms=5,
+    )
+    host_layout = QVBoxLayout(host)
+    host_layout.addWidget(background)
+    qtbot.addWidget(host)
+    completions: list[bool] = []
+    progress: list[float] = []
+    background.intro_finished.connect(lambda: completions.append(True))
+    background.intro_progress_changed.connect(progress.append)
+
+    assert background.timer_active is False
+    _emit_application_state(Qt.ApplicationState.ApplicationActive)
+    host.show()
+    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
+    qtbot.waitUntil(lambda: background.intro_progress > 0.0, timeout=250)
+    assert background.intro_complete is False
+
+    background.hide()
+
+    assert background.timer_active is False
+    assert background.intro_complete is True
+    assert background.intro_progress == 1.0
+    assert progress[-1] == 1.0
+    assert completions == [True]
+
+    background.show()
+    _emit_application_state(Qt.ApplicationState.ApplicationActive)
+    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
+    qtbot.wait(25)
+
+    assert background.timer_active is True
+    assert background.intro_complete is True
+    assert background.intro_progress == 1.0
+    assert completions == [True]
+
+
+def test_application_inactive_pauses_incomplete_intro_without_reset(
+    qtbot: QtBot,
+) -> None:
+    """Application inactivity pauses and resumes the same incomplete intro."""
+    background = AnimatedStartBackground(
+        StartVariant.CONSTRUCTOR,
+        intro_duration_ms=1_000,
+        frame_interval_ms=5,
+    )
+    qtbot.addWidget(background)
+    completions: list[bool] = []
+    background.intro_finished.connect(lambda: completions.append(True))
+    _emit_application_state(Qt.ApplicationState.ApplicationActive)
+    background.show()
+    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
+    qtbot.waitUntil(lambda: background.intro_progress > 0.0, timeout=250)
+
+    _emit_application_state(Qt.ApplicationState.ApplicationInactive)
+    paused_progress = background.intro_progress
+    assert background.timer_active is False
+    assert background.intro_complete is False
+    qtbot.wait(30)
+    assert background.intro_progress == paused_progress
+    assert completions == []
+
+    _emit_application_state(Qt.ApplicationState.ApplicationActive)
+    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
+    qtbot.waitUntil(lambda: background.intro_progress > paused_progress, timeout=250)
+
+    assert background.intro_complete is False
+    assert completions == []
+
+
+def test_minimize_restore_pauses_incomplete_intro_without_reset(
+    qtbot: QtBot,
+) -> None:
+    """Minimizing a real host pauses and resumes the same incomplete intro."""
+    host = QFrame()
+    background = AnimatedStartBackground(
+        StartVariant.PLAYER,
+        host,
+        intro_duration_ms=1_000,
         frame_interval_ms=5,
     )
     host_layout = QVBoxLayout(host)
@@ -195,20 +214,24 @@ def test_minimize_restore_host_pauses_timer_without_replaying_intro(
     _emit_application_state(Qt.ApplicationState.ApplicationActive)
     host.show()
     qtbot.waitUntil(lambda: background.timer_active, timeout=250)
-    qtbot.waitUntil(lambda: background.intro_complete, timeout=500)
-    assert completions == [True]
+    qtbot.waitUntil(lambda: background.intro_progress > 0.0, timeout=250)
 
     host.setWindowState(Qt.WindowState.WindowMinimized)
     qtbot.waitUntil(lambda: not background.timer_active, timeout=250)
+    paused_progress = background.intro_progress
+    assert background.intro_complete is False
+    qtbot.wait(30)
+    assert background.intro_progress == paused_progress
+    assert completions == []
 
     host.setWindowState(Qt.WindowState.WindowNoState)
     host.showNormal()
     _emit_application_state(Qt.ApplicationState.ApplicationActive)
     qtbot.waitUntil(lambda: background.timer_active, timeout=250)
-    qtbot.wait(25)
+    qtbot.waitUntil(lambda: background.intro_progress > paused_progress, timeout=250)
 
-    assert background.intro_complete is True
-    assert completions == [True]
+    assert background.intro_complete is False
+    assert completions == []
 
 
 def test_start_widget_connects_progress_without_blocking_actions(qtbot: QtBot) -> None:

@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QCloseEvent, QGuiApplication
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QTableWidgetItem
 from pytestqt.qtbot import QtBot
 
@@ -20,6 +21,7 @@ from epicase_core.domain import (
     CaseMeta,
     DocumentResponse,
 )
+from epicase_ui.animated_start import AnimatedStartWidget
 
 
 def _select_type(field: FieldEditor, value: str) -> None:
@@ -339,6 +341,45 @@ def test_home_requested_returns_to_start(qtbot: QtBot) -> None:
     window._saved_view.home_requested.emit()
 
     assert window._stack.currentIndex() == _PAGE_START
+
+
+def test_start_intro_finishes_on_page_leave_without_replaying(
+    qtbot: QtBot,
+) -> None:
+    """Переходы реального стека завершают intro один раз на том же start widget."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+    application = QGuiApplication.instance()
+    assert isinstance(application, QGuiApplication)
+    application.applicationStateChanged.emit(Qt.ApplicationState.ApplicationActive)
+    window.show()
+
+    start_page = window._stack.widget(_PAGE_START)
+    assert start_page is not None
+    animated = start_page.findChild(AnimatedStartWidget)
+    assert animated is not None
+    background = animated.background
+    completions: list[bool] = []
+    background.intro_finished.connect(lambda: completions.append(True))
+    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
+    assert background.intro_complete is False
+
+    window._stack.setCurrentIndex(_PAGE_EDITOR)
+
+    assert background.intro_complete is True
+    assert background.intro_progress == 1.0
+    assert background.timer_active is False
+    assert completions == [True]
+
+    window._show_case_saved("/path/case.epicase")
+    window._saved_view.home_requested.emit()
+
+    assert window._stack.currentIndex() == _PAGE_START
+    assert window._stack.widget(_PAGE_START) is start_page
+    qtbot.waitUntil(lambda: background.timer_active, timeout=250)
+    qtbot.wait(25)
+    assert background.intro_complete is True
+    assert completions == [True]
 
 
 # --- Тесты подтверждения перед потерей несохранённого кейса ---
