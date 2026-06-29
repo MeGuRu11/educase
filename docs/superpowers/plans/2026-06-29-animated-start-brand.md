@@ -1395,3 +1395,44 @@ Report all implementation commit hashes, the pytest count and these live checks:
 6. resize, maximize, minimize and restore;
 7. open a case/editor and confirm the background stops;
 8. return Constructor home and confirm the intro does not replay.
+
+### Task 7: Increase background animation smoothness
+
+**Files:**
+- Modify: `src/epicase_ui/animated_start.py`
+- Modify: `tests/ui/test_animated_start.py`
+
+- [ ] **Step 1: Write the failing timer cadence test**
+
+Add a test that creates `AnimatedStartBackground` with default arguments and
+asserts that its child `QTimer` has a 33 ms interval and uses
+`Qt.TimerType.PreciseTimer`.
+
+- [ ] **Step 2: Run the focused test and verify it fails**
+
+Run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ui/test_animated_start.py::test_start_animation_uses_smooth_default_frame_cadence -q
+```
+
+Expected: FAIL because the current default interval is 50 ms.
+
+- [ ] **Step 3: Implement the shared 30 FPS cadence**
+
+Use one `_FRAME_INTERVAL_MS = 33` constant as the default for
+`AnimatedStartBackground` and `AnimatedStartWidget`. Configure the internal
+timer with `Qt.TimerType.PreciseTimer`. Keep all motion calculations based on
+elapsed time.
+
+- [ ] **Step 4: Run the full quality gate**
+
+Run `ruff check src tests`, `mypy src tests`, `pytest -q`, and
+`python -m compileall -q src tests` in that order.
+
+- [ ] **Step 5: Commit**
+
+```powershell
+git add -- docs/superpowers/specs/2026-06-29-animated-start-brand-design.md docs/superpowers/plans/2026-06-29-animated-start-brand.md src/epicase_ui/animated_start.py tests/ui/test_animated_start.py
+git commit -m "perf(ui): smooth start screen animation"
+```

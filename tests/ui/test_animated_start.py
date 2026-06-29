@@ -3,7 +3,7 @@
 from inspect import signature
 
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPixmap, QRegion
 from PySide6.QtWidgets import (
     QFrame,
@@ -83,6 +83,24 @@ def test_start_animation_uses_approved_default_intro_duration(qtbot: QtBot) -> N
 
     assert background_default == 1_400
     assert shell_default == 1_400
+
+
+def test_start_animation_uses_smooth_default_frame_cadence(qtbot: QtBot) -> None:
+    """The shared animation uses a precise 30 FPS timer in both public widgets."""
+    background = AnimatedStartBackground(StartVariant.PLAYER)
+    qtbot.addWidget(background)
+    timer = background.findChild(QTimer)
+
+    assert timer is not None
+    assert timer.interval() == 33
+    assert timer.timerType() is Qt.TimerType.PreciseTimer
+    assert (
+        signature(AnimatedStartBackground).parameters["frame_interval_ms"].default
+        == 33
+    )
+    assert (
+        signature(AnimatedStartWidget).parameters["frame_interval_ms"].default == 33
+    )
 
 
 def test_intro_finishes_once_and_does_not_replay_after_hide_show(qtbot: QtBot) -> None:

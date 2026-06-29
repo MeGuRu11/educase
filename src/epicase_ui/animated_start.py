@@ -30,6 +30,7 @@ _CONSTRUCTOR_TEAL = QColor("#17393A")
 _CONSTRUCTOR_BRASS = QColor("#B49A56")
 _PLAYER_TEAL = QColor("#0F766E")
 _PLAYER_PALE = QColor("#D9EEEB")
+_FRAME_INTERVAL_MS = 33
 
 _NormalizedPoint = tuple[float, float]
 _Edge = tuple[int, int]
@@ -135,7 +136,7 @@ class AnimatedStartBackground(QWidget):
         parent: QWidget | None = None,
         *,
         intro_duration_ms: int = 1_400,
-        frame_interval_ms: int = 50,
+        frame_interval_ms: int = _FRAME_INTERVAL_MS,
     ) -> None:
         """Create a deterministic background for one application variant."""
         super().__init__(parent)
@@ -161,6 +162,7 @@ class AnimatedStartBackground(QWidget):
 
         self._timer = QTimer(self)
         self._timer.setInterval(max(1, int(frame_interval_ms)))
+        self._timer.setTimerType(Qt.TimerType.PreciseTimer)
         self._timer.timeout.connect(self._on_frame)
 
         application = QGuiApplication.instance()
@@ -406,7 +408,7 @@ class AnimatedStartWidget(QWidget):
         parent: QWidget | None = None,
         *,
         intro_duration_ms: int = 1_400,
-        frame_interval_ms: int = 50,
+        frame_interval_ms: int = _FRAME_INTERVAL_MS,
     ) -> None:
         """Create a start shell without disabling any foreground actions."""
         super().__init__(parent)
