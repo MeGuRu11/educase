@@ -71,11 +71,8 @@ def test_load_qss_contains_branded_start_card_contract() -> None:
             "font-size: 12px;",
             "color: #9AA5AF;",
         ),
-        "QLabel#startSubtitle": (
-            "font-size: 15px;",
-            "color: #66727E;",
-        ),
         "QWidget#playerStartScreen QLabel#startProduct": ("color: #0F766E;",),
+        "QWidget#constructorStartScreen QLabel#startProduct": ("color: #17393A;",),
     }
 
     for selector, declarations in expected_rules.items():
@@ -84,3 +81,4 @@ def test_load_qss_contains_branded_start_card_contract() -> None:
             assert declaration in body
 
     assert "letter-spacing" not in _qss_rule_body(qss, "QLabel#startProduct")
+    assert "QLabel#startSubtitle" not in qss
