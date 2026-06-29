@@ -19,6 +19,7 @@ description: >-
 - `epicase_core.domain` — чистый Python, immutable-модели и бизнес-правила.
 - `epicase_core.application` — оркестрация, сборка и загрузка моделей.
 - `epicase_core.infrastructure.archive` — единственная персистентность.
+- `epicase_ui` — общие PySide6 presentation-компоненты; не импортирует приложения или Infrastructure.
 - `epicase_constructor` — GUI преподавателя.
 - `epicase_player` — GUI курсанта.
 

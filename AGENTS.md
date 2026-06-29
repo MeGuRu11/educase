@@ -27,6 +27,7 @@ src/
     application/         # use cases, сервисы — оркестрация, без бизнес-правил
     infrastructure/      # файловый I/O, кодеки архивов
       archive/           # кодеки .epicase / .epiresult — единственная персистентность
+  epicase_ui/            # общие PySide6 presentation-компоненты двух приложений
   epicase_constructor/   # GUI преподавателя (PySide6)
   epicase_player/        # GUI курсанта (PySide6)
 ```

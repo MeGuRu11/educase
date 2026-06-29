@@ -31,6 +31,7 @@ epicase-player = "epicase_player.__main__:main"
 [tool.hatch.build.targets.wheel]
 packages = [
     "src/epicase_core",
+    "src/epicase_ui",
     "src/epicase_constructor",
     "src/epicase_player",
 ]
@@ -51,7 +52,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 python_version = "3.12"
 strict = true
 mypy_path = "src"
-packages = ["epicase_core", "epicase_constructor", "epicase_player"]
+packages = ["epicase_core", "epicase_ui", "epicase_constructor", "epicase_player"]
 
 # PySide6 и pytest-qt поставляют неполные стабы — точечно гасим шум по missing imports.
 [[tool.mypy.overrides]]
