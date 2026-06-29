@@ -15,7 +15,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     app.setStyleSheet(load_qss())
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     return app.exec()
 
 
