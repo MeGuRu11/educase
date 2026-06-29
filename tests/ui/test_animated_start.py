@@ -70,6 +70,18 @@ def test_background_exposes_variant_specific_identity(
     assert epicase_ui.AnimatedStartBackground is AnimatedStartBackground
 
 
+def test_background_uses_investigation_map_renderer(qtbot: QtBot) -> None:
+    """Both product backgrounds expose the approved investigation-map layers."""
+    constructor = AnimatedStartBackground(StartVariant.CONSTRUCTOR)
+    player = AnimatedStartBackground(StartVariant.PLAYER)
+    qtbot.addWidget(constructor)
+    qtbot.addWidget(player)
+
+    expected_layers = ("grid", "routes", "hotspots", "signals")
+    assert constructor.map_layers == expected_layers
+    assert player.map_layers == expected_layers
+
+
 def test_start_animation_uses_approved_default_intro_duration(qtbot: QtBot) -> None:
     """Both shared start widgets default to the approved 1.4-second intro."""
     del qtbot
