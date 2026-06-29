@@ -260,19 +260,35 @@ QPushButton#schemeRevealClose:pressed {
     background: #0A524C;
 }
 
-/* --- C7/C8: стартовые экраны Constructor и Player --- */
+/* --- N2: общая бренд-карточка стартовых экранов Constructor и Player --- */
+QFrame#startActionCard {
+    background: #FFFFFF;
+    border: 1px solid #D4DAE0;
+    border-radius: 14px;
+}
 QLabel#startTitle {
     font-size: 28px;
     font-weight: bold;
     color: #1F2A33;
+}
+QLabel#startProduct {
+    font-size: 11px;
+    font-weight: bold;
+}
+QLabel#startRole {
+    font-size: 14px;
+    color: #66727E;
 }
 QLabel#startSubtitle {
     font-size: 15px;
     color: #66727E;
 }
 QLabel#startHint {
-    font-size: 13px;
+    font-size: 12px;
     color: #9AA5AF;
+}
+QWidget#playerStartScreen QLabel#startProduct {
+    color: #0F766E;
 }
 /* Акцентная кнопка — teal-заливка, основное действие. */
 QPushButton#startAccentButton {

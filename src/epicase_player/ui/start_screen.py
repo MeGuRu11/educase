@@ -3,12 +3,16 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QHBoxLayout,
+    QFrame,
     QLabel,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
+
+from epicase_ui.animated_start import AnimatedStartWidget, StartVariant
+from epicase_ui.brand_mark import BrandMarkWidget
+from epicase_ui.branding import BrandAsset
 
 
 class StartScreen(QWidget):
@@ -22,35 +26,44 @@ class StartScreen(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("playerStartScreen")
 
         root = QVBoxLayout(self)
-        root.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        center = QWidget()
-        center.setMaximumWidth(440)
-        col = QVBoxLayout(center)
+        card = QFrame()
+        card.setMaximumWidth(460)
+        col = QVBoxLayout(card)
+        col.setContentsMargins(28, 24, 28, 24)
         col.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        col.setSpacing(12)
+        col.setSpacing(9)
+
+        mark = BrandMarkWidget(BrandAsset.PLAYER)
+        mark.setFixedSize(76, 76)
+        col.addWidget(mark, alignment=Qt.AlignmentFlag.AlignCenter)
 
         title = QLabel("EpiCase")
         title.setObjectName("startTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         col.addWidget(title)
 
-        subtitle = QLabel("Учебный тренажёр военного эпидемиолога")
-        subtitle.setObjectName("startSubtitle")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        col.addWidget(subtitle)
+        product = QLabel("PLAYER")
+        product.setObjectName("startProduct")
+        product.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        col.addWidget(product)
 
-        col.addSpacing(24)
+        role = QLabel("Учебный тренажёр военного эпидемиолога")
+        role.setObjectName("startRole")
+        role.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        role.setWordWrap(True)
+        col.addWidget(role)
+        col.addSpacing(16)
 
         btn_open = QPushButton("Открыть кейс…")
         btn_open.setObjectName("startAccentButton")
         btn_open.clicked.connect(self.open_requested)
         col.addWidget(btn_open)
-
-        col.addSpacing(8)
 
         hint = QLabel("Откройте файл .epicase, полученный от преподавателя")
         hint.setObjectName("startHint")
@@ -58,8 +71,5 @@ class StartScreen(QWidget):
         hint.setWordWrap(True)
         col.addWidget(hint)
 
-        h = QHBoxLayout()
-        h.addStretch()
-        h.addWidget(center)
-        h.addStretch()
-        root.addLayout(h)
+        animated = AnimatedStartWidget(StartVariant.PLAYER, card, mark)
+        root.addWidget(animated)
