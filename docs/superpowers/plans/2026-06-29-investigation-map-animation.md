@@ -16,7 +16,7 @@
 - Create: `src/epicase_ui/investigation_map.py`
 - Create: `tests/ui/test_investigation_map.py`
 
-- [ ] **Step 1: Write failing geometry tests**
+- [x] **Step 1: Write failing geometry tests**
 
 Create tests for:
 
@@ -49,7 +49,7 @@ def test_variants_define_distinct_balanced_maps() -> None:
     assert player.accent.name() == "#d9eeeb"
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ui/test_investigation_map.py -q
@@ -57,7 +57,7 @@ def test_variants_define_distinct_balanced_maps() -> None:
 
 Expected: collection fails because `epicase_ui.investigation_map` does not exist.
 
-- [ ] **Step 3: Add the model and pure curve evaluator**
+- [x] **Step 3: Add the model and pure curve evaluator**
 
 Create:
 
@@ -102,7 +102,7 @@ def _cubic_point(route: _CubicRoute, progress: float) -> tuple[float, float]:
 Add four balanced routes and three hotspots per variant. Constructor data is
 more regular; Player data uses freer curves. Keep coordinates normalized.
 
-- [ ] **Step 4: Run focused checks**
+- [x] **Step 4: Run focused checks**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ui/test_investigation_map.py -q
@@ -118,7 +118,7 @@ Expected: all commands exit with code 0.
 - Modify: `src/epicase_ui/investigation_map.py`
 - Modify: `tests/ui/test_investigation_map.py`
 
-- [ ] **Step 1: Write failing raster and motion tests**
+- [x] **Step 1: Write failing raster and motion tests**
 
 Render each variant to a real `QImage` through `QPainter` and assert:
 
@@ -137,7 +137,7 @@ The test uses `intro_progress=0.15`, `1.0`, and elapsed times `2_000` and
 assert renderer.layer_names == ("grid", "routes", "hotspots", "signals")
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ui/test_investigation_map.py -q
@@ -145,7 +145,7 @@ assert renderer.layer_names == ("grid", "routes", "hotspots", "signals")
 
 Expected: failures because `InvestigationMapRenderer` is absent.
 
-- [ ] **Step 3: Implement the renderer**
+- [x] **Step 3: Implement the renderer**
 
 Add:
 
@@ -193,7 +193,7 @@ Requirements:
 - painter state is balanced with `save()`/`restore()`;
 - no random values, images or I/O.
 
-- [ ] **Step 4: Run focused checks**
+- [x] **Step 4: Run focused checks**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ui/test_investigation_map.py -q
@@ -203,7 +203,7 @@ Requirements:
 
 Expected: all commands exit with code 0.
 
-- [ ] **Step 5: Commit the renderer**
+- [x] **Step 5: Commit the renderer**
 
 ```powershell
 git add -- src/epicase_ui/investigation_map.py tests/ui/test_investigation_map.py
@@ -216,7 +216,7 @@ git commit -m "feat(ui): add investigation map renderer"
 - Modify: `src/epicase_ui/animated_start.py`
 - Modify: `tests/ui/test_animated_start.py`
 
-- [ ] **Step 1: Write the failing integration test**
+- [x] **Step 1: Write the failing integration test**
 
 Add:
 
@@ -231,7 +231,7 @@ def test_background_uses_investigation_map_renderer(qtbot: QtBot) -> None:
     assert player.map_layers == ("grid", "routes", "hotspots", "signals")
 ```
 
-- [ ] **Step 2: Run the integration test and verify RED**
+- [x] **Step 2: Run the integration test and verify RED**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ui/test_animated_start.py::test_background_uses_investigation_map_renderer -q
@@ -239,7 +239,7 @@ def test_background_uses_investigation_map_renderer(qtbot: QtBot) -> None:
 
 Expected: failure because `map_layers` does not exist.
 
-- [ ] **Step 3: Delegate background painting**
+- [x] **Step 3: Delegate background painting**
 
 Import `InvestigationMapRenderer` and `StartVariant` from
 `epicase_ui.investigation_map`. In `AnimatedStartBackground.__init__` create:
@@ -271,7 +271,7 @@ self._map_renderer.paint(
 Remove the obsolete node, edge and particle constants and their painting
 methods. Keep all timer, lifecycle and foreground-card code unchanged.
 
-- [ ] **Step 4: Run shared and application UI tests**
+- [x] **Step 4: Run shared and application UI tests**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ui tests/player/test_start_screen.py tests/constructor/test_start_screen.py tests/constructor/test_main_window.py -q
@@ -281,7 +281,7 @@ methods. Keep all timer, lifecycle and foreground-card code unchanged.
 
 Expected: all commands exit with code 0.
 
-- [ ] **Step 5: Commit the integration**
+- [x] **Step 5: Commit the integration**
 
 ```powershell
 git add -- src/epicase_ui/animated_start.py tests/ui/test_animated_start.py
@@ -293,7 +293,7 @@ git commit -m "feat(ui): animate start screens as investigation maps"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-29-investigation-map-animation.md`
 
-- [ ] **Step 1: Run the full quality gate**
+- [x] **Step 1: Run the full quality gate**
 
 ```powershell
 .\.venv\Scripts\ruff.exe check src tests
@@ -304,7 +304,7 @@ git commit -m "feat(ui): animate start screens as investigation maps"
 
 Expected: all four commands exit with code 0. Record the collected test count.
 
-- [ ] **Step 2: Verify repository scope**
+- [x] **Step 2: Verify repository scope**
 
 ```powershell
 git diff --check
@@ -314,7 +314,7 @@ git diff --stat
 
 Expected: only this plan remains modified after implementation commits.
 
-- [ ] **Step 3: Mark plan tasks complete and commit**
+- [x] **Step 3: Mark plan tasks complete and commit**
 
 Change this plan's task checkboxes from `[ ]` to `[x]`, then run:
 
@@ -323,7 +323,7 @@ git add -- docs/superpowers/plans/2026-06-29-investigation-map-animation.md
 git commit -m "docs: complete investigation map animation"
 ```
 
-- [ ] **Step 4: Prepare live verification**
+- [x] **Step 4: Prepare live verification**
 
 Report the commit hashes, test count and these checks:
 
