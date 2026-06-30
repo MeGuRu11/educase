@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
-from PySide6.QtGui import QMouseEvent, QPixmap
-from PySide6.QtWidgets import QGraphicsScene
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPen, QPixmap
+from PySide6.QtWidgets import QGraphicsRectItem, QGraphicsScene
 from pytestqt.qtbot import QtBot
 
 from epicase_core.domain.scheme import Hotspot, HotspotShape
@@ -27,10 +27,36 @@ def _make_view(
     """Собрать вью с фоновым pixmap _PX_W×_PX_H и (опционально) хотспотами/колбэком."""
     scene = QGraphicsScene()
     scene.addPixmap(QPixmap(_PX_W, _PX_H))
+    highlight_items: dict[str, QGraphicsRectItem] = {}
+    for hotspot in hotspots:
+        shape = hotspot.shape
+        item = QGraphicsRectItem(
+            QRectF(
+                shape.x * _PX_W,
+                shape.y * _PX_H,
+                shape.w * _PX_W,
+                shape.h * _PX_H,
+            )
+        )
+        item.setPen(QPen(Qt.PenStyle.NoPen))
+        item.setBrush(QBrush(Qt.BrushStyle.NoBrush))
+        scene.addItem(item)
+        highlight_items[hotspot.id] = item
     view = _SchemeGraphicsView(
-        scene, _PX_W, _PX_H, hotspots, on_hotspot if on_hotspot is not None else _noop
+        scene,
+        _PX_W,
+        _PX_H,
+        hotspots,
+        on_hotspot if on_hotspot is not None else _noop,
+        highlight_items,
     )
+    scene.setParent(view)
     qtbot.addWidget(view)
+    view.show()
+    qtbot.waitUntil(
+        lambda: view.viewport().width() == _PX_W
+        and view.viewport().height() == _PX_H
+    )
     return view
 
 
@@ -105,3 +131,27 @@ def test_hit_test_center_preserved_under_zoom(qtbot: QtBot) -> None:
     )
     view.mousePressEvent(event)
     assert calls == [hotspot]
+
+
+def test_hover_temporarily_highlights_real_hotspot_area(qtbot: QtBot) -> None:
+    """Hover показывает прежний прямоугольный hit-area только временно."""
+    hotspot = Hotspot(
+        id="center",
+        shape=HotspotShape(0.25, 0.25, 0.5, 0.5),
+    )
+    view = _make_view(qtbot, (hotspot,))
+    center = QPointF(_PX_W / 2, _PX_H / 2)
+    event = QMouseEvent(
+        QEvent.Type.MouseMove,
+        center,
+        center,
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+
+    view.mouseMoveEvent(event)
+
+    item = view._highlight_items["center"]
+    assert item.pen().color() == QColor("#0F766E")
+    assert item.brush().color().alpha() > 0

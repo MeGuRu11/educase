@@ -3,20 +3,18 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QColor, QFontMetricsF
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtWidgets import (
     QDialog,
     QGraphicsItem,
-    QGraphicsPathItem,
     QGraphicsRectItem,
-    QGraphicsTextItem,
     QGraphicsView,
 )
 from pytestqt.qtbot import QtBot
 
 from epicase_core.domain.scheme import Hotspot, HotspotShape, SchemeDocument, SchemeView
 from epicase_player.ui.scheme_viewer import SchemeViewerWidget
+from epicase_ui.hotspot_marker import HotspotMarkerItem
 
 
 def _scheme_with_child_and_reveal() -> SchemeDocument:
@@ -62,10 +60,10 @@ def test_viewer_renders_background(qtbot: QtBot, png_bytes: Callable[..., bytes]
     assert viewer.has_background() is True
 
 
-def test_viewer_hotspot_label_has_contrast_background_and_wraps(
+def test_viewer_renders_marker_and_hides_default_hit_area(
     qtbot: QtBot, png_bytes: Callable[..., bytes]
 ) -> None:
-    """Подпись хотспота контрастная, жирная и переносится внутри ширины зоны."""
+    """Player показывает пин, а прямоугольник оставляет невидимым hit-area."""
     label = "Водонапорная башня с длинным названием"
     scheme = SchemeDocument(
         root=SchemeView(
@@ -75,6 +73,7 @@ def test_viewer_hotspot_label_has_contrast_background_and_wraps(
                     id="tower",
                     shape=HotspotShape(x=0.1, y=0.1, w=0.35, h=0.4),
                     label=label,
+                    icon="water",
                 ),
             ),
         )
@@ -87,38 +86,58 @@ def test_viewer_hotspot_label_has_contrast_background_and_wraps(
     scene = graphics_view.scene()
     assert scene is not None
 
-    zones = [
+    markers = [
+        item for item in scene.items() if isinstance(item, HotspotMarkerItem)
+    ]
+    hit_areas = [
         item
         for item in scene.items()
         if isinstance(item, QGraphicsRectItem) and item.parentItem() is None
     ]
-    assert len(zones) == 1
-    zone = zones[0]
-    assert zone.toolTip() == label
+    assert len(markers) == 1
+    marker = markers[0]
+    assert marker.icon_key == "water"
+    assert marker.toolTip() == label
+    assert len(marker.label_lines) == 2
     assert (
-        zone.flags() & QGraphicsItem.GraphicsItemFlag.ItemClipsChildrenToShape
+        marker.flags()
+        & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations
     )
+    assert len(hit_areas) == 1
+    hit_area = hit_areas[0]
+    assert hit_area.pen().style() == Qt.PenStyle.NoPen
+    assert hit_area.brush().style() == Qt.BrushStyle.NoBrush
+    assert marker.pos() == hit_area.rect().center()
 
-    text_items = [
-        item for item in scene.items() if isinstance(item, QGraphicsTextItem)
-    ]
-    assert len(text_items) == 1
-    text_item = text_items[0]
-    assert text_item.toPlainText() == label
-    assert text_item.defaultTextColor() == QColor("#FFFFFF")
-    assert text_item.font().bold() is True
-    assert 0 < text_item.textWidth() <= 105
-    font_metrics = QFontMetricsF(text_item.font())
-    assert text_item.boundingRect().height() > 2 * font_metrics.lineSpacing()
 
-    background_items = [
-        item for item in scene.items() if isinstance(item, QGraphicsPathItem)
+def test_viewer_unknown_icon_uses_inspect_marker(
+    qtbot: QtBot, png_bytes: Callable[..., bytes]
+) -> None:
+    """Legacy/unknown ключ не ломает Player и показывает универсальный inspect."""
+    scheme = SchemeDocument(
+        root=SchemeView(
+            background="bg",
+            hotspots=(
+                Hotspot(
+                    id="legacy",
+                    shape=HotspotShape(0.2, 0.2, 0.2, 0.2),
+                    icon="zoom",
+                ),
+            ),
+        )
+    )
+    viewer = SchemeViewerWidget(scheme, {"bg": png_bytes(120, 120)})
+    qtbot.addWidget(viewer)
+    graphics_view = viewer.findChild(QGraphicsView)
+    assert graphics_view is not None
+    scene = graphics_view.scene()
+    assert scene is not None
+
+    markers = [
+        item for item in scene.items() if isinstance(item, HotspotMarkerItem)
     ]
-    assert len(background_items) == 1
-    background = background_items[0]
-    assert background.brush().color().alpha() >= 230
-    assert background.brush().color() == QColor(20, 49, 48, 240)
-    assert zone.rect().contains(background.boundingRect())
+    assert len(markers) == 1
+    assert markers[0].icon_key == "inspect"
 
 
 def test_viewer_missing_background_shows_placeholder(qtbot: QtBot) -> None:
