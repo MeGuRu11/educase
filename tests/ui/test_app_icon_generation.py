@@ -47,6 +47,22 @@ def _rgba_pixels(image: QImage) -> bytes:
     return bytes(normalized.constBits())
 
 
+def _max_channel_delta(left: bytes, right: bytes) -> int:
+    """Вернуть максимальное абсолютное отклонение RGBA-канала."""
+    assert len(left) == len(right)
+    return max((abs(left_value - right_value) for left_value, right_value in zip(
+        left, right, strict=True
+    )), default=0)
+
+
+def test_visual_comparison_measures_antialias_rounding_delta() -> None:
+    """Сравнение различает малую погрешность каналов без побайтового равенства."""
+    assert _max_channel_delta(
+        bytes((57, 118, 110, 255)),
+        bytes((59, 117, 110, 255)),
+    ) == 2
+
+
 @pytest.mark.parametrize("app", ("constructor", "player"))
 def test_checked_in_ico_has_exact_png_frames(app: str) -> None:
     """ICO содержит полный упорядоченный набор валидных PNG-кадров."""
@@ -92,7 +108,10 @@ def test_checked_in_ico_is_visually_reproducible_with_qapplication(
             checked_image.dotsPerMeterX(),
             checked_image.dotsPerMeterY(),
         )
-        assert _rgba_pixels(generated_image) == _rgba_pixels(checked_image)
+        assert _max_channel_delta(
+            _rgba_pixels(generated_image),
+            _rgba_pixels(checked_image),
+        ) <= 2
 
 
 def test_build_ico_rejects_invalid_svg() -> None:

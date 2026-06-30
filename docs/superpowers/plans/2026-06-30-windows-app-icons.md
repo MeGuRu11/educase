@@ -4,7 +4,7 @@
 
 **Goal:** Добавить адаптивные SVG-исходники и воспроизводимые многокадровые Windows ICO для Constructor и Player.
 
-**Architecture:** Четыре SVG лежат как package resources: full-варианты для размеров от 32 px и упрощённые small-варианты для 16–24 px. Типизированный офлайн-генератор на PySide6 рендерит SVG в PNG и упаковывает кадры в ICO средствами `struct`; checked-in ICO сверяются с повторной генерацией по структуре, DPI и RGBA-пикселям.
+**Architecture:** Четыре SVG лежат как package resources: full-варианты для размеров от 32 px и упрощённые small-варианты для 16–24 px. Типизированный офлайн-генератор на PySide6 рендерит SVG в PNG и упаковывает кадры в ICO средствами `struct`; checked-in ICO сверяются с повторной генерацией по структуре, DPI и с допуском платформенного округления RGBA не более 2 из 255.
 
 **Tech Stack:** Python 3.12, PySide6 `QSvgRenderer`/`QImage`, стандартные `dataclasses`, `pathlib`, `struct`, pytest.
 
@@ -249,7 +249,10 @@ def test_checked_in_ico_is_visually_reproducible(app: str) -> None:
         checked_image = QImage.fromData(checked_payload)
         assert (generated_image.width(), generated_image.height()) == (size, size)
         assert generated_image.dotsPerMeterX() == checked_image.dotsPerMeterX()
-        assert _rgba_pixels(generated_image) == _rgba_pixels(checked_image)
+        assert _max_channel_delta(
+            _rgba_pixels(generated_image),
+            _rgba_pixels(checked_image),
+        ) <= 2
 
 
 def test_build_ico_rejects_invalid_svg() -> None:
