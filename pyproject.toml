@@ -35,6 +35,9 @@ packages = [
     "src/epicase_constructor",
     "src/epicase_player",
 ]
+artifacts = [
+    "src/epicase_ui/resources/**/*.ico",
+]
 
 # ---- Качество кода ----
 

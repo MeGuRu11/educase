@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import struct
+import tomllib
 from importlib.resources import files
+from pathlib import Path
 
 import pytest
 from PySide6.QtGui import QImage
@@ -70,3 +72,14 @@ def test_build_ico_rejects_invalid_svg() -> None:
     """Невалидный full или small SVG останавливает сборку."""
     with pytest.raises(ValueError, match="Некорректный SVG"):
         build_ico(IconSource(full_svg=b"broken", small_svg=b"broken"))
+
+
+def test_wheel_config_explicitly_includes_ico_resources() -> None:
+    """Wheel-конфигурация явно сохраняет ICO как package artifacts."""
+    pyproject_path = Path(__file__).parents[2] / "pyproject.toml"
+    config = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    artifacts = config["tool"]["hatch"]["build"]["targets"]["wheel"][
+        "artifacts"
+    ]
+
+    assert "src/epicase_ui/resources/**/*.ico" in artifacts
