@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path
+    d="M32 4 58 18v28L32 60 6 46V18Z"
+    fill="#FFFFFF"
+    stroke="#17393A"
+    stroke-linejoin="round"
+    stroke-width="5.5"
+  />
+  <g data-role="blueprint">
+    <path
+      d="m18 44 14-25 14 25Z"
+      fill="none"
+      stroke="#17393A"
+      stroke-linejoin="round"
+      stroke-width="5.5"
+    />
+    <g fill="#B49A56" stroke="#17393A" stroke-width="2">
+      <circle cx="32" cy="19" r="6.5" />
+      <circle cx="18" cy="44" r="6.5" />
+      <circle cx="46" cy="44" r="6.5" />
+    </g>
+  </g>
+</svg>

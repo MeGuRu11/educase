@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path
+    d="M32 3 57 17v30L32 61 7 47V17Z"
+    fill="#FFFFFF"
+    stroke="#17393A"
+    stroke-linejoin="round"
+    stroke-width="3.5"
+  />
+  <g
+    data-detail="grid"
+    fill="none"
+    stroke="#D9EEEB"
+    stroke-linecap="round"
+    stroke-width="2"
+  >
+    <path d="M18 19h28M18 32h28M18 45h28" />
+    <path d="M20 16v32M32 10v44M44 16v32" />
+  </g>
+  <g data-role="blueprint">
+    <path
+      d="m20 43 12-22 12 22Z"
+      fill="none"
+      stroke="#17393A"
+      stroke-linejoin="round"
+      stroke-width="3"
+    />
+    <g fill="#B49A56" stroke="#17393A" stroke-width="2">
+      <circle cx="32" cy="21" r="4.5" />
+      <circle cx="20" cy="43" r="4.5" />
+      <circle cx="44" cy="43" r="4.5" />
+    </g>
+  </g>
+</svg>

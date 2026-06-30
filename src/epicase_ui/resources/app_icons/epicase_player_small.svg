@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path
+    d="M32 4 58 18v28L32 60 6 46V18Z"
+    fill="#0F766E"
+    stroke="#17393A"
+    stroke-linejoin="round"
+    stroke-width="5.5"
+  />
+  <g data-role="route">
+    <path
+      d="M17 44c10 0 8-24 21-24 7 0 7 9 7 15"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-linecap="round"
+      stroke-width="7"
+    />
+    <circle
+      cx="17"
+      cy="44"
+      r="6.5"
+      fill="#D9EEEB"
+      stroke="#17393A"
+      stroke-width="2"
+    />
+    <path
+      d="m35 32 10 10 10-10"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="7"
+    />
+  </g>
+</svg>
