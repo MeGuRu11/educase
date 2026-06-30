@@ -9,8 +9,12 @@
 """
 from __future__ import annotations
 
+from functools import partial
+
 from loguru import logger
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -25,6 +29,11 @@ from epicase_constructor.ui.icons import load_icon
 from epicase_constructor.ui.list_helpers import make_placeholder, refresh_placeholder, wrap_in_card
 from epicase_constructor.ui.scheme_zone_canvas import SchemeZoneCanvas
 from epicase_core.application.case_builder import AssetRef, HotspotDraft, SchemeViewDraft
+from epicase_ui.hotspot_icons import (
+    DEFAULT_HOTSPOT_ICON_KEY,
+    hotspot_icon_qicon,
+    hotspot_icon_specs,
+)
 
 
 class ZonePropsCard(QWidget):
@@ -35,9 +44,20 @@ class ZonePropsCard(QWidget):
     дальнейшей вложенности (``allow_nested=False``).
     """
 
+    icon_changed = Signal(str)
+
     def __init__(self, parent: QWidget | None = None, allow_nested: bool = False) -> None:
         super().__init__(parent)
         self._allow_nested = allow_nested
+
+        self.icon_combo = QComboBox(self)
+        for spec in hotspot_icon_specs():
+            self.icon_combo.addItem(
+                hotspot_icon_qicon(spec.key),
+                spec.label,
+                spec.key,
+            )
+        self.icon_combo.currentIndexChanged.connect(self._emit_icon_changed)
 
         self.label_edit = QLineEdit(self)
         self.label_edit.setPlaceholderText("Подпись зоны, например: Спальное помещение")
@@ -48,6 +68,7 @@ class ZonePropsCard(QWidget):
         self.assets_picker = AssetListPicker(self)
 
         form = QFormLayout()
+        form.addRow("Иконка объекта", self.icon_combo)
         form.addRow("Подпись", self.label_edit)
         form.addRow("Вскрываемый текст", self.reveal_text_edit)
         form.addRow("Фото зоны", self.assets_picker)
@@ -72,6 +93,27 @@ class ZonePropsCard(QWidget):
 
             main_layout.addWidget(nested_box)
 
+    def _emit_icon_changed(self, _index: int) -> None:
+        """Передать наружу стабильный ключ текущей иконки."""
+        self.icon_changed.emit(self.icon_key())
+
+    def icon_key(self) -> str:
+        """Вернуть исходный ключ combo, включая неизвестный legacy-ключ."""
+        value = self.icon_combo.currentData()
+        return value if isinstance(value, str) else DEFAULT_HOTSPOT_ICON_KEY
+
+    def set_icon_key(self, key: str) -> None:
+        """Выбрать ключ; неизвестный сохранить отдельным fallback-элементом."""
+        index = self.icon_combo.findData(key)
+        if index < 0:
+            self.icon_combo.addItem(
+                hotspot_icon_qicon(key),
+                "Неизвестная иконка",
+                key,
+            )
+            index = self.icon_combo.count() - 1
+        self.icon_combo.setCurrentIndex(index)
+
     def load(self, draft: HotspotDraft) -> None:
         """Заполнить карточку значениями ``HotspotDraft`` (открытие кейса на правку).
 
@@ -79,6 +121,7 @@ class ZonePropsCard(QWidget):
         ``set_ref``/``clear`` (сигнал ``changed`` поставит фон вложенному холсту), затем
         рекурсивно зоны вложенного редактора через ``load_hotspots`` (ПОСЛЕ установки фона).
         """
+        self.set_icon_key(draft.icon)
         self.label_edit.setText(draft.label)
         self.reveal_text_edit.setText(draft.reveal_text)
         self.assets_picker.load(draft.reveal_assets)
@@ -158,10 +201,12 @@ class SchemeZoneEditor(QWidget):
         n = len(self.canvas.normalized_zones())
         while len(self.cards) < n:
             card = ZonePropsCard(allow_nested=self._allow_nested, parent=self)
+            card.icon_changed.connect(partial(self._on_card_icon_changed, card))
             box = wrap_in_card(card, f"Зона {len(self.cards) + 1}")
             self.cards.append(card)
             self._card_boxes.append(box)
             self._cards_layout.addWidget(box)
+            self.canvas.set_zone_icon(len(self.cards) - 1, card.icon_key())
         while len(self.cards) > n:
             self.cards.pop()
             box = self._card_boxes.pop()
@@ -169,6 +214,14 @@ class SchemeZoneEditor(QWidget):
             box.deleteLater()
         refresh_placeholder(self._empty_label, is_empty=len(self.cards) == 0)
         self._update_buttons()
+
+    def _on_card_icon_changed(self, card: ZonePropsCard, key: str) -> None:
+        """Обновить пин зоны, соответствующей изменённой карточке."""
+        try:
+            index = self.cards.index(card)
+        except ValueError:
+            return
+        self.canvas.set_zone_icon(index, key)
 
     def set_background(self, ref: AssetRef | None) -> None:
         """Сменить фон холста; фон сбрасывает зоны, что синхронизирует карточки в 0."""
@@ -196,8 +249,11 @@ class SchemeZoneEditor(QWidget):
                 len(self.cards),
                 len(hotspots),
             )
-        for card, draft in zip(self.cards, hotspots, strict=False):
+        for index, (card, draft) in enumerate(
+            zip(self.cards, hotspots, strict=False)
+        ):
             card.load(draft)
+            self.canvas.set_zone_icon(index, card.icon_key())
 
     def to_hotspots(self) -> tuple[HotspotDraft, ...]:
         """Собрать ``HotspotDraft`` для каждой зоны из долей холста и карточки свойств."""
@@ -208,6 +264,7 @@ class SchemeZoneEditor(QWidget):
                 w=w,
                 h=h,
                 label=card.label_edit.text(),
+                icon=card.icon_key(),
                 reveal_text=card.reveal_text_edit.text(),
                 reveal_assets=card.assets_picker.value(),
                 child=card.to_child(),

@@ -11,7 +11,11 @@ from PySide6.QtGui import QColor, QPixmap
 from pytestqt.qtbot import QtBot
 
 from epicase_constructor.ui.scheme_zone_editor import SchemeZoneEditor, ZonePropsCard
-from epicase_core.application.case_builder import AssetRef, SchemeViewDraft
+from epicase_core.application.case_builder import (
+    AssetRef,
+    HotspotDraft,
+    SchemeViewDraft,
+)
 
 
 def _make_ref(tmp_path: Path, name: str = "bg.png") -> AssetRef:
@@ -60,6 +64,41 @@ def test_card_fields_round_trip_to_hotspots(qtbot: QtBot, tmp_path: Path) -> Non
     assert 0.0 <= h.y <= 1.0
     assert h.w > 0.0
     assert h.h > 0.0
+
+
+def test_icon_combo_defaults_and_round_trips(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """Новая зона получает inspect; выбор преподавателя попадает в draft и холст."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    editor._add_button.click()
+
+    card = editor.cards[0]
+    assert card.icon_key() == "inspect"
+    index = card.icon_combo.findData("water")
+    assert index >= 0
+    card.icon_combo.setCurrentIndex(index)
+
+    assert editor.to_hotspots()[0].icon == "water"
+    assert editor.canvas.zone_icon_key(0) == "water"
+
+
+def test_unknown_icon_is_preserved_until_explicit_change(
+    qtbot: QtBot, tmp_path: Path
+) -> None:
+    """Неизвестный ключ не теряется в draft, а на холсте безопасно показан inspect."""
+    editor = SchemeZoneEditor()
+    qtbot.addWidget(editor)
+    editor.set_background(_make_ref(tmp_path))
+    source = HotspotDraft(0.1, 0.1, 0.2, 0.2, icon="legacy_custom")
+
+    editor.load_hotspots((source,))
+
+    assert editor.cards[0].icon_key() == "legacy_custom"
+    assert editor.to_hotspots()[0].icon == "legacy_custom"
+    assert editor.canvas.zone_icon_key(0) == "inspect"
 
 
 def test_two_zones_two_cards(qtbot: QtBot, tmp_path: Path) -> None:
@@ -210,12 +249,16 @@ def test_zone_props_card_allow_nested_true_to_child_with_bg(
     nested_card = card.nested_editor.cards[0]
     nested_card.label_edit.setText("Кровать")
     nested_card.reveal_text_edit.setText("Место сна")
+    icon_index = nested_card.icon_combo.findData("cold_storage")
+    assert icon_index >= 0
+    nested_card.icon_combo.setCurrentIndex(icon_index)
 
     child = card.to_child()
     assert child is not None
     assert child.background is not None
     assert len(child.hotspots) == 1
     assert child.hotspots[0].label == "Кровать"
+    assert child.hotspots[0].icon == "cold_storage"
     assert child.hotspots[0].reveal_text == "Место сна"
 
 

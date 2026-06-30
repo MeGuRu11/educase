@@ -38,6 +38,8 @@ from PySide6.QtWidgets import (
 )
 
 from epicase_core.application.case_builder import AssetRef
+from epicase_ui.hotspot_icons import DEFAULT_HOTSPOT_ICON_KEY
+from epicase_ui.hotspot_marker import HotspotMarkerItem
 
 _MAX_WIDTH = 600
 
@@ -123,6 +125,17 @@ class ZoneItem(QGraphicsRectItem):
         self._active_handle: _Handle | None = None
         self._press_scene_rect = QRectF()
         self._index: int = 0
+        self.marker = HotspotMarkerItem(DEFAULT_HOTSPOT_ICON_KEY, parent=self)
+        self.marker.setZValue(3.0)
+        self._sync_marker()
+
+    def _sync_marker(self) -> None:
+        """Держать пин в центре редактируемого прямоугольника."""
+        self.marker.setPos(self.rect().center())
+
+    def set_icon_key(self, key: str) -> None:
+        """Показать allowlist-иконку или универсальный fallback."""
+        self.marker.set_icon_key(key)
 
     def set_index(self, index: int) -> None:
         """Задать порядковый номер бейджа (1-based). 0 — скрыть бейдж."""
@@ -302,6 +315,7 @@ class ZoneItem(QGraphicsRectItem):
         self.prepareGeometryChange()
         self.setRect(clamped)
         self.setPos(0.0, 0.0)
+        self._sync_marker()
 
     def _clamp_position(self, new_pos: QPointF, bounds: QRectF) -> QPointF:
         """Зажать позицию так, чтобы ``sceneBoundingRect`` оставался внутри ``bounds``."""
@@ -453,6 +467,15 @@ class SchemeZoneCanvas(QGraphicsView):
         if self._on_zones_changed is not None:
             self._on_zones_changed()
 
+    def set_zone_icon(self, index: int, key: str) -> None:
+        """Сменить иконку зоны по индексу, игнорируя устаревший индекс."""
+        if 0 <= index < len(self._zones):
+            self._zones[index].set_icon_key(key)
+
+    def zone_icon_key(self, index: int) -> str:
+        """Вернуть фактически отображаемый allowlist-ключ зоны."""
+        return self._zones[index].marker.icon_key
+
     def remove_selected(self) -> None:
         """Удалить выделенные зоны со сцены и из списка; уведомить об изменении."""
         for zone in [z for z in self._zones if z.isSelected()]:
@@ -479,6 +502,15 @@ class SchemeZoneCanvas(QGraphicsView):
             return []
         return [z.normalized(float(self._px_w), float(self._px_h)) for z in self._zones]
 
+    @staticmethod
+    def _zone_for_item(item: QGraphicsItem | None) -> ZoneItem | None:
+        """Найти родительскую ZoneItem для дочернего пина или ручки."""
+        while item is not None:
+            if isinstance(item, ZoneItem):
+                return item
+            item = item.parentItem()
+        return None
+
     # --- рисование резиновой рамкой -----------------------------------------
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -486,7 +518,7 @@ class SchemeZoneCanvas(QGraphicsView):
         if (
             self.has_background()
             and event.button() == Qt.MouseButton.LeftButton
-            and not isinstance(self.itemAt(event.position().toPoint()), ZoneItem)
+            and self._zone_for_item(self.itemAt(event.position().toPoint())) is None
         ):
             scene_pos = self.mapToScene(event.position().toPoint())
             self._draw_start = scene_pos

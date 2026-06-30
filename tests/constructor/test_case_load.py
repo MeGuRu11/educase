@@ -320,6 +320,7 @@ def _contacts_ui_draft(png: bytes) -> ContactsDraft:
                 w=0.3,
                 h=0.25,
                 label="Казарма",
+                icon="barracks",
                 reveal_text="Спальное",
                 child=SchemeViewDraft(
                     background=AssetRef("ct-int.png", "", data=png),
@@ -330,6 +331,7 @@ def _contacts_ui_draft(png: bytes) -> ContactsDraft:
                             w=0.2,
                             h=0.2,
                             label="Койка",
+                            icon="cold_storage",
                             reveal_text="Место",
                         ),
                     ),
@@ -341,6 +343,7 @@ def _contacts_ui_draft(png: bytes) -> ContactsDraft:
                 w=0.25,
                 h=0.3,
                 label="Пищеблок",
+                icon="canteen",
                 reveal_text="Кухня",
             ),
         ),
@@ -364,6 +367,8 @@ def test_contacts_editor_load_restores_scheme_zones(
     assert editor.zone_editor.cards[0].label_edit.text() == "Казарма"
     assert editor.zone_editor.cards[0].reveal_text_edit.text() == "Спальное"
     assert editor.zone_editor.cards[1].label_edit.text() == "Пищеблок"
+    assert editor.zone_editor.cards[1].icon_key() == "canteen"
+    assert editor.zone_editor.canvas.zone_icon_key(1) == "canteen"
 
     # Координаты зон близки к исходным (пиксельное округление холста).
     coords = editor.zone_editor.canvas.normalized_zones()
@@ -377,6 +382,8 @@ def test_contacts_editor_load_restores_scheme_zones(
     assert nested.canvas.has_background() is True
     assert len(nested.cards) == 1
     assert nested.cards[0].label_edit.text() == "Койка"
+    assert nested.cards[0].icon_key() == "cold_storage"
+    assert nested.canvas.zone_icon_key(0) == "cold_storage"
 
     # Осмотр восстановлен.
     assert len(editor.inspection_editor.group_editors) == 1

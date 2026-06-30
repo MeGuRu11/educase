@@ -80,6 +80,22 @@ def test_add_zone_round_trips_fractions(qtbot: QtBot, tmp_path: Path) -> None:
     assert nh == pytest.approx(0.5, abs=0.02)
 
 
+def test_zone_marker_follows_resize(qtbot: QtBot, tmp_path: Path) -> None:
+    """Пин остаётся в центре редактируемого прямоугольника после resize."""
+    canvas = SchemeZoneCanvas()
+    qtbot.addWidget(canvas)
+    canvas.set_background(_make_background(tmp_path))
+    zone = canvas.add_zone(0.1, 0.1, 0.2, 0.2)
+    assert zone is not None
+    before = zone.marker.scenePos()
+
+    zone.set_scene_rect(QRectF(24.0, 14.0, 16.0, 16.0))
+
+    assert zone.marker.scenePos() != before
+    assert zone.marker.pos() == zone.rect().center()
+    assert canvas._zone_for_item(zone.marker) is zone
+
+
 def test_add_zone_without_background_returns_none(qtbot: QtBot) -> None:
     """Без фона рисование невозможно: ``add_zone`` возвращает ``None`` и зон не появляется."""
     canvas = SchemeZoneCanvas()
