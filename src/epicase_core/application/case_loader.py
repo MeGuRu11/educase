@@ -258,8 +258,8 @@ def _hotspot_to_draft(h: Hotspot, assets: Mapping[str, bytes]) -> HotspotDraft:
     Зеркало ``_build_hotspots``: геометрия из ``HotspotShape`` в доли, ``reveal_assets``
     восстанавливаются из памяти с отбрасыванием id без байтов, ``child`` — рекурсивно через
     ``_scheme_view_to_draft`` (``None`` у плоской зоны ИЛИ у вложенного вида без восстановимого
-    фона — orphan-логика глубины). Иконка домена в драфт не переносится (её ставит
-    ``_build_hotspots`` по умолчанию — симметрия сохраняется).
+    фона — orphan-логика глубины). Ключ инфраструктурной иконки копируется без
+    интерпретации: allowlist и fallback принадлежат presentation-слою.
     """
     return HotspotDraft(
         x=h.shape.x,
@@ -267,6 +267,7 @@ def _hotspot_to_draft(h: Hotspot, assets: Mapping[str, bytes]) -> HotspotDraft:
         w=h.shape.w,
         h=h.shape.h,
         label=h.label,
+        icon=h.icon,
         reveal_text=h.reveal_text,
         reveal_assets=tuple(
             _asset_ref(a, assets) for a in h.reveal_assets if a in assets

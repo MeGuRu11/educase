@@ -192,10 +192,9 @@ class HotspotDraft:
     """Сырые значения одной зоны схемы из UI: прямоугольник + подпись + вскрываемое + вложенный вид.
 
     Геометрия в долях [0..1] (левый верх ``x``, ``y`` и размеры ``w``, ``h``), подпись,
-    вскрываемый текст и прикреплённые фото (``reveal_assets``). ``child`` — опциональный
-    вложенный интерьерный вид зоны (свой фон + свои зоны, рекурсивно); ``None`` у плоской зоны
-    (существующий плоский авторинг этого поля не задаёт). Иконку домен (``Hotspot``) получает
-    по умолчанию через ``_build_hotspots``.
+    инфраструктурная иконка, вскрываемый текст и прикреплённые фото (``reveal_assets``).
+    ``child`` — опциональный вложенный интерьерный вид зоны (свой фон + свои зоны,
+    рекурсивно); ``None`` у плоской зоны.
     """
 
     x: float
@@ -203,6 +202,7 @@ class HotspotDraft:
     w: float
     h: float
     label: str = ""
+    icon: str = ""
     reveal_text: str = ""
     reveal_assets: tuple[AssetRef, ...] = ()
     child: SchemeViewDraft | None = None
@@ -537,8 +537,9 @@ def _build_hotspots(drafts: tuple[HotspotDraft, ...]) -> tuple[Hotspot, ...]:
     Геометрия копируется в ``HotspotShape`` (доли [0..1]); ``reveal_assets`` сворачиваются в
     кортеж ``asset_id`` (как в ``_build_search``). ``child`` собирается тем же
     ``_build_scheme_view`` (общая рекурсия); вложенный вид без фона схлопывается в ``None``.
-    ``icon`` остаётся дефолтным. Нумерация сквозная в пределах ОДНОГО вида: ``hotspot-<i>`` от 1
-    (каждый вложенный вид нумерует свои зоны независимо — id уникален лишь в своём ``SchemeView``).
+    ``icon`` копируется как стабильный ключ presentation-каталога. Нумерация сквозная
+    в пределах ОДНОГО вида: ``hotspot-<i>`` от 1 (каждый вложенный вид нумерует свои зоны
+    независимо — id уникален лишь в своём ``SchemeView``).
     """
     spots: list[Hotspot] = []
     for d in drafts:
@@ -548,6 +549,7 @@ def _build_hotspots(drafts: tuple[HotspotDraft, ...]) -> tuple[Hotspot, ...]:
                 id=f"hotspot-{len(spots) + 1}",
                 shape=HotspotShape(x=d.x, y=d.y, w=d.w, h=d.h),
                 label=d.label,
+                icon=d.icon,
                 reveal_text=d.reveal_text,
                 reveal_assets=tuple(ref.asset_id for ref in d.reveal_assets),
                 child=child,

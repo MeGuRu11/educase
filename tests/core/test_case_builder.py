@@ -561,6 +561,30 @@ def test_build_case_contacts_hotspots() -> None:
     assert spot.child is None
 
 
+def test_build_contacts_preserves_hotspot_icon() -> None:
+    """Ключ иконки из draft попадает в доменный Hotspot."""
+    contacts = ContactsDraft(
+        scheme=AssetRef("scheme", "", data=b"PNG"),
+        hotspots=(
+            HotspotDraft(
+                x=0.1,
+                y=0.2,
+                w=0.3,
+                h=0.4,
+                label="Медпункт",
+                icon="medical",
+            ),
+        ),
+    )
+
+    stage = build_case(
+        CaseDraft(case_id="case-icon", title="Case", contacts=contacts)
+    ).contacts
+
+    assert stage.scheme is not None
+    assert stage.scheme.root.hotspots[0].icon == "medical"
+
+
 def test_build_case_environment_hotspots() -> None:
     """``environment`` с фоном и зоной → плоский ``Hotspot`` в ``scheme.root.hotspots``."""
     environment = EnvironmentDraft(

@@ -412,6 +412,47 @@ def _environment_draft() -> EnvironmentDraft:
     )
 
 
+def test_case_to_draft_preserves_nested_hotspot_icon() -> None:
+    """Domain → draft сохраняет ключ иконки и во вложенном виде."""
+    case = Case(
+        meta=CaseMeta(id="case-icons", title="Case"),
+        contacts=StageContacts(
+            scheme=SchemeDocument(
+                root=SchemeView(
+                    background="root",
+                    hotspots=(
+                        Hotspot(
+                            id="outer",
+                            shape=HotspotShape(0.1, 0.1, 0.2, 0.2),
+                            icon="barracks",
+                            child=SchemeView(
+                                background="child",
+                                hotspots=(
+                                    Hotspot(
+                                        id="inner",
+                                        shape=HotspotShape(0.2, 0.2, 0.3, 0.3),
+                                        icon="cold_storage",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        ),
+    )
+
+    draft = case_to_draft(
+        LoadedCase(case=case, assets={"root": b"ROOT", "child": b"CHILD"})
+    )
+
+    assert draft.contacts is not None
+    assert draft.contacts.hotspots[0].icon == "barracks"
+    child = draft.contacts.hotspots[0].child
+    assert child is not None
+    assert child.hotspots[0].icon == "cold_storage"
+
+
 def test_contacts_environment_round_trip(tmp_path: Path) -> None:
     """Этапы 3–4: CaseDraft → .epicase → case_to_draft даёт симметричный домен (рекурсия схемы)."""
     draft = CaseDraft(
