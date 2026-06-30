@@ -4,7 +4,7 @@
 
 **Goal:** Добавить адаптивные SVG-исходники и воспроизводимые многокадровые Windows ICO для Constructor и Player.
 
-**Architecture:** Четыре SVG лежат как package resources: full-варианты для размеров от 32 px и упрощённые small-варианты для 16–24 px. Типизированный офлайн-генератор на PySide6 рендерит SVG в PNG и упаковывает кадры в ICO средствами `struct`; checked-in ICO сверяются с повторной генерацией тестами.
+**Architecture:** Четыре SVG лежат как package resources: full-варианты для размеров от 32 px и упрощённые small-варианты для 16–24 px. Типизированный офлайн-генератор на PySide6 рендерит SVG в PNG и упаковывает кадры в ICO средствами `struct`; checked-in ICO сверяются с повторной генерацией по структуре, DPI и RGBA-пикселям.
 
 **Tech Stack:** Python 3.12, PySide6 `QSvgRenderer`/`QImage`, стандартные `dataclasses`, `pathlib`, `struct`, pytest.
 
@@ -231,13 +231,25 @@ def test_checked_in_ico_has_exact_png_frames(app: str) -> None:
 
 
 @pytest.mark.parametrize("app", ("constructor", "player"))
-def test_checked_in_ico_is_reproducible(app: str) -> None:
+def test_checked_in_ico_is_visually_reproducible(app: str) -> None:
     source = IconSource(
         full_svg=_resource(f"epicase_{app}.svg"),
         small_svg=_resource(f"epicase_{app}_small.svg"),
     )
 
-    assert build_ico(source) == _resource(f"epicase_{app}.ico")
+    generated_frames = _frames(build_ico(source))
+    checked_frames = _frames(_resource(f"epicase_{app}.ico"))
+    assert tuple(size for size, _ in generated_frames) == tuple(
+        size for size, _ in checked_frames
+    )
+    for (size, generated_payload), (_, checked_payload) in zip(
+        generated_frames, checked_frames, strict=True
+    ):
+        generated_image = QImage.fromData(generated_payload)
+        checked_image = QImage.fromData(checked_payload)
+        assert (generated_image.width(), generated_image.height()) == (size, size)
+        assert generated_image.dotsPerMeterX() == checked_image.dotsPerMeterX()
+        assert _rgba_pixels(generated_image) == _rgba_pixels(checked_image)
 
 
 def test_build_ico_rejects_invalid_svg() -> None:

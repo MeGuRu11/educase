@@ -41,6 +41,12 @@ def _frames(data: bytes) -> list[tuple[int, bytes]]:
     return frames
 
 
+def _rgba_pixels(image: QImage) -> bytes:
+    """Вернуть нормализованные RGBA-пиксели без метаданных PNG-кодера."""
+    normalized = image.convertToFormat(QImage.Format.Format_RGBA8888)
+    return bytes(normalized.constBits())
+
+
 @pytest.mark.parametrize("app", ("constructor", "player"))
 def test_checked_in_ico_has_exact_png_frames(app: str) -> None:
     """ICO содержит полный упорядоченный набор валидных PNG-кадров."""
@@ -56,16 +62,37 @@ def test_checked_in_ico_has_exact_png_frames(app: str) -> None:
 
 
 @pytest.mark.parametrize("app", ("constructor", "player"))
-def test_checked_in_ico_is_reproducible_with_qapplication(
+def test_checked_in_ico_is_visually_reproducible_with_qapplication(
     app: str, qtbot: QtBot
 ) -> None:
-    """Checked-in ICO не зависит от инициализации QApplication в полном suite."""
+    """Все кадры воспроизводятся пиксель-в-пиксель независимо от PNG-кодера."""
     source = IconSource(
         full_svg=_resource(f"epicase_{app}.svg"),
         small_svg=_resource(f"epicase_{app}_small.svg"),
     )
+    generated_frames = _frames(build_ico(source))
+    checked_frames = _frames(_resource(f"epicase_{app}.ico"))
 
-    assert build_ico(source) == _resource(f"epicase_{app}.ico")
+    assert tuple(size for size, _ in generated_frames) == tuple(
+        size for size, _ in checked_frames
+    )
+    for (size, generated_payload), (_, checked_payload) in zip(
+        generated_frames, checked_frames, strict=True
+    ):
+        generated_image = QImage.fromData(generated_payload)
+        checked_image = QImage.fromData(checked_payload)
+        assert (generated_image.width(), generated_image.height()) == (
+            size,
+            size,
+        )
+        assert (
+            generated_image.dotsPerMeterX(),
+            generated_image.dotsPerMeterY(),
+        ) == (
+            checked_image.dotsPerMeterX(),
+            checked_image.dotsPerMeterY(),
+        )
+        assert _rgba_pixels(generated_image) == _rgba_pixels(checked_image)
 
 
 def test_build_ico_rejects_invalid_svg() -> None:
