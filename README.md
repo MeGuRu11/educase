@@ -32,11 +32,17 @@ pytest -q
 
 ## Сборка EXE
 
-```bash
-pyinstaller packaging/constructor.spec
-pyinstaller packaging/player.spec
-# результат — в dist/
+```bat
+rem Пересобрать оба приложения
+build_all.bat
+
+rem Или пересобрать одно приложение
+build_constructor.bat
+build_player.bat
 ```
+
+Скрипты можно запускать из любого текущего каталога. Они используют `.venv`,
+если окружение существует, и записывают готовые автономные EXE в `dist/`.
 
 ## Для ИИ-агентов
 

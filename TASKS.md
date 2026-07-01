@@ -52,7 +52,7 @@
 
 ## Бэклог (наш код)
 
-- [ ] PKG-1 — PyInstaller, 2 EXE (theme.qss + иконки в datas) (M)
+- [x] PKG-1 — PyInstaller, 2 EXE (theme.qss + иконки в datas) (M)
 - [ ] V2 — сквозной ручной E2E всего цикла (после V1)
 - [ ] E2E-FINAL — финальная валидация на эталонном кейсе (gated K4)
 
