@@ -1,25 +1,45 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec для Constructor. Сборка: pyinstaller packaging/constructor.spec
-# Запуск из корня репозитория.
+# Пути вычисляются от расположения spec-файла.
+
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(SPECPATH).parent.resolve()
+SRC = PROJECT_ROOT / "src"
+UI_RESOURCES = SRC / "epicase_ui" / "resources"
+APP_ICONS = UI_RESOURCES / "app_icons"
 
 a = Analysis(
-    ["../src/epicase_constructor/__main__.py"],
-    pathex=["src"],
+    [str(SRC / "epicase_constructor" / "__main__.py")],
+    pathex=[str(SRC)],
     binaries=[],
     datas=[
-        ("../src/epicase_core/theme/theme.qss", "epicase_core/theme"),
-        ("../src/epicase_constructor/resources/icons", "epicase_constructor/resources/icons"),
+        (
+            str(SRC / "epicase_core" / "theme" / "theme.qss"),
+            "epicase_core/theme",
+        ),
+        (str(UI_RESOURCES), "epicase_ui/resources"),
+        (
+            str(SRC / "epicase_constructor" / "resources" / "icons"),
+            "epicase_constructor/resources/icons",
+        ),
     ],
     hiddenimports=[],
     hookspath=[],
-    excludes=[],
+    excludes=["epicase_player"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)
 
 exe = EXE(
-    pyz, a.scripts, a.binaries, a.datas, [],
-    name="EpiCase-Constructor",
-    console=False,       # GUI: без консольного окна
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name="EpiCase Constructor",
+    console=False,
     upx=False,
+    icon=str(APP_ICONS / "epicase_constructor.ico"),
 )
