@@ -78,6 +78,9 @@ def test_installer_build_reads_project_version_and_fails_fast() -> None:
     assert 'call "%ROOT%build_all.bat"' in source
     assert "tomllib.load" in source
     assert "['project']['version']" in source
+    assert 'for /f "delims=" %%V in (\'^""%PYTHON%" -c ' in source
+    assert '^"\') do set "APP_VERSION=%%V"' in source
+    assert "usebackq" not in source
     assert "if not defined APP_VERSION goto version_missing" in source
     assert "Inno Setup 6 is required" in source
     assert '"/DAppVersion=%APP_VERSION%"' in source

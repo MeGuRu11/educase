@@ -12,7 +12,7 @@ set "PYTHON=python"
 if exist "%ROOT%.venv\Scripts\python.exe" set "PYTHON=%ROOT%.venv\Scripts\python.exe"
 
 set "APP_VERSION="
-for /f "usebackq delims=" %%V in (`"%PYTHON%" -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"`) do set "APP_VERSION=%%V"
+for /f "delims=" %%V in ('^""%PYTHON%" -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"^"') do set "APP_VERSION=%%V"
 if not defined APP_VERSION goto version_missing
 
 set "ISCC="
