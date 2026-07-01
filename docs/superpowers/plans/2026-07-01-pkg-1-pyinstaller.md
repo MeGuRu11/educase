@@ -2,22 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Produce two independent Windows one-file GUI executables with the correct EpiCase resources, application icons, and package isolation.
+**Goal:** Produce two independent Windows one-file GUI executables with the correct EpiCase resources, application icons, package isolation, and reusable batch rebuild commands.
 
-**Architecture:** Keep `packaging/constructor.spec` and `packaging/player.spec` as the build configuration. Resolve all inputs from PyInstaller's `SPECPATH`, package only the resources each application needs, and validate the executable contract by executing each spec against lightweight test doubles before running real builds.
+**Architecture:** Keep `packaging/constructor.spec` and `packaging/player.spec` as the build configuration. Resolve all inputs from PyInstaller's `SPECPATH`, package only the resources each application needs, and expose two selective batch scripts plus one fail-fast aggregate script. Validate both spec and batch contracts before running the aggregate script for the real build.
 
-**Tech Stack:** Python 3.12, PyInstaller 6, PySide6, pytest, PowerShell.
+**Tech Stack:** Python 3.12, PyInstaller 6, PySide6, pytest, Windows batch, PowerShell.
 
 ---
 
 ## File map
 
 - Create `tests/test_packaging_specs.py`: executable contract tests for both spec files.
+- Create `build_constructor.bat`: location-independent Constructor rebuild command.
+- Create `build_player.bat`: location-independent Player rebuild command.
+- Create `build_all.bat`: fail-fast sequential rebuild of both applications.
 - Modify `packaging/constructor.spec`: robust paths, Constructor resources and ICO, Player exclusion.
 - Modify `packaging/player.spec`: robust paths, shared resources and Player ICO, Constructor exclusion.
+- Modify `README.md`: document selective and complete batch rebuilds.
 - Modify `TASKS.md`: close PKG-1 only after both built executables pass acceptance.
 
-### Task 1: Lock the packaging contract with failing tests
+### Task 1: Lock the spec and batch contracts with failing tests
 
 **Files:**
 - Create: `tests/test_packaging_specs.py`
@@ -127,21 +131,64 @@ def _execute_spec(filename: str) -> tuple[str, FakeAnalysis, FakeBuildTarget]:
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
+Add batch contract tests before running the focused test:
+
+```python
+@pytest.mark.parametrize(
+    ("filename", "spec_filename", "work_directory"),
+    (
+        ("build_constructor.bat", "constructor.spec", "build\\constructor"),
+        ("build_player.bat", "player.spec", "build\\player"),
+    ),
+)
+def test_individual_batch_build_is_location_independent(
+    filename: str,
+    spec_filename: str,
+    work_directory: str,
+) -> None:
+    path = ROOT / filename
+    assert path.exists()
+    source = path.read_text(encoding="utf-8")
+
+    assert 'set "ROOT=%~dp0"' in source
+    assert '.venv\\Scripts\\python.exe' in source
+    assert 'pushd "%ROOT%"' in source
+    assert '"%PYTHON%" -m PyInstaller --clean --noconfirm' in source
+    assert "--distpath dist" in source
+    assert f"--workpath {work_directory}" in source
+    assert f"packaging\\{spec_filename}" in source
+    assert "exit /b %EXIT_CODE%" in source
+
+
+def test_build_all_batch_calls_both_builds_and_stops_on_first_error() -> None:
+    path = ROOT / "build_all.bat"
+    assert path.exists()
+    source = path.read_text(encoding="utf-8")
+    constructor_call = 'call "%~dp0build_constructor.bat"'
+    player_call = 'call "%~dp0build_player.bat"'
+
+    assert source.index(constructor_call) < source.index(player_call)
+    assert "if errorlevel 1 exit /b %ERRORLEVEL%" in source
+    assert source.rstrip().endswith("exit /b %ERRORLEVEL%")
+```
+
 Run:
 
 ```powershell
 python -m pytest tests/test_packaging_specs.py -q
 ```
 
-Expected: both cases fail because the current specs point outside the
-repository and do not define the required exclusions, shared resources, names,
-or EXE icons.
+Expected: collection succeeds and five cases fail because the current specs
+violate the executable contract and the three batch files do not exist.
 
-### Task 2: Implement both one-file spec configurations
+### Task 2: Implement specs and reusable batch commands
 
 **Files:**
 - Modify: `packaging/constructor.spec`
 - Modify: `packaging/player.spec`
+- Create: `build_constructor.bat`
+- Create: `build_player.bat`
+- Create: `build_all.bat`
 
 - [ ] **Step 1: Make Constructor paths and resources explicit**
 
@@ -207,7 +254,48 @@ icon=str(APP_ICONS / "epicase_player.ico"),
 
 Do not package Constructor action icons separately in Player.
 
-- [ ] **Step 3: Run the focused test and verify GREEN**
+- [ ] **Step 3: Add the two selective batch scripts**
+
+Create `build_constructor.bat`:
+
+```bat
+@echo off
+setlocal
+
+set "ROOT=%~dp0"
+set "PYTHON=python"
+if exist "%ROOT%.venv\Scripts\python.exe" set "PYTHON=%ROOT%.venv\Scripts\python.exe"
+
+pushd "%ROOT%" >nul || exit /b 1
+"%PYTHON%" -m PyInstaller --clean --noconfirm --distpath dist --workpath build\constructor packaging\constructor.spec
+set "EXIT_CODE=%ERRORLEVEL%"
+popd
+exit /b %EXIT_CODE%
+```
+
+Create `build_player.bat` with the same interpreter selection and directory
+handling, changing the final command to:
+
+```bat
+"%PYTHON%" -m PyInstaller --clean --noconfirm --distpath dist --workpath build\player packaging\player.spec
+```
+
+- [ ] **Step 4: Add the aggregate batch script**
+
+Create `build_all.bat`:
+
+```bat
+@echo off
+setlocal
+
+call "%~dp0build_constructor.bat"
+if errorlevel 1 exit /b %ERRORLEVEL%
+
+call "%~dp0build_player.bat"
+exit /b %ERRORLEVEL%
+```
+
+- [ ] **Step 5: Run the focused test and verify GREEN**
 
 Run:
 
@@ -215,9 +303,9 @@ Run:
 python -m pytest tests/test_packaging_specs.py -q
 ```
 
-Expected: `2 passed`.
+Expected: `5 passed`.
 
-- [ ] **Step 4: Run the mandatory quality gate**
+- [ ] **Step 6: Run the mandatory quality gate**
 
 Run in order, stopping on the first failure:
 
@@ -230,10 +318,10 @@ python -m compileall -q src tests
 
 Expected: every command exits with code 0.
 
-- [ ] **Step 5: Commit the tested build configuration**
+- [ ] **Step 7: Commit the tested build configuration**
 
 ```powershell
-git add tests/test_packaging_specs.py packaging/constructor.spec packaging/player.spec
+git add tests/test_packaging_specs.py packaging/constructor.spec packaging/player.spec build_constructor.bat build_player.bat build_all.bat
 git commit -m "build: configure standalone Windows executables"
 ```
 
@@ -243,27 +331,18 @@ git commit -m "build: configure standalone Windows executables"
 - Generated, ignored: `build/constructor/`, `build/player/`
 - Generated, ignored: `dist/EpiCase Constructor.exe`, `dist/EpiCase Player.exe`
 
-- [ ] **Step 1: Build Constructor from the repository root**
+- [ ] **Step 1: Build both applications through the public batch workflow**
 
 Run:
 
 ```powershell
-pyinstaller --clean --noconfirm --distpath dist --workpath build/constructor packaging/constructor.spec
+cmd /c build_all.bat
 ```
 
-Expected: exit code 0 and `dist/EpiCase Constructor.exe` exists.
+Expected: exit code 0; `dist/EpiCase Constructor.exe` and
+`dist/EpiCase Player.exe` exist.
 
-- [ ] **Step 2: Build Player from the repository root**
-
-Run:
-
-```powershell
-pyinstaller --clean --noconfirm --distpath dist --workpath build/player packaging/player.spec
-```
-
-Expected: exit code 0 and `dist/EpiCase Player.exe` exists.
-
-- [ ] **Step 3: Inspect embedded resources and Windows icons**
+- [ ] **Step 2: Inspect embedded resources and Windows icons**
 
 Run `pyi-archive_viewer -l` for both files and assert that each archive contains
 `epicase_core/theme/theme.qss`, the correct application ICO, and shared brand
@@ -273,7 +352,7 @@ and hotspot resources. Constructor must also contain
 Use `[System.Drawing.Icon]::ExtractAssociatedIcon()` for each EXE and assert
 that both extracted icons are non-null and have different handles.
 
-- [ ] **Step 4: Smoke-launch each GUI**
+- [ ] **Step 3: Smoke-launch each GUI**
 
 Start each EXE with `Start-Process -PassThru -WindowStyle Hidden`, wait for
 input-idle or a visible main-window handle for up to 30 seconds, and fail if
@@ -286,9 +365,23 @@ with no missing-module or missing-resource startup error.
 ### Task 4: Close PKG-1 after acceptance
 
 **Files:**
+- Modify: `README.md`
 - Modify: `TASKS.md`
 
-- [ ] **Step 1: Mark PKG-1 complete**
+- [ ] **Step 1: Document the batch entrypoints**
+
+Replace the direct PyInstaller commands in the README build section with:
+
+```bat
+build_constructor.bat
+build_player.bat
+build_all.bat
+```
+
+State that the first two rebuild one application, `build_all.bat` rebuilds
+both, and the results are written to `dist/`.
+
+- [ ] **Step 2: Mark PKG-1 complete**
 
 Change only:
 
@@ -302,20 +395,20 @@ to:
 - [x] PKG-1 — PyInstaller, 2 EXE (theme.qss + иконки в datas) (M)
 ```
 
-- [ ] **Step 2: Run the final quality gate**
+- [ ] **Step 3: Run the final quality gate**
 
 Run the four quality-gate commands from Task 2 Step 4.
 
 Expected: every command exits with code 0.
 
-- [ ] **Step 3: Commit task completion**
+- [ ] **Step 4: Commit documentation and task completion**
 
 ```powershell
-git add TASKS.md
+git add README.md TASKS.md
 git commit -m "docs: close PyInstaller packaging task"
 ```
 
-- [ ] **Step 4: Verify the final repository state**
+- [ ] **Step 5: Verify the final repository state**
 
 Run:
 
