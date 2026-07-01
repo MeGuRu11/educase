@@ -54,8 +54,9 @@ def test_installer_files_and_shortcuts_follow_components() -> None:
     assert 'Source: "..\\dist\\EpiCase Player.exe"' in source
     assert "Components: constructor" in source
     assert "Components: player" in source
-    assert 'Name: "{commongroup}\\EpiCase Constructor"' in source
-    assert 'Name: "{commongroup}\\EpiCase Player"' in source
+    assert "{commongroup}" not in source
+    assert 'Name: "{group}\\EpiCase Constructor"' in source
+    assert 'Name: "{group}\\EpiCase Player"' in source
     assert 'Name: "{commondesktop}\\EpiCase Constructor"' in source
     assert 'Name: "{commondesktop}\\EpiCase Player"' in source
     assert "Tasks: desktopicon" in source

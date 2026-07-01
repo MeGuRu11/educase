@@ -78,8 +78,8 @@ def test_installer_files_and_shortcuts_follow_components() -> None:
     assert 'Source: "..\\dist\\EpiCase Player.exe"' in source
     assert "Components: constructor" in source
     assert "Components: player" in source
-    assert 'Name: "{commongroup}\\EpiCase Constructor"' in source
-    assert 'Name: "{commongroup}\\EpiCase Player"' in source
+    assert 'Name: "{group}\\EpiCase Constructor"' in source
+    assert 'Name: "{group}\\EpiCase Player"' in source
     assert 'Name: "{commondesktop}\\EpiCase Constructor"' in source
     assert 'Name: "{commondesktop}\\EpiCase Player"' in source
     assert "Tasks: desktopicon" in source
@@ -208,8 +208,8 @@ Source: "..\dist\{#ConstructorExe}"; DestDir: "{app}"; Flags: ignoreversion; Com
 Source: "..\dist\{#PlayerExe}"; DestDir: "{app}"; Flags: ignoreversion; Components: player
 
 [Icons]
-Name: "{commongroup}\EpiCase Constructor"; Filename: "{app}\{#ConstructorExe}"; WorkingDir: "{app}"; Components: constructor
-Name: "{commongroup}\EpiCase Player"; Filename: "{app}\{#PlayerExe}"; WorkingDir: "{app}"; Components: player
+Name: "{group}\EpiCase Constructor"; Filename: "{app}\{#ConstructorExe}"; WorkingDir: "{app}"; Components: constructor
+Name: "{group}\EpiCase Player"; Filename: "{app}\{#PlayerExe}"; WorkingDir: "{app}"; Components: player
 Name: "{commondesktop}\EpiCase Constructor"; Filename: "{app}\{#ConstructorExe}"; WorkingDir: "{app}"; Tasks: desktopicon; Components: constructor
 Name: "{commondesktop}\EpiCase Player"; Filename: "{app}\{#PlayerExe}"; WorkingDir: "{app}"; Tasks: desktopicon; Components: player
 ```
@@ -221,10 +221,10 @@ Add six narrowly-scoped entries:
 ```iss
 [InstallDelete]
 Type: files; Name: "{app}\{#ConstructorExe}"; Check: not WizardIsComponentSelected('constructor')
-Type: files; Name: "{commongroup}\EpiCase Constructor.lnk"; Check: not WizardIsComponentSelected('constructor')
+Type: files; Name: "{group}\EpiCase Constructor.lnk"; Check: not WizardIsComponentSelected('constructor')
 Type: files; Name: "{commondesktop}\EpiCase Constructor.lnk"; Check: not WizardIsComponentSelected('constructor')
 Type: files; Name: "{app}\{#PlayerExe}"; Check: not WizardIsComponentSelected('player')
-Type: files; Name: "{commongroup}\EpiCase Player.lnk"; Check: not WizardIsComponentSelected('player')
+Type: files; Name: "{group}\EpiCase Player.lnk"; Check: not WizardIsComponentSelected('player')
 Type: files; Name: "{commondesktop}\EpiCase Player.lnk"; Check: not WizardIsComponentSelected('player')
 ```
 

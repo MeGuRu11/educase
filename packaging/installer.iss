@@ -59,15 +59,15 @@ Source: "..\dist\EpiCase Constructor.exe"; DestDir: "{app}"; Flags: ignoreversio
 Source: "..\dist\EpiCase Player.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: player
 
 [Icons]
-Name: "{commongroup}\EpiCase Constructor"; Filename: "{app}\{#ConstructorExe}"; WorkingDir: "{app}"; Components: constructor
-Name: "{commongroup}\EpiCase Player"; Filename: "{app}\{#PlayerExe}"; WorkingDir: "{app}"; Components: player
+Name: "{group}\EpiCase Constructor"; Filename: "{app}\{#ConstructorExe}"; WorkingDir: "{app}"; Components: constructor
+Name: "{group}\EpiCase Player"; Filename: "{app}\{#PlayerExe}"; WorkingDir: "{app}"; Components: player
 Name: "{commondesktop}\EpiCase Constructor"; Filename: "{app}\{#ConstructorExe}"; WorkingDir: "{app}"; Tasks: desktopicon; Components: constructor
 Name: "{commondesktop}\EpiCase Player"; Filename: "{app}\{#PlayerExe}"; WorkingDir: "{app}"; Tasks: desktopicon; Components: player
 
 [InstallDelete]
 Type: files; Name: "{app}\{#ConstructorExe}"; Check: not WizardIsComponentSelected('constructor')
-Type: files; Name: "{commongroup}\EpiCase Constructor.lnk"; Check: not WizardIsComponentSelected('constructor')
+Type: files; Name: "{group}\EpiCase Constructor.lnk"; Check: not WizardIsComponentSelected('constructor')
 Type: files; Name: "{commondesktop}\EpiCase Constructor.lnk"; Check: not WizardIsComponentSelected('constructor')
 Type: files; Name: "{app}\{#PlayerExe}"; Check: not WizardIsComponentSelected('player')
-Type: files; Name: "{commongroup}\EpiCase Player.lnk"; Check: not WizardIsComponentSelected('player')
+Type: files; Name: "{group}\EpiCase Player.lnk"; Check: not WizardIsComponentSelected('player')
 Type: files; Name: "{commondesktop}\EpiCase Player.lnk"; Check: not WizardIsComponentSelected('player')
